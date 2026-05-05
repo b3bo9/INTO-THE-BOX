@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Into the Box - Mobile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        /* Disabilita i comportamenti nativi dei dispositivi touch per evitare zoom o scorrimenti */
+        * {
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: 'Impact', 'Georgia', serif; }
+        
+        #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        #uiCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+        
+        /* General HUD Elements */
+        .health-bar-container { background: #111; border: 1px solid #444; border-radius: 4px; overflow: hidden; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
+        .health-bar-fill { height: 100%; background: linear-gradient(90deg, #990000, #ff3333); width: 100%; transition: width 0.1s; }
+
+        /* Effetti Particellari HUD Essenze */
+        .stack-dot { width: 14px; height: 14px; border-radius: 50%; background: #222; border: 1px solid #555; transition: all 0.3s; box-shadow: inset 0 0 5px #000; }
+        @media (min-width: 640px) { .stack-dot { width: 22px; height: 22px; border-width: 2px; } }
+        
+        .stack-dot.active.red { background: #ff0000; border-color: #ffaa00; box-shadow: 0 0 15px #ff0000; }
+        .stack-dot.active.blue { background: #0088ff; border-color: #00ffff; box-shadow: 0 0 15px #0088ff; }
+        .stack-dot.active.green { background: #00ff00; border-color: #aaffaa; box-shadow: 0 0 15px #00ff00; }
+
+        /* Ombre personalizzate per il testo della Combo */
+        #combo-text {
+            text-shadow: 0 0 15px #ffaa00, 0 0 5px #ff0000, 2px 2px 0 #000;
+        }
+        @media (min-width: 640px) {
+            #combo-text { text-shadow: 0 0 30px #ffaa00, 0 0 10px #ff0000, 4px 4px 0 #000; }
+        }
+    </style>
+</head>
+<body class="text-white selection:bg-red-900">
+
+    <div id="initScreen" class="absolute inset-0 bg-black z-[300] flex items-center justify-center cursor-pointer pointer-events-auto">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-red-700 tracking-widest animate-pulse text-center px-4">Tocca per Entrare</h1>
+    </div>
+
+    <div id="mainMenu" class="absolute inset-0 bg-black/95 z-[200] flex items-center justify-center backdrop-blur-lg pointer-events-auto hidden">
+        <div class="bg-[#0a0a0e] border-2 border-red-800 p-6 sm:p-8 rounded-xl shadow-[0_0_50px_rgba(255,0,0,0.3)] w-[90%] max-w-[450px] flex flex-col gap-4 sm:gap-6 max-h-[90vh] overflow-y-auto">
+            <h1 class="text-4xl sm:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-white to-red-600 text-center mb-0 sm:mb-2 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)]">INTO THE BOX</h1>
+            <h2 class="text-xs sm:text-sm text-gray-400 text-center uppercase tracking-widest">Sopravvivi all'arena.</h2>
+            
+            <p class="text-[10px] sm:text-xs text-gray-400 text-center border-b border-gray-800 pb-4">
+                I nemici rilasciano <span class="text-red-500 font-bold">Essenze Cromatiche</span>.<br>Accumulane 3 uguali per attivare l'<b>OVERDRIVE</b>.<br><br>
+                <span class="text-blue-400 font-bold block mt-2">🎮 COMANDI SMARTPHONE:</span>
+                Usa il Joystick Sinistro per muoverti.<br>Usa il Joystick Destro per mirare e fare fuoco.<br>Usa i pulsanti a schermo per Scatto e Ascensione.
+            </p>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs sm:text-sm text-gray-400 font-bold uppercase tracking-wider">Difficoltà</label>
+                <select id="gameDifficulty" onmouseenter="AudioEngine.playHover()" class="w-full bg-[#111] text-white border border-gray-700 px-3 py-2 sm:px-4 sm:py-3 rounded focus:outline-none focus:border-red-500 transition-colors appearance-none cursor-pointer text-sm">
+                    <option value="0.6">🟢 Apprendista (Facile)</option>
+                    <option value="1.0" selected>🟡 Cacciatore (Normale)</option>
+                    <option value="1.6">🔴 Demoniaco (Difficile)</option>
+                </select>
+            </div>
+
+            <button onmouseenter="AudioEngine.playHover()" onclick="AudioEngine.playClick(); startGameFromMenu()" class="w-full mt-2 bg-gradient-to-r from-red-900 to-red-700 hover:from-red-600 hover:to-red-500 text-white font-extrabold py-4 sm:py-5 rounded-lg text-xl sm:text-2xl border-2 border-red-500 shadow-[0_0_30px_rgba(255,0,0,0.6)] transition-all transform hover:scale-105 active:scale-95 uppercase tracking-widest">Inizia Massacro</button>
+        </div>
+    </div>
+
+    <div id="game-container"></div>
+    <canvas id="uiCanvas"></canvas>
+
+    <div id="mobile-controls" class="absolute inset-0 pointer-events-none z-50 hidden">
+        <div id="joy-left-zone" class="absolute bottom-8 left-8 sm:bottom-12 sm:left-12 w-32 h-32 bg-white/10 rounded-full border border-white/20 pointer-events-auto touch-none">
+            <div id="joy-left-stick" class="absolute top-1/2 left-1/2 w-14 h-14 bg-white/40 rounded-full transform -translate-x-1/2 -translate-y-1/2 shadow-[0_0_15px_rgba(255,255,255,0.3)] backdrop-blur-sm pointer-events-none transition-transform duration-75"></div>
+        </div>
+
+        <div id="joy-right-zone" class="absolute bottom-8 right-8 sm:bottom-12 sm:right-12 w-32 h-32 bg-red-500/10 rounded-full border border-red-500/20 pointer-events-auto touch-none">
+            <div id="joy-right-stick" class="absolute top-1/2 left-1/2 w-14 h-14 bg-red-500/50 rounded-full transform -translate-x-1/2 -translate-y-1/2 shadow-[0_0_15px_rgba(255,0,0,0.5)] backdrop-blur-sm pointer-events-none transition-transform duration-75"></div>
+        </div>
+
+        <button id="btn-dash" class="absolute bottom-32 right-[8.5rem] w-14 h-14 bg-blue-500/40 backdrop-blur-md rounded-full border border-blue-400 text-white font-black text-xs pointer-events-auto shadow-[0_0_15px_rgba(0,100,255,0.6)] active:scale-90 active:bg-blue-500/70 transition-all flex items-center justify-center touch-none">
+            <i class="fa-solid fa-bolt text-xl"></i>
+        </button>
+
+        <button id="btn-ult" class="absolute bottom-[11rem] right-12 w-14 h-14 bg-fuchsia-500/40 backdrop-blur-md rounded-full border border-fuchsia-400 text-white font-black text-xs pointer-events-auto shadow-[0_0_15px_rgba(255,0,255,0.6)] opacity-50 scale-75 transition-all flex items-center justify-center touch-none">
+            <i class="fa-solid fa-angles-up text-2xl"></i>
+        </button>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud" class="absolute inset-0 pointer-events-none hidden z-10">
+        
+        <!-- Top Left HUD (Stats & Ultimate integrati) -->
+        <div class="absolute top-3 left-3 sm:top-6 sm:left-6 bg-black/85 border border-gray-700 p-3 sm:p-4 rounded-xl flex flex-col gap-2 w-[55vw] min-w-[230px] max-w-[320px] sm:w-[350px] sm:max-w-none shadow-2xl backdrop-blur-md pointer-events-none">
+            
+            <!-- Intestazione Cacciatore e Piano -->
+            <div class="flex justify-between items-center border-b border-gray-700 pb-1.5 sm:pb-2">
+                <span class="font-black text-base sm:text-2xl text-white drop-shadow-md tracking-wider">Cacciatore</span>
+                <span class="text-[10px] sm:text-xs text-gray-400 font-bold bg-gray-800 px-2 py-0.5 sm:py-1 rounded whitespace-nowrap border border-gray-600">Piano <span id="ui-floor" class="text-white">1</span></span>
+            </div>
+            
+            <div class="flex flex-col gap-2 sm:gap-3 mt-1">
+                <!-- HP & Vite -->
+                <div>
+                    <div class="flex justify-between items-center text-[12px] sm:text-sm font-bold text-gray-300 uppercase mb-1">
+                        <span id="ui-lives" class="text-pink-500 tracking-widest drop-shadow-md">❤️❤️❤️</span>
+                        <span id="ui-hp-text" class="text-red-400 ml-2 drop-shadow-md">100/100</span>
+                    </div>
+                    <div class="health-bar-container h-3 sm:h-5 w-full">
+                        <div id="ui-hp-fill" class="health-bar-fill"></div>
+                    </div>
+                </div>
+
+                <!-- ULTIMATE (Ascensione) -->
+                <div>
+                    <div class="flex justify-between items-end text-[10px] sm:text-xs font-bold text-cyan-300 uppercase mb-1">
+                        <span class="tracking-widest">Ascensione</span>
+                        <span id="ultimate-ready-text" class="text-white font-black animate-pulse hidden drop-shadow-[0_0_5px_rgba(0,255,255,0.8)]">PRONTA!</span>
+                    </div>
+                    <div class="w-full h-2 sm:h-3 bg-black border border-gray-600 rounded-full overflow-hidden shadow-[0_0_8px_rgba(0,255,255,0.2)]">
+                        <div id="ultimate-bar-fill" class="h-full w-0 bg-gradient-to-r from-fuchsia-600 to-cyan-400 transition-all duration-200"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Demoni rimasti -->
+            <div class="mt-1 sm:mt-2 bg-red-950/50 border border-red-900 rounded p-1.5 sm:p-2 text-center flex justify-center items-center shadow-inner">
+                <i class="fa-solid fa-skull mr-2 text-red-500 text-xs sm:text-base"></i>
+                <span class="text-[12px] sm:text-sm text-red-300 font-black uppercase tracking-wider">Demoni: <span id="ui-enemies-left" class="text-white text-base sm:text-lg ml-1">0</span></span>
+            </div>
+        </div>
+
+        <!-- Combo UI (Spostato a destra su smartphone e abbassato) -->
+        <div id="combo-container" class="absolute top-[140px] right-3 sm:top-6 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 text-right sm:text-center transition-opacity duration-100 opacity-0 flex flex-col items-end sm:items-center w-auto">
+            <h2 id="combo-text" class="font-black text-white m-0 leading-none origin-right sm:origin-center text-4xl sm:text-7xl">COMBO x2!</h2>
+            <div class="w-28 sm:w-48 h-2 sm:h-3 bg-black/80 border border-amber-500 rounded-full overflow-hidden mt-1.5 shadow-[0_0_10px_rgba(255,170,0,0.8)]">
+                <div id="combo-bar" class="h-full bg-amber-500 w-full transition-all duration-100 ease-linear"></div>
+            </div>
+        </div>
+
+        <!-- Center Bottom: Essence UI -->
+        <div id="essence-hud" class="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center gap-1.5 sm:gap-2 bg-black/80 border border-gray-700 rounded-xl p-3 sm:p-4 shadow-[0_5px_20px_rgba(0,0,0,0.9)] backdrop-blur-sm transition-opacity duration-300 opacity-0">
+            <div class="flex gap-2 sm:gap-3 mb-0.5">
+                <div class="stack-dot" id="stack-1"></div>
+                <div class="stack-dot" id="stack-2"></div>
+                <div class="stack-dot" id="stack-3"></div>
+            </div>
+            <div id="overdrive-text" class="font-black text-sm sm:text-xl text-white hidden tracking-widest uppercase drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]">INFERNO!</div>
+            <div class="w-full h-1.5 sm:h-2 bg-gray-800 rounded-full overflow-hidden mt-0.5">
+                <div id="essence-timer" class="h-full w-0 bg-white transition-all duration-100 linear"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="deathScreen" class="absolute inset-0 bg-red-950/90 flex flex-col items-center justify-center z-[100] hidden backdrop-blur-md pointer-events-auto">
+        <h1 id="deathTitle" class="text-6xl sm:text-8xl font-black text-red-600 mb-2 drop-shadow-[0_0_30px_rgba(220,38,38,1)] tracking-tighter uppercase">Sei Morto</h1>
+        <p id="deathSubtitle" class="text-lg sm:text-2xl text-red-300 mb-10 font-bold">Il Flow si è interrotto.</p>
+        <button id="btn-restart" onclick="restartGame()" class="bg-black hover:bg-gray-900 text-red-500 font-black py-4 px-8 sm:px-12 rounded-xl text-xl sm:text-2xl border-4 border-red-800 shadow-[0_0_30px_rgba(220,38,38,0.8)] transition-all hover:scale-110 active:scale-95">
+            RINASCI NEL SANGUE
+        </button>
+        <button id="btn-respawn" onclick="respawnPlayer()" class="hidden bg-black hover:bg-gray-900 text-pink-500 font-black py-4 px-8 sm:px-12 rounded-xl text-xl sm:text-2xl border-4 border-pink-800 shadow-[0_0_30px_rgba(255,105,180,0.8)] transition-all hover:scale-110 active:scale-95">
+            RITORNA IN BATTAGLIA
+        </button>
+    </div>
+
+    <div id="floorScreen" class="absolute inset-0 bg-blue-950/90 flex flex-col items-center justify-center z-[100] hidden backdrop-blur-md pointer-events-auto">
+        <h1 class="text-4xl sm:text-7xl font-black text-blue-400 mb-4 drop-shadow-[0_0_30px_rgba(96,165,250,1)] uppercase tracking-tight text-center">Massacro Concluso</h1>
+        <p class="text-sm sm:text-xl text-blue-200 mb-10 font-bold text-center px-4">L'oscurità si fa più densa al piano inferiore...</p>
+        <button onclick="nextFloor()" class="bg-black hover:bg-gray-900 text-blue-500 font-black py-4 px-8 sm:px-12 rounded-xl text-xl sm:text-2xl border-4 border-blue-600 shadow-[0_0_30px_rgba(59,130,246,0.6)] transition-all hover:scale-110 active:scale-95">
+            SCENDI PIÙ A FONDO
+        </button>
+    </div>
+
+<script>
+/**
+ * DIABLO CLONE - ULTIMATE PERFORMANCE EDITION
+ */
+
+const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+// --- AUDIO ENGINE ---
+const AudioEngine = {
+    ctx: null, musicNode: null, initialized: false,
+    init() {
+        if (this.initialized) return;
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioContext();
+        this.initialized = true;
+        this.playMenuMusic();
+    },
+    playHover() {
+        if (!this.ctx || this.ctx.state === 'suspended') return;
+        let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+    },
+    playClick() {
+        if (!this.ctx || this.ctx.state === 'suspended') return;
+        let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
+        osc.type = 'square'; osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(20, this.ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+    },
+    playMenuMusic() {
+        if (!this.ctx || this.musicNode) return;
+        let osc1 = this.ctx.createOscillator(); let osc2 = this.ctx.createOscillator();
+        let lfo = this.ctx.createOscillator(); let filter = this.ctx.createBiquadFilter();
+        let gain = this.ctx.createGain();
+        
+        osc1.type = 'sawtooth'; osc1.frequency.value = 55;
+        osc2.type = 'sawtooth'; osc2.frequency.value = 55.5; 
+        
+        lfo.type = 'sine'; lfo.frequency.value = 0.2; 
+        let lfoGain = this.ctx.createGain(); lfoGain.gain.value = 400;
+        lfo.connect(lfoGain);
+        
+        filter.type = 'lowpass'; filter.frequency.value = 300;
+        lfoGain.connect(filter.frequency);
+        
+        gain.gain.value = 0; gain.gain.linearRampToValueAtTime(0.2, this.ctx.currentTime + 2);
+        
+        osc1.connect(filter); osc2.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+        osc1.start(); osc2.start(); lfo.start();
+        this.musicNode = { osc1, osc2, lfo, gain };
+    },
+    stopMenuMusic() {
+        if (!this.musicNode) return;
+        this.musicNode.gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1);
+        setTimeout(() => {
+            if(this.musicNode) {
+                this.musicNode.osc1.stop(); this.musicNode.osc2.stop(); this.musicNode.lfo.stop();
+                this.musicNode = null;
+            }
+        }, 1000);
+    },
+    playShoot(type) {
+        if (!this.ctx) return;
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        
+        let osc = this.ctx.createOscillator();
+        let gain = this.ctx.createGain();
+        let t = this.ctx.currentTime;
+        
+        if (type === 'explosive_arrow') {
+            osc.type = 'square'; osc.frequency.setValueAtTime(150, t); osc.frequency.exponentialRampToValueAtTime(40, t + 0.3);
+            gain.gain.setValueAtTime(0.3, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+            osc.start(t); osc.stop(t + 0.3);
+        } else if (type === 'chain_lightning') {
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(600, t); osc.frequency.linearRampToValueAtTime(1200, t + 0.05); osc.frequency.linearRampToValueAtTime(200, t + 0.15);
+            gain.gain.setValueAtTime(0.15, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+            osc.start(t); osc.stop(t + 0.15);
+        } else if (type === 'homing_arrow') {
+            osc.type = 'sine'; osc.frequency.setValueAtTime(300, t); osc.frequency.exponentialRampToValueAtTime(800, t + 0.2);
+            gain.gain.setValueAtTime(0.2, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+            osc.start(t); osc.stop(t + 0.2);
+        } else { 
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(800, t); osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
+            gain.gain.setValueAtTime(0.2, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+            osc.start(t); osc.stop(t + 0.1);
+        }
+        osc.connect(gain); gain.connect(this.ctx.destination);
+    },
+    playDeathMusic() {
+        if (!this.ctx) return;
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const notes = [311.13, 233.08, 155.56, 116.54]; 
+        let t = this.ctx.currentTime;
+        notes.forEach((freq, i) => {
+            let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
+            osc.type = 'sawtooth'; osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0, t + i * 0.5); gain.gain.linearRampToValueAtTime(0.3, t + i * 0.5 + 0.1); gain.gain.exponentialRampToValueAtTime(0.01, t + i * 0.5 + 1.0);
+            osc.connect(gain); gain.connect(this.ctx.destination); osc.start(t + i * 0.5); osc.stop(t + i * 0.5 + 1.0);
+        });
+    },
+    playLevelCompleteMusic() {
+        if (!this.ctx || this.ctx.state === 'suspended') return;
+        const now = this.ctx.currentTime;
+        const notes = [220.00, 261.63, 329.63, 440.00];
+        
+        notes.forEach((freq, i) => {
+            let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
+            osc.type = 'sawtooth'; osc.frequency.value = freq;
+            let time = now + (i * 0.15);
+            gain.gain.setValueAtTime(0, time); gain.gain.linearRampToValueAtTime(0.2, time + 0.05); gain.gain.exponentialRampToValueAtTime(0.01, time + 0.8);
+            
+            let filter = this.ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.setValueAtTime(600 + (i * 200), time); filter.frequency.exponentialRampToValueAtTime(100, time + 0.8);
+            osc.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(time); osc.stop(time + 1.0);
+        });
+
+        setTimeout(() => {
+            if(!this.ctx) return;
+            let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
+            osc.type = 'sine'; osc.frequency.value = 440.0;
+            gain.gain.setValueAtTime(0, this.ctx.currentTime); gain.gain.linearRampToValueAtTime(0.15, this.ctx.currentTime + 0.1); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 2.5);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(this.ctx.currentTime); osc.stop(this.ctx.currentTime + 2.5);
+        }, notes.length * 150);
+    },
+
+    playDescendSound() {
+        if (!this.ctx || this.ctx.state === 'suspended') return;
+        let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(150, this.ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(20, this.ctx.currentTime + 1.5);
+        gain.gain.setValueAtTime(0.4, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1.5);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 1.5);
+    }
+};
+
+const MathUtils = {
+    distanceSq: (p1, p2) => (p2.x - p1.x)**2 + (p2.y - p1.y)**2,
+    distance: (p1, p2) => Math.hypot(p2.x - p1.x, p2.y - p1.y),
+    angle: (p1, p2) => Math.atan2(p2.y - p1.y, p2.x - p1.x),
+    randomRange: (min, max) => Math.random() * (max - min) + min,
+    randomInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
+    lerp: (start, end, amt) => (1 - amt) * start + amt * end
+};
+
+const TILE_SIZE = 64; 
+const CHUNK_SIZE = 30; 
+const FIXED_TIME_STEP = 1 / 60;
+const MAX_TIME_STEP = 0.1;
+
+const ESSENCE_COLORS = { 'red': 0xff0000, 'blue': 0x0088ff, 'green': 0x00ff00 };
+const ESSENCE_NAMES = { 'red': 'INFERNO', 'blue': 'TEMPESTA', 'green': 'PANDEMIA' };
+
+const SharedGeo = {
+    box: new THREE.BoxGeometry(1, 1, 1),
+    sphere: new THREE.SphereGeometry(1, 6, 6),
+    cylinder: new THREE.CylinderGeometry(1, 1, 1, 8),
+    icosahedron: new THREE.IcosahedronGeometry(1, 0),
+    bloodPlane: new THREE.PlaneGeometry(40, 40)
+};
+
+function createPatternTexture(type) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128; canvas.height = 128; 
+    const ctx = canvas.getContext('2d');
+    
+    if (type === 'floor') {
+        ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, 128, 128);
+        for(let i=0; i<80; i++) {
+            ctx.fillStyle = Math.random() > 0.5 ? '#111' : '#080808';
+            ctx.fillRect(Math.random()*128, Math.random()*128, Math.random()*8+3, Math.random()*8+3);
+        }
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+        ctx.strokeRect(0, 0, 64, 64); ctx.strokeRect(64, 0, 64, 64);
+        ctx.strokeRect(0, 64, 64, 64); ctx.strokeRect(64, 64, 64, 64);
+    } else if (type === 'wall') {
+        ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, 128, 128);
+        ctx.fillStyle = '#111';
+        for(let i=0; i<8; i++) {
+            let y = i*16; let offset = (i%2)*16;
+            ctx.fillRect(offset+1, y+1, 30, 14); ctx.fillRect(offset+33, y+1, 30, 14);
+            ctx.fillRect(offset+65, y+1, 30, 14); ctx.fillRect(offset+97, y+1, 30, 14);
+            if(offset > 0) ctx.fillRect(-15, y+1, 30, 14);
+        }
+    } else if (type === 'blood') {
+        let grad = ctx.createRadialGradient(64,64,0,64,64,64);
+        grad.addColorStop(0, 'rgba(255,0,0,1)');
+        grad.addColorStop(0.4, 'rgba(150,0,0,0.8)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad; ctx.fillRect(0,0,128,128);
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+    return tex;
+}
+
+const BLOOD_TEX = createPatternTexture('blood');
+
+const SharedMat = {
+    blood: new THREE.MeshBasicMaterial({map: BLOOD_TEX, transparent: true, opacity: 0.7, depthWrite: false}),
+    level: new THREE.MeshBasicMaterial({color: 0xffffff, blending: THREE.AdditiveBlending}),
+    sparkRed: new THREE.MeshBasicMaterial({color: 0xff0000, blending: THREE.AdditiveBlending}),
+    sparkBlue: new THREE.MeshBasicMaterial({color: 0x00ffff, blending: THREE.AdditiveBlending}),
+    sparkGreen: new THREE.MeshBasicMaterial({color: 0x00ff00, blending: THREE.AdditiveBlending}),
+    sparkWhite: new THREE.MeshBasicMaterial({color: 0xffffff, blending: THREE.AdditiveBlending}),
+    arrow: new THREE.MeshBasicMaterial({color: 0xffffff, blending: THREE.NormalBlending}),
+    homingArrow: new THREE.MeshBasicMaterial({color: 0x00ff00, blending: THREE.AdditiveBlending}),
+    explosiveArrow: new THREE.MeshBasicMaterial({color: 0xff0000, blending: THREE.AdditiveBlending}),
+    chainLightning: new THREE.MeshBasicMaterial({color: 0x00ffff, blending: THREE.AdditiveBlending}),
+    enemyFireball: new THREE.MeshBasicMaterial({color: 0xff0055, blending: THREE.AdditiveBlending}),
+    enemyBolt: new THREE.MeshBasicMaterial({color: 0x00ffff, blending: THREE.AdditiveBlending}),
+    fireShape: new THREE.MeshBasicMaterial({color: 0xff3300, blending: THREE.AdditiveBlending}),
+    hazardFire: new THREE.MeshBasicMaterial({color: 0xff3300, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending}),
+    hazardPoison: new THREE.MeshBasicMaterial({color: 0x00ff00, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending}),
+    hazardEnemy: new THREE.MeshBasicMaterial({color: 0xff0000, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending})
+};
+
+
+// --- SPATIAL HASHING ---
+class SpatialHashGrid {
+    constructor(bounds, dimensions) {
+        this.bounds = bounds; this.dimensions = dimensions; this.cells = new Map();
+    }
+    insert(client) {
+        const keys = this._clientKeys(client);
+        for(let i=0; i<keys.length; i++) {
+            let k = keys[i];
+            if (!this.cells.has(k)) this.cells.set(k, new Set());
+            this.cells.get(k).add(client);
+        }
+        client.gridKeys = keys;
+    }
+    updateClient(client) { this.remove(client); this.insert(client); }
+    remove(client) {
+        if (!client.gridKeys) return;
+        for(let i=0; i<client.gridKeys.length; i++) {
+            let k = client.gridKeys[i];
+            if (this.cells.has(k)) {
+                this.cells.get(k).delete(client);
+                if (this.cells.get(k).size === 0) this.cells.delete(k);
+            }
+        }
+        client.gridKeys = [];
+    }
+    findNearby(client, radius) {
+        const results = new Set();
+        const keys = this._clientKeys({ x: client.x, y: client.y, radius: radius || client.radius });
+        for(let i=0; i<keys.length; i++) {
+            let k = keys[i];
+            if (this.cells.has(k)) {
+                this.cells.get(k).forEach(other => { if (client !== other) results.add(other); });
+            }
+        }
+        return Array.from(results);
+    }
+    _clientKeys(client) {
+        const r = client.radius || 10;
+        const startX = Math.floor((client.x - r - this.bounds[0][0]) / this.dimensions[0]);
+        const endX = Math.floor((client.x + r - this.bounds[0][0]) / this.dimensions[0]);
+        const startY = Math.floor((client.y - r - this.bounds[0][1]) / this.dimensions[1]);
+        const endY = Math.floor((client.y + r - this.bounds[0][1]) / this.dimensions[1]);
+        const keys = [];
+        for (let i = startX; i <= endX; i++) for (let j = startY; j <= endY; j++) keys.push(`${i},${j}`);
+        return keys;
+    }
+}
+
+// --- TOUCH CONTROLS MANAGER ---
+const TouchControls = {
+    init() {
+        if (!isTouchDevice) return;
+        document.getElementById('mobile-controls').classList.remove('hidden');
+
+        this.setupJoystick(document.getElementById('joy-left-zone'), document.getElementById('joy-left-stick'), 'left');
+        this.setupJoystick(document.getElementById('joy-right-zone'), document.getElementById('joy-right-stick'), 'right');
+
+        const btnDash = document.getElementById('btn-dash');
+        const btnUlt = document.getElementById('btn-ult');
+
+        btnDash.addEventListener('touchstart', (e) => { e.preventDefault(); if(Game.state === 'PLAYING') Game.player.dash(); });
+        btnUlt.addEventListener('touchstart', (e) => { e.preventDefault(); Game.activateUltimate(); });
+    },
+    setupJoystick(zone, stick, side) {
+        let identifier = null; const maxR = 40; let cx = 0, cy = 0;
+        const onStart = (e) => {
+            e.preventDefault();
+            let rect = zone.getBoundingClientRect(); cx = rect.left + rect.width / 2; cy = rect.top + rect.height / 2;
+            if(e.changedTouches) {
+                for(let i=0; i<e.changedTouches.length; i++) {
+                    if(identifier === null) { identifier = e.changedTouches[i].identifier; updateStick(e.changedTouches[i].clientX, e.changedTouches[i].clientY); break; }
+                }
+            } else { updateStick(e.clientX, e.clientY); }
+        };
+        const onMove = (e) => {
+            e.preventDefault(); if(identifier === null) return;
+            if(e.changedTouches) {
+                for(let i=0; i<e.changedTouches.length; i++) {
+                    if(e.changedTouches[i].identifier === identifier) { updateStick(e.changedTouches[i].clientX, e.changedTouches[i].clientY); break; }
+                }
+            } else { updateStick(e.clientX, e.clientY); }
+        };
+        const onEnd = (e) => {
+            e.preventDefault(); if(identifier === null) return;
+            if(e.changedTouches) {
+                let found = false; for(let i=0; i<e.changedTouches.length; i++) { if(e.changedTouches[i].identifier === identifier) found = true; }
+                if(!found) return; 
+            }
+            identifier = null; stick.style.transform = `translate(-50%, -50%) translate(0px, 0px)`; Game.inputs[side] = { x: 0, y: 0, active: false };
+        };
+        const updateStick = (clientX, clientY) => {
+            let dx = clientX - cx; let dy = clientY - cy; let distance = Math.hypot(dx, dy);
+            let nx = dx / distance || 0; let ny = dy / distance || 0;
+            if (distance > maxR) { dx = nx * maxR; dy = ny * maxR; }
+            stick.style.transform = `translate(-50%, -50%) translate(${dx}px, ${dy}px)`; Game.inputs[side] = { x: nx, y: ny, active: true };
+        };
+        zone.addEventListener('touchstart', onStart, {passive: false}); zone.addEventListener('touchmove', onMove, {passive: false});
+        zone.addEventListener('touchend', onEnd, {passive: false}); zone.addEventListener('touchcancel', onEnd, {passive: false});
+    }
+};
+
+// --- DOM CACHING & UI ---
+const UI = {
+    cache: { hpPct: null, hpText: null, floor: null, enemiesLeft: null, ultActive: null, ultCharge: null, comboOpacity: null, lives: null },
+    els: {},
+    init() { 
+        this.els.hpFill = document.getElementById('ui-hp-fill'); this.els.hpText = document.getElementById('ui-hp-text');
+        this.els.lives = document.getElementById('ui-lives');
+        this.els.floor = document.getElementById('ui-floor'); this.els.enemiesLeft = document.getElementById('ui-enemies-left');
+        this.els.essenceHud = document.getElementById('essence-hud'); this.els.essenceTimer = document.getElementById('essence-timer');
+        this.els.overdriveText = document.getElementById('overdrive-text');
+        this.els.stacks = [document.getElementById('stack-1'), document.getElementById('stack-2'), document.getElementById('stack-3')];
+        this.els.ultFill = document.getElementById('ultimate-bar-fill'); this.els.ultText = document.getElementById('ultimate-ready-text');
+        this.els.comboContainer = document.getElementById('combo-container'); this.els.comboText = document.getElementById('combo-text');
+        this.els.comboBar = document.getElementById('combo-bar');
+        this.els.btnUlt = document.getElementById('btn-ult');
+    },
+    update() {
+        if (!Game.player) return;
+        
+        let hpPct = (Game.player.stats.hp / Game.player.stats.maxHp) * 100;
+        let hpText = `${Math.floor(Game.player.stats.hp)}/${Math.floor(Game.player.stats.maxHp)}`;
+        if (this.cache.hpPct !== hpPct) { this.els.hpFill.style.width = `${hpPct}%`; this.cache.hpPct = hpPct; }
+        if (this.cache.hpText !== hpText) { this.els.hpText.innerText = hpText; this.cache.hpText = hpText; }
+
+        if (this.cache.lives !== Game.lives) {
+            this.els.lives.innerText = '❤️'.repeat(Math.max(0, Game.lives));
+            this.cache.lives = Game.lives;
+        }
+
+        if (this.cache.floor !== Game.floor) { this.els.floor.innerText = Game.floor; this.cache.floor = Game.floor; }
+        let eLeft = Math.max(0, Game.floorMaxKills - Game.floorKills);
+        if (this.cache.enemiesLeft !== eLeft) { this.els.enemiesLeft.innerText = eLeft; this.cache.enemiesLeft = eLeft; }
+        
+        let hasEssence = Game.player.essence !== null;
+        if (hasEssence) {
+            this.els.essenceHud.classList.remove('opacity-0');
+            this.els.essenceHud.classList.add('opacity-100');
+            for(let i=1; i<=3; i++) {
+                this.els.stacks[i-1].className = `stack-dot ${i <= Game.player.essenceStacks ? 'active ' + Game.player.essence : ''}`;
+            }
+            this.els.essenceTimer.style.width = `${(Game.player.essenceTimer / (Game.player.overdrive ? 5.0 : 8.0)) * 100}%`;
+            
+            if (Game.player.overdrive) {
+                this.els.overdriveText.classList.remove('hidden'); 
+                this.els.overdriveText.innerText = ESSENCE_NAMES[Game.player.essence];
+                this.els.overdriveText.style.color = '#' + ESSENCE_COLORS[Game.player.essence].toString(16).padStart(6,'0');
+            } else { this.els.overdriveText.classList.add('hidden'); }
+        } else {
+            this.els.essenceHud.classList.remove('opacity-100');
+            this.els.essenceHud.classList.add('opacity-0');
+        }
+
+        if (Game.ultimateActive) {
+            let uPct = `${(Game.ultimateTimer / 10.0) * 100}%`;
+            if(this.cache.ultCharge !== uPct || !this.cache.ultActive) {
+                this.els.ultFill.style.width = uPct; this.els.ultFill.style.background = '#ffffff';
+                this.els.ultText.classList.add('hidden');
+                if(isTouchDevice) { 
+                    this.els.btnUlt.classList.add('opacity-50', 'scale-75', 'bg-fuchsia-500/40', 'border-fuchsia-400', 'shadow-[0_0_15px_rgba(255,0,255,0.6)]'); 
+                    this.els.btnUlt.classList.remove('animate-pulse', 'bg-cyan-500/60', 'border-cyan-300', 'shadow-[0_0_25px_rgba(0,255,255,0.9)]', 'opacity-100', 'scale-100'); 
+                }
+                this.cache.ultCharge = uPct; this.cache.ultActive = true;
+            }
+        } else {
+            let uPct = `${Game.ultimateCharge}%`;
+            if (this.cache.ultCharge !== uPct || this.cache.ultActive) {
+                this.els.ultFill.style.width = uPct; this.els.ultFill.style.background = ''; // Torna al gradient tailwind
+                if (Game.ultimateCharge >= 100) {
+                    this.els.ultText.classList.remove('hidden');
+                    if(isTouchDevice) { 
+                        this.els.btnUlt.classList.remove('opacity-50', 'scale-75', 'bg-fuchsia-500/40', 'border-fuchsia-400', 'shadow-[0_0_15px_rgba(255,0,255,0.6)]'); 
+                        this.els.btnUlt.classList.add('animate-pulse', 'bg-cyan-500/60', 'border-cyan-300', 'shadow-[0_0_25px_rgba(0,255,255,0.9)]', 'opacity-100', 'scale-100'); 
+                    }
+                } else {
+                    this.els.ultText.classList.add('hidden');
+                    if(isTouchDevice) { 
+                        this.els.btnUlt.classList.add('opacity-50', 'scale-75', 'bg-fuchsia-500/40', 'border-fuchsia-400', 'shadow-[0_0_15px_rgba(255,0,255,0.6)]'); 
+                        this.els.btnUlt.classList.remove('animate-pulse', 'bg-cyan-500/60', 'border-cyan-300', 'shadow-[0_0_25px_rgba(0,255,255,0.9)]', 'opacity-100', 'scale-100'); 
+                    }
+                }
+                this.cache.ultCharge = uPct; this.cache.ultActive = false;
+            }
+        }
+
+        let isCombo = Game.combo > 0;
+        if (this.cache.comboOpacity !== isCombo) { 
+            if (isCombo) {
+                this.els.comboContainer.classList.remove('opacity-0');
+                this.els.comboContainer.classList.add('opacity-100');
+            } else {
+                this.els.comboContainer.classList.remove('opacity-100');
+                this.els.comboContainer.classList.add('opacity-0');
+            }
+            this.cache.comboOpacity = isCombo; 
+        }
+        if (isCombo) this.els.comboBar.style.width = `${(Game.comboTimer / Game.comboMaxTime) * 100}%`;
+    },
+    triggerComboAnim(combo) {
+        this.els.comboText.innerText = `COMBO x${combo}!`;
+        let scale = isTouchDevice ? (1 + Math.min(combo * 0.03, 0.4)) : (1 + Math.min(combo * 0.05, 1.0));
+        this.els.comboText.style.transform = `scale(${scale})`;
+        
+        let shadow = "0 0 15px #ffaa00, 0 0 5px #ff0000, 2px 2px 0 #000";
+        if (!isTouchDevice) shadow = "0 0 30px #ffaa00, 0 0 10px #ff0000, 4px 4px 0 #000";
+        
+        if(combo > 50) shadow = isTouchDevice ? "0 0 20px #ff00ff, 0 0 10px #ff0000, 2px 2px 0 #000" : "0 0 30px #ff00ff, 0 0 10px #ff0000, 4px 4px 0 #000";
+        else if(combo > 20) shadow = isTouchDevice ? "0 0 20px #ff0000, 0 0 10px #ff0000, 2px 2px 0 #000" : "0 0 30px #ff0000, 0 0 10px #ff0000, 4px 4px 0 #000";
+        this.els.comboText.style.textShadow = shadow;
+
+        setTimeout(() => { this.els.comboText.style.transform = `scale(${1 + Math.min(combo * 0.01, 0.15)})`; }, 50);
+    }
+};
+
+// --- ENGINE 3D ---
+const Game = {
+    scene: null, camera: null, renderer: null, raycaster: new THREE.Raycaster(),
+    uiCanvas: document.getElementById('uiCanvas'), uiCtx: null,
+    width: window.innerWidth, height: window.innerHeight,
+    keys: {}, mouse: { x: 0, y: 0, worldX: 0, worldY: 0, leftDown: false },
+    inputs: { left: {x:0, y:0, active:false}, right: {x:0, y:0, active:false} },
+    
+    lastTime: 0, accumulator: 0, state: 'MENU',
+    floor: 1, floorMaxKills: 0, floorKills: 0, frameCount: 0,
+    hitStop: 0, trauma: 0, combo: 0, comboTimer: 0, comboMaxTime: 5.0, difficultyMult: 1.0,
+    ultimateCharge: 0, ultimateActive: false, ultimateTimer: 0,
+    lives: 3,
+
+    // Collections per Object Pooling
+    player: null, map: null, enemyGrid: null,
+    enemies: [], projectiles: [], particles: [], essences: [], extraLivesDrops: [], 
+    floatingTexts: [], hazards: [], decoys: [], bloodDecals: [], bloodDecalIndex: 0,
+    
+    init() {
+        UI.init();
+        TouchControls.init();
+        
+        const container = document.getElementById('game-container');
+        this.scene = new THREE.Scene();
+        this.scene.fog = new THREE.Fog(0x020205, 600, 2000); 
+
+        this.camera = new THREE.PerspectiveCamera(50, this.width / this.height, 1, 3000);
+        
+        const pixelRatio = isTouchDevice ? 1.0 : Math.min(window.devicePixelRatio, 1.5);
+        this.renderer = new THREE.WebGLRenderer({ antialias: !isTouchDevice, alpha: false, powerPreference: "high-performance" });
+        this.renderer.setPixelRatio(pixelRatio);
+        this.renderer.setSize(this.width, this.height);
+        this.renderer.outputEncoding = THREE.sRGBEncoding;
+        
+        this.renderer.shadowMap.enabled = !isTouchDevice;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(this.renderer.domElement);
+        
+        const ambient = new THREE.AmbientLight(0x1a1a2a, 1.5);
+        this.scene.add(ambient);
+
+        this.uiCtx = this.uiCanvas.getContext('2d');
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        this.setupInputs();
+        
+        this.initPools();
+        requestAnimationFrame(this.loop.bind(this));
+    },
+
+    initPools() {
+        this.particles = Array.from({length: isTouchDevice ? 300 : 800}, () => new Particle());
+        this.projectiles = Array.from({length: 100}, () => new Projectile());
+        this.floatingTexts = Array.from({length: 60}, () => new FloatingText());
+        this.hazards = Array.from({length: 30}, () => new Hazard());
+
+        this.bloodDecals = [];
+        this.bloodDecalIndex = 0;
+        let bloodMax = isTouchDevice ? 150 : 500;
+        for(let i=0; i<bloodMax; i++) {
+            let decal = new THREE.Mesh(SharedGeo.bloodPlane, SharedMat.blood);
+            decal.rotation.x = -Math.PI/2; decal.visible = false;
+            decal.userData = { active: false, life: 0 };
+            this.scene.add(decal);
+            this.bloodDecals.push(decal);
+        }
+    },
+
+    getParticle() {
+        let p = this.particles.find(p => !p.active);
+        if(!p) { p = new Particle(); this.particles.push(p); }
+        return p;
+    },
+    getProjectile() {
+        let p = this.projectiles.find(p => !p.active);
+        if(!p) { p = new Projectile(); this.projectiles.push(p); }
+        return p;
+    },
+    getFloatingText() {
+        let f = this.floatingTexts.find(f => !f.active);
+        if(!f) { f = new FloatingText(); this.floatingTexts.push(f); }
+        return f;
+    },
+    getHazard() {
+        let h = this.hazards.find(h => !h.active);
+        if(!h) { h = new Hazard(); this.hazards.push(h); }
+        return h;
+    },
+    
+    addCombo(amount = 1) { this.combo += amount; this.comboTimer = this.comboMaxTime; UI.triggerComboAnim(this.combo); },
+    resetCombo() { this.combo = 0; this.comboTimer = 0; },
+    addUltimateCharge(amount) { if (!this.ultimateActive) this.ultimateCharge = Math.min(100, this.ultimateCharge + amount); },
+
+    activateUltimate() {
+        if (this.ultimateCharge >= 100 && !this.ultimateActive) {
+            this.ultimateCharge = 0; this.ultimateActive = true; this.ultimateTimer = 10.0; 
+            this.addTrauma(1.0); this.hitStop = 0.3;
+            this.getFloatingText().spawn(this.player.x, this.player.y, "ASCENSIONE!", '#00ffff', 40, true);
+            for(let i=0; i<40; i++) this.getParticle().spawn(this.player.x, 20, this.player.y, SharedMat.sparkBlue, 'trail');
+        }
+    },
+
+    addTrauma(amount) { this.trauma = Math.min(this.trauma + amount, 1.0); },
+    
+    snapCamera() {
+        let camY = isTouchDevice ? 850 : 700; 
+        let camZ = this.player.y + (isTouchDevice ? 550 : 500);
+        this.camera.position.set(this.player.x, camY, camZ);
+        this.camera.lookAt(this.player.x, 0, this.player.y);
+    },
+    
+    resize() {
+        this.width = window.innerWidth; this.height = window.innerHeight;
+        this.renderer.setSize(this.width, this.height);
+        this.camera.aspect = this.width / this.height; this.camera.updateProjectionMatrix();
+        this.uiCanvas.width = this.width; this.uiCanvas.height = this.height;
+    },
+    
+    setupInputs() {
+        window.addEventListener('keydown', e => { 
+            this.keys[e.key.toLowerCase()] = true; 
+            if(e.code === 'Space' && this.state === 'PLAYING') this.player.dash();
+        });
+        window.addEventListener('keyup', e => { this.keys[e.key.toLowerCase()] = false; });
+        window.addEventListener('mousemove', e => { this.mouse.x = e.clientX; this.mouse.y = e.clientY; });
+        window.addEventListener('mousedown', e => { 
+            if (e.button === 0) this.mouse.leftDown = true; 
+            if (e.button === 2) { this.mouse.rightDown = true; this.activateUltimate(); }
+        });
+        window.addEventListener('mouseup', e => { 
+            if (e.button === 0) this.mouse.leftDown = false; 
+            if (e.button === 2) this.mouse.rightDown = false;
+        });
+        window.addEventListener('contextmenu', e => e.preventDefault()); 
+    },
+    
+    spawnEnemies() {
+        let initialSpawns = Math.min(20 + (this.floor*5), this.floorMaxKills);
+        for(let i=0; i<initialSpawns; i++) this.spawnEnemy();
+    },
+
+    spawnEnemy() {
+        let pos = this.map.getRandomFloorTile(); let attempts = 0;
+        while(MathUtils.distance({x: pos.x*TILE_SIZE, y: pos.y*TILE_SIZE}, this.player) < TILE_SIZE * 8 && attempts < 50) {
+            pos = this.map.getRandomFloorTile(); attempts++;
+        }
+        
+        let difficulty = this.floor + (this.floorKills * 0.1); 
+        const r = Math.random(); let type = 'goblin';
+        if (difficulty >= 1.0 && r > 0.3) type = 'orc';
+        if (difficulty >= 1.0 && r > 0.5) type = 'skeleton_archer'; 
+        if (difficulty > 1.2 && r > 0.7) type = 'mage';            
+        if (difficulty > 1.5 && r > 0.8) type = 'leaper';
+        if (difficulty > 2.0 && r > 0.85) type = 'pyromancer'; 
+        if (difficulty > 2.5 && r > 0.90) type = 'fire_demon';      
+        
+        let enemy = new Enemy(pos.x * TILE_SIZE + TILE_SIZE/2, pos.y * TILE_SIZE + TILE_SIZE/2, type, difficulty);
+        this.enemies.push(enemy); this.enemyGrid.insert(enemy);
+    },
+    
+    updateCamera(dt) {
+        let camX = this.player.x; 
+        let camY = isTouchDevice ? 850 : 600;
+        let camZ = this.player.y + (isTouchDevice ? 550 : 400);
+        
+        let shakeX = 0, shakeY = 0, shakeZ = 0;
+        if (this.trauma > 0) {
+            let shakeForce = this.trauma * this.trauma * 40; 
+            shakeX = MathUtils.randomRange(-shakeForce, shakeForce);
+            shakeY = MathUtils.randomRange(-shakeForce, shakeForce);
+            shakeZ = MathUtils.randomRange(-shakeForce, shakeForce);
+            this.trauma -= dt * 2.0; 
+            if (this.trauma < 0) this.trauma = 0;
+        }
+
+        this.camera.position.lerp(new THREE.Vector3(camX + shakeX, camY + shakeY, camZ + shakeZ), 0.15);
+        this.camera.lookAt(this.player.x + shakeX*0.5, 0, this.player.y + shakeZ*0.5); 
+    },
+
+    updateMouseWorld() {
+        if (isTouchDevice && this.inputs.right.active) return; 
+        const mouseNDC = new THREE.Vector2((this.mouse.x / this.width) * 2 - 1, -(this.mouse.y / this.height) * 2 + 1);
+        this.raycaster.setFromCamera(mouseNDC, this.camera);
+        const target = new THREE.Vector3();
+        this.raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), target);
+        if (target) { this.mouse.worldX = target.x; this.mouse.worldY = target.z; }
+    },
+    
+    loop(timestamp) {
+        if (!this.lastTime) this.lastTime = timestamp;
+        let frameTime = (timestamp - this.lastTime) / 1000;
+        this.lastTime = timestamp;
+        
+        if (frameTime > MAX_TIME_STEP) frameTime = MAX_TIME_STEP;
+        this.accumulator += frameTime;
+
+        while(this.accumulator >= FIXED_TIME_STEP) {
+            if (this.hitStop > 0) this.hitStop -= FIXED_TIME_STEP;
+            else this.update(FIXED_TIME_STEP);
+            this.accumulator -= FIXED_TIME_STEP;
+        }
+        
+        this.draw(); 
+        requestAnimationFrame(this.loop.bind(this));
+    },
+
+    startGame(diffMult) {
+        document.getElementById('mainMenu').classList.add('hidden');
+        document.getElementById('hud').classList.remove('hidden');
+        this.difficultyMult = diffMult || 1.0;
+
+        this.map = new GameMap(CHUNK_SIZE, CHUNK_SIZE); this.map.generate();
+        this.enemyGrid = new SpatialHashGrid([[-1000, -1000], [CHUNK_SIZE*TILE_SIZE+1000, CHUNK_SIZE*TILE_SIZE+1000]], [200, 200]);
+
+        const startPos = this.map.getRandomFloorTile();
+        this.player = new Player(startPos.x * TILE_SIZE + TILE_SIZE/2, startPos.y * TILE_SIZE + TILE_SIZE/2);
+        
+        this.floorMaxKills = 20 + (this.floor * 10); this.floorKills = 0; this.resetCombo();
+        this.lives = 3;
+        this.snapCamera(); this.spawnEnemies(); this.state = 'PLAYING';
+    },
+    
+    update(dt) {
+        if (this.state !== 'PLAYING') return;
+        this.frameCount++;
+        
+        if (this.combo > 0) {
+            this.comboTimer -= dt;
+            if (this.comboTimer <= 0) this.resetCombo();
+        }
+
+        if (this.ultimateActive) {
+            this.ultimateTimer -= dt;
+            if (this.ultimateTimer <= 0) this.ultimateActive = false;
+        }
+
+        this.updateMouseWorld();
+        this.player.update(dt);
+        this.updateCamera(dt);
+
+        for (let i = this.enemies.length - 1; i >= 0; i--) {
+            let e = this.enemies[i];
+            e.update(dt);
+            this.enemyGrid.updateClient(e); 
+
+            if (e.dead) {
+                e.onDeath();
+                this.enemyGrid.remove(e);
+                this.enemies.splice(i, 1);
+                this.floorKills++;
+                if (this.floorKills + this.enemies.length < this.floorMaxKills) this.spawnEnemy();
+            }
+        }
+        
+        for (let i = 0; i < this.projectiles.length; i++) if(this.projectiles[i].active) this.projectiles[i].update(dt);
+        for (let i = 0; i < this.hazards.length; i++) if(this.hazards[i].active) this.hazards[i].update(dt);
+        
+        for (let i = this.decoys.length - 1; i >= 0; i--) {
+            this.decoys[i].update(dt);
+            if (this.decoys[i].life <= 0) this.decoys.splice(i, 1);
+        }
+        for (let i = 0; i < this.particles.length; i++) if(this.particles[i].active) this.particles[i].update(dt);
+        for (let i = 0; i < this.floatingTexts.length; i++) if(this.floatingTexts[i].active) this.floatingTexts[i].update(dt);
+
+        this.essences.forEach(e => { 
+            e.mesh.rotation.y += dt; e.mesh.position.y = 10 + Math.sin(this.frameCount * 0.05) * 5;
+        });
+
+        this.extraLivesDrops.forEach(el => { 
+            el.mesh.rotation.y += dt * 2; el.mesh.position.y = 10 + Math.sin(this.frameCount * 0.1) * 5;
+        });
+
+        for (let i = 0; i < this.bloodDecals.length; i++) {
+            let d = this.bloodDecals[i];
+            if (d.userData.active) {
+                d.userData.life -= dt;
+                if (d.userData.life < 1.0) {
+                    d.scale.setScalar(Math.max(0.001, d.userData.life));
+                }
+                if (d.userData.life <= 0) {
+                    d.userData.active = false;
+                    d.visible = false;
+                }
+            }
+        }
+
+        if (this.floorKills >= this.floorMaxKills && this.enemies.length === 0 && this.state === 'PLAYING') {
+            this.state = 'FLOOR_TRANSITION';
+            document.getElementById('floorScreen').classList.remove('hidden');
+            AudioEngine.playLevelCompleteMusic();
+        }
+        UI.update();
+    },
+    
+    draw() {
+        if(!this.scene || !this.uiCtx) return;
+        this.renderer.render(this.scene, this.camera);
+        this.uiCtx.clearRect(0, 0, this.width, this.height);
+        
+        const toScreenPosition = (x, y, z) => {
+            const vec = new THREE.Vector3(x, y, z); vec.project(this.camera);
+            vec.x = (vec.x * 0.5 + 0.5) * this.width; vec.y = -(vec.y * 0.5 - 0.5) * this.height;
+            return vec;
+        };
+
+        this.uiCtx.fillStyle = 'rgba(0,0,0,0.8)';
+        this.enemies.forEach(e => {
+            if (e.stats.hp < e.stats.maxHp) {
+                let pos = toScreenPosition(e.x, e.radius + 35, e.y);
+                if(pos.z < 1) this.uiCtx.fillRect(pos.x - 16, pos.y-2, 32, 6);
+            }
+        });
+        
+        this.uiCtx.fillStyle = '#ff0000';
+        this.enemies.forEach(e => {
+            if (e.stats.hp < e.stats.maxHp) {
+                let pos = toScreenPosition(e.x, e.radius + 35, e.y);
+                if(pos.z < 1) this.uiCtx.fillRect(pos.x - 15, pos.y-1, 30 * (e.stats.hp / e.stats.maxHp), 4);
+            }
+        });
+
+        for (let i = 0; i < this.floatingTexts.length; i++) {
+            let ft = this.floatingTexts[i];
+            if (!ft.active) continue;
+            let pos = toScreenPosition(ft.x, ft.h, ft.y);
+            if(pos.z < 1) {
+                let progress = ft.life / ft.maxLife;
+                this.uiCtx.globalAlpha = Math.max(0, progress);
+                let scale = ft.isCrit ? (2.0 - progress) : (1.5 - progress*0.5);
+                this.uiCtx.font = `900 ${Math.max(10, ft.size * scale * (isTouchDevice?0.7:1))}px 'Impact', sans-serif`;
+                this.uiCtx.fillStyle = ft.color;
+                this.uiCtx.textAlign = 'center';
+                this.uiCtx.strokeStyle = '#000'; this.uiCtx.lineWidth = isTouchDevice ? 2 : 4;
+                this.uiCtx.strokeText(ft.text, pos.x, pos.y);
+                this.uiCtx.fillText(ft.text, pos.x, pos.y);
+                this.uiCtx.globalAlpha = 1;
+            }
+        }
+    }
+};
+
+class Essence {
+    constructor(x, y, type) {
+        this.x = x; this.y = y; this.type = type; 
+        let color = ESSENCE_COLORS[type];
+        this.mesh = new THREE.Group(); this.mesh.position.set(x, 10, y);
+
+        this.coreMat = new THREE.MeshBasicMaterial({color: color, blending: THREE.AdditiveBlending});
+        let core = new THREE.Mesh(SharedGeo.sphere, this.coreMat); core.scale.setScalar(6);
+        
+        this.haloMat = new THREE.MeshBasicMaterial({color: color, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending});
+        let halo = new THREE.Mesh(SharedGeo.sphere, this.haloMat); halo.scale.setScalar(12);
+        
+        this.light = new THREE.PointLight(color, 2, 100);
+        this.mesh.add(core); this.mesh.add(halo); this.mesh.add(this.light);
+        Game.scene.add(this.mesh);
+    }
+    dispose() { this.coreMat.dispose(); this.haloMat.dispose(); Game.scene.remove(this.mesh); }
+}
+
+class ExtraLife {
+    constructor(x, y) {
+        this.x = x; this.y = y; 
+        this.mesh = new THREE.Group(); this.mesh.position.set(x, 10, y);
+
+        this.mat = new THREE.MeshBasicMaterial({color: 0xff66bb, blending: THREE.AdditiveBlending});
+        let core = new THREE.Mesh(SharedGeo.icosahedron, this.mat); core.scale.setScalar(8);
+        
+        this.light = new THREE.PointLight(0xff66bb, 2, 100);
+        this.mesh.add(core); this.mesh.add(this.light);
+        Game.scene.add(this.mesh);
+    }
+    dispose() { this.mat.dispose(); Game.scene.remove(this.mesh); }
+}
+
+class Hazard {
+    constructor() {
+        this.active = false;
+        this.hitCooldown = {}; 
+        this.tickTimer = 0; 
+        
+        this.mesh = new THREE.Mesh(SharedGeo.cylinder, SharedMat.hazardFire);
+        this.light = new THREE.PointLight(0xffffff, 1.0, 100);
+        this.light.position.y = 10; 
+        this.mesh.add(this.light);
+        
+        this.mesh.visible = false;
+        Game.scene.add(this.mesh);
+    }
+
+    spawn(x, z, radius, duration, damage, colorHex, type='fire') {
+        this.active = true;
+        this.x = x; this.y = z; 
+        this.radius = radius; 
+        this.life = duration; this.maxLife = duration;
+        this.damage = damage; 
+        this.type = type; 
+        this.hitCooldown = {};
+        this.tickTimer = 0;
+
+        this.mesh.position.set(x, 1, z); 
+        this.mesh.scale.set(this.radius, 2, this.radius);
+        
+        if (type === 'poison') this.mesh.material = SharedMat.hazardPoison;
+        else if (type === 'enemy_fire') this.mesh.material = SharedMat.hazardEnemy;
+        else this.mesh.material = SharedMat.hazardFire;
+
+        this.light.color.setHex(colorHex);
+        this.light.distance = radius * 1.5;
+
+        this.mesh.visible = true;
+    }
+
+    update(dt) {
+        if (!this.active) return;
+        this.life -= dt; this.mesh.rotation.y += dt; 
+        this.mesh.material.opacity = 0.2 + Math.sin(this.life * 5) * 0.2; 
+        
+        if (Game.frameCount % 5 === 0 && !isTouchDevice) { 
+            let p = Game.getParticle();
+            let mat = this.type === 'poison' ? SharedMat.sparkGreen : SharedMat.sparkRed;
+            p.spawn(this.x + MathUtils.randomRange(-this.radius, this.radius), 2, 
+                    this.y + MathUtils.randomRange(-this.radius, this.radius), mat, 'trail');
+        }
+
+        this.tickTimer += dt;
+        if (this.tickTimer >= 0.2) { 
+            this.tickTimer = 0;
+            if (this.type === 'fire' || this.type === 'poison') {
+                let nearby = Game.enemyGrid.findNearby(this, this.radius);
+                for (let i=0; i<nearby.length; i++) {
+                    let e = nearby[i];
+                    if(!this.hitCooldown[e.id]) this.hitCooldown[e.id] = 0;
+                    this.hitCooldown[e.id] -= 0.2;
+                    if (this.hitCooldown[e.id] <= 0 && MathUtils.distanceSq(this, e) < (this.radius + e.radius)**2) {
+                        e.takeDamage(this.damage, Game.player, false);
+                        if(this.type === 'poison') e.slowedTimer = 2.0; 
+                        this.hitCooldown[e.id] = 0.5; 
+                    }
+                }
+
+                if (this.type === 'enemy_fire') {
+                    if(!this.hitCooldown['player']) this.hitCooldown['player'] = 0;
+                    this.hitCooldown['player'] -= 0.2;
+                    if (this.hitCooldown['player'] <= 0 && MathUtils.distanceSq(this, Game.player) < (this.radius + Game.player.radius)**2) {
+                        Game.player.takeDamage(this.damage, null); this.hitCooldown['player'] = 0.3;
+                    }
+                }
+            }
+        }
+
+        if (this.life <= 0) { 
+            this.active = false;
+            this.mesh.visible = false;
+        }
+    }
+}
+
+class Decoy {
+    constructor(x, y) {
+        this.x = x; this.y = y; this.life = 3.0; this.radius = 16;
+        this.mat = new THREE.MeshBasicMaterial({color: 0x00ff00, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending});
+        this.mesh = new THREE.Mesh(SharedGeo.cylinder, this.mat); 
+        this.mesh.position.set(x, 12, y); this.mesh.scale.set(10, 24, 10);
+        Game.scene.add(this.mesh);
+    }
+    update(dt) {
+        this.life -= dt; this.mesh.material.opacity = (this.life / 3.0) * 0.5;
+        if(this.life <= 0) { this.mat.dispose(); Game.scene.remove(this.mesh); }
+    }
+}
+
+class GameMap {
+    constructor(w, h) {
+        this.width = w; this.height = h; this.grid = [];
+        for(let x=0; x<w; x++) { this.grid[x] = []; for(let y=0; y<h; y++) this.grid[x][y] = 1; }
+        this.mapGroup = new THREE.Group();
+    }
+    generate() {
+        const rooms = []; const numRooms = 15; 
+        for(let i=0; i<numRooms; i++) {
+            let rw = MathUtils.randomInt(5, 10), rh = MathUtils.randomInt(5, 10);
+            let rx = MathUtils.randomInt(1, this.width - rw - 1), ry = MathUtils.randomInt(1, this.height - rh - 1);
+            let room = {x: rx, y: ry, w: rw, h: rh, center: {x: Math.floor(rx + rw/2), y: Math.floor(ry + rh/2)}};
+            rooms.push(room);
+            for(let x=rx; x<rx+rw; x++) for(let y=ry; y<ry+rh; y++) this.grid[x][y] = 2;
+            if (i > 0) this.carveCorridor(rooms[i-1].center.x, rooms[i-1].center.y, room.center.x, room.center.y);
+            if (rw > 7 && rh > 7 && Math.random() > 0.5) this.grid[room.center.x][room.center.y] = 3; 
+        }
+
+        let floorCount = 0, wallCount = 0, pillarCount = 0;
+        for(let x=0; x<this.width; x++) for(let y=0; y<this.height; y++) {
+            if(this.grid[x][y] === 2) floorCount++;
+            else if (this.grid[x][y] === 3) { floorCount++; pillarCount++; } 
+            else wallCount++;
+        }
+
+        const floorGeo = new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE); floorGeo.rotateX(-Math.PI/2);
+        const floorMat = new THREE.MeshLambertMaterial({ map: createPatternTexture('floor') });
+        const floorMesh = new THREE.InstancedMesh(floorGeo, floorMat, floorCount); 
+
+        const wallGeo = new THREE.BoxGeometry(TILE_SIZE, TILE_SIZE*1.5, TILE_SIZE);
+        const wallMat = new THREE.MeshLambertMaterial({ map: createPatternTexture('wall') });
+        const wallMesh = new THREE.InstancedMesh(wallGeo, wallMat, wallCount);
+
+        const pillarGeo = new THREE.CylinderGeometry(15, 15, TILE_SIZE*1.5, 8);
+        const pillarMesh = new THREE.InstancedMesh(pillarGeo, wallMat, pillarCount);
+
+        if(!isTouchDevice) {
+            floorMesh.receiveShadow = true;
+            wallMesh.castShadow = true; wallMesh.receiveShadow = true;
+            pillarMesh.castShadow = true; pillarMesh.receiveShadow = true;
+        }
+
+        let dummy = new THREE.Object3D(); let fIdx = 0, wIdx = 0, pIdx = 0;
+        for(let x=0; x<this.width; x++) {
+            for(let y=0; y<this.height; y++) {
+                dummy.position.set(x * TILE_SIZE, 0, y * TILE_SIZE);
+                if (this.grid[x][y] === 2 || this.grid[x][y] === 3) {
+                    dummy.updateMatrix(); floorMesh.setMatrixAt(fIdx++, dummy.matrix);
+                    if (this.grid[x][y] === 3) {
+                        dummy.position.y = TILE_SIZE*0.75; dummy.updateMatrix(); pillarMesh.setMatrixAt(pIdx++, dummy.matrix);
+                    }
+                } else {
+                    dummy.position.y = TILE_SIZE*0.75; dummy.updateMatrix(); wallMesh.setMatrixAt(wIdx++, dummy.matrix);
+                    if (Math.random() < 0.03 && this.isAdjacentToFloor(x,y)) { 
+                        let l = new THREE.PointLight(0xffaa00, 1.0, 200); l.position.set(x*TILE_SIZE, 40, y*TILE_SIZE);
+                        let f = new THREE.Mesh(new THREE.SphereGeometry(6, 4, 4), new THREE.MeshBasicMaterial({color: 0xffaa00, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending}));
+                        l.add(f); this.mapGroup.add(l);
+                    }
+                }
+            }
+        }
+        this.mapGroup.add(floorMesh); this.mapGroup.add(wallMesh); if(pillarCount>0) this.mapGroup.add(pillarMesh);
+        Game.scene.add(this.mapGroup);
+    }
+    
+    isAdjacentToFloor(x,y) {
+        if(x>0 && this.grid[x-1][y]===2) return true; if(x<this.width-1 && this.grid[x+1][y]===2) return true;
+        if(y>0 && this.grid[x][y-1]===2) return true; if(y<this.height-1 && this.grid[x][y+1]===2) return true; return false;
+    }
+
+    carveCorridor(x1, y1, x2, y2) {
+        let x = x1, y = y1;
+        while (x !== x2) { this.grid[x][y] = 2; this.grid[x][y+1] = 2; x += (x2 > x) ? 1 : -1; }
+        while (y !== y2) { this.grid[x][y] = 2; this.grid[x+1][y] = 2; y += (y2 > y) ? 1 : -1; }
+    }
+    getRandomFloorTile() {
+        let attempts = 0;
+        while(attempts < 1000) {
+            let x = MathUtils.randomInt(1, this.width - 2), y = MathUtils.randomInt(1, this.height - 2);
+            if (this.grid[x][y] === 2) return {x, y}; attempts++;
+        }
+        return {x: 2, y: 2};
+    }
+    isSolid(x, y) {
+        let gx = Math.floor(x / TILE_SIZE), gy = Math.floor(y / TILE_SIZE);
+        if (gx < 0 || gy < 0 || gx >= this.width || gy >= this.height) return true;
+        return this.grid[gx][gy] === 1 || this.grid[gx][gy] === 3; 
+    }
+}
+
+class Entity {
+    constructor(x, y, radius, speed) {
+        this.id = Math.random().toString(36).substr(2, 9);
+        this.x = x; this.y = y; this.radius = radius; this.speed = speed;
+        this.angle = 0; this.dead = false; this.mesh = new THREE.Group();
+        this.stats = { hp: 100, maxHp: 100, minDmg: 5, maxDmg: 10 };
+        this.flashTimer = 0;
+    }
+    move(dx, dy, dt) {
+        let len = Math.hypot(dx, dy);
+        if (len > 0) { dx /= len; dy /= len; }
+        
+        let totalDist = this.speed * dt;
+        let steps = Math.max(1, Math.ceil(totalDist / 15)); 
+        let stepDist = totalDist / steps;
+        
+        for (let i = 0; i < steps; i++) {
+            let newX = this.x + dx * stepDist; let newY = this.y + dy * stepDist;
+            if (!Game.map.isSolid(newX + this.radius*Math.sign(dx), this.y) && !Game.map.isSolid(newX - this.radius*Math.sign(dx), this.y)) this.x = newX;
+            if (!Game.map.isSolid(this.x, newY + this.radius*Math.sign(dy)) && !Game.map.isSolid(this.x, newY - this.radius*Math.sign(dy))) this.y = newY;
+        }
+        this.mesh.position.set(this.x, this.mesh.position.y, this.y);
+    }
+    takeDamage(amount, source, isCrit = false) {
+        if (this.dead) return;
+        this.stats.hp -= amount;
+        if (isCrit && source === Game.player) { Game.hitStop = 0.05; Game.addTrauma(0.5); Game.addCombo(); } 
+        else if (source === Game.player) { Game.addCombo(); }
+
+        Game.getFloatingText().spawn(this.x, this.y, Math.floor(amount), isCrit ? '#ffff00' : '#ffffff', isCrit ? 28 : 20, isCrit);
+        
+        let pCount = isCrit ? (isTouchDevice?4:8) : (isTouchDevice?2:4);
+        for(let i=0; i<pCount; i++) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.blood, 'blood');
+        
+        this.flashTimer = 0.1;
+        this.mesh.children.forEach(c => { if(c.material && c.material.emissive) c.material.emissive.setHex(0x555555); });
+        if (this.stats.hp <= 0) { this.stats.hp = 0; this.dead = true; }
+    }
+    updateFlash(dt) {
+        if (this.flashTimer > 0) {
+            this.flashTimer -= dt;
+            if (this.flashTimer <= 0) this.mesh.children.forEach(c => { if(c.material && c.material.emissive) c.material.emissive.setHex(0x000000); });
+        }
+    }
+}
+
+class Player extends Entity {
+    constructor(x, y) {
+        super(x, y, 16, 200); 
+        this.baseSpeed = 200; 
+        this.level = 1; this.xp = 0; this.xpNeeded = 100;
+        this.attackTimer = 0; this.baseAttackSpeed = 3.5; this.isAttacking = false; this.attackSwing = 0;
+        this.dashTimer = 0; this.isDashing = false; this.dashCooldown = 0;
+        this.stats = { hp: 100, maxHp: 100, minDmg: 8, maxDmg: 15 };
+        this.essence = null; this.essenceStacks = 0; this.essenceTimer = 0; this.overdrive = false;
+        this.invincibilityTimer = 0;
+        this.initMesh();
+    }
+    initMesh() {
+        const bodyGeo = new THREE.CylinderGeometry(10, 12, 24, 8);
+        const bodyMat = new THREE.MeshLambertMaterial({color: 0x333333});
+        this.bodyMesh = new THREE.Mesh(bodyGeo, bodyMat); this.bodyMesh.position.y = 12; 
+        
+        const headGeo = new THREE.SphereGeometry(8, 8, 8);
+        const headMat = new THREE.MeshLambertMaterial({color: 0xffccaa});
+        const head = new THREE.Mesh(headGeo, headMat); head.position.y = 28; 
+
+        this.weaponGroup = new THREE.Group(); this.weaponGroup.position.set(12, 16, 0);
+        const swordGeo = new THREE.BoxGeometry(3, 26, 6);
+        const swordMat = new THREE.MeshLambertMaterial({color: 0xaaaaaa});
+        const sword = new THREE.Mesh(swordGeo, swordMat); sword.position.y = 13; 
+        this.weaponGroup.add(sword);
+
+        this.light = new THREE.PointLight(0xffffff, 2.5, 800);
+        this.light.position.y = 120; 
+        
+        if(!isTouchDevice) {
+            this.bodyMesh.castShadow = true; head.castShadow = true; sword.castShadow = true;
+            this.light.castShadow = true;
+        }
+
+        this.mesh.add(this.bodyMesh); this.mesh.add(head); this.mesh.add(this.weaponGroup); this.mesh.add(this.light);
+        this.mesh.position.set(this.x, 0, this.y); Game.scene.add(this.mesh);
+    }
+    collectEssence(type) {
+        if (this.essence === type) { if (this.essenceStacks < 3) this.essenceStacks++; } 
+        else { this.essence = type; this.essenceStacks = 1; this.overdrive = false; }
+        
+        Game.addUltimateCharge(10); 
+        if (this.essenceStacks === 3 && !this.overdrive) this.triggerOverdrive();
+        this.essenceTimer = this.overdrive ? 5.0 : 8.0; this.updateAppearance();
+    }
+    triggerOverdrive() {
+        this.overdrive = true; Game.hitStop = 0.2; Game.addTrauma(1.0); 
+        Game.getFloatingText().spawn(this.x, this.y, ESSENCE_NAMES[this.essence] + "!", '#' + ESSENCE_COLORS[this.essence].toString(16).padStart(6, '0'), 40, true);
+        let mat = this.essence === 'red' ? SharedMat.sparkRed : (this.essence === 'blue' ? SharedMat.sparkBlue : SharedMat.sparkGreen);
+        
+        let pCount = isTouchDevice ? 10 : 30;
+        for(let i=0; i<pCount; i++) Game.getParticle().spawn(this.x, 20, this.y, mat, 'trail');
+    }
+    updateAppearance() {
+        let colorHex = 0x333333; let lColor = 0xffffff;
+        if (this.essence) { colorHex = ESSENCE_COLORS[this.essence]; lColor = ESSENCE_COLORS[this.essence]; }
+        this.bodyMesh.material.color.setHex(colorHex); this.light.color.setHex(lColor);
+        
+        if (this.overdrive) { this.light.intensity = 5.0; this.bodyMesh.material.emissive.setHex(colorHex); } 
+        else { this.light.intensity = this.essence ? 3.0 : 2.0; this.bodyMesh.material.emissive.setHex(0x000000); }
+        
+        if (Game.ultimateActive) { this.bodyMesh.material.emissive.setHex(0x00ffff); this.light.color.setHex(0x00ffff); this.light.intensity = 6.0; }
+    }
+    update(dt) {
+        if (this.dead) return;
+        this.updateFlash(dt);
+        
+        if (this.invincibilityTimer > 0) {
+            this.invincibilityTimer -= dt;
+            let isVisible = (Math.floor(this.invincibilityTimer * 15) % 2 === 0);
+            this.mesh.children.forEach(child => {
+                if (child !== this.light) child.visible = isVisible;
+            });
+            if (this.invincibilityTimer <= 0) {
+                this.mesh.children.forEach(child => child.visible = true);
+            }
+        }
+
+        if (!Game.ultimateActive && this.bodyMesh.material.emissive.getHex() === 0x00ffff) this.updateAppearance();
+        
+        if (this.essence) {
+            this.essenceTimer -= dt;
+            if (this.essenceTimer <= 0) { this.essence = null; this.essenceStacks = 0; this.overdrive = false; this.updateAppearance(); }
+        }
+
+        if (this.dashCooldown > 0) this.dashCooldown -= dt;
+
+        if (Game.inputs.right.active) {
+            this.angle = Math.atan2(Game.inputs.right.y, Game.inputs.right.x);
+        } else if (!isTouchDevice || Game.mouse.leftDown) {
+            this.angle = Math.atan2(Game.mouse.worldY - this.y, Game.mouse.worldX - this.x);
+        }
+        
+        this.mesh.rotation.y = -this.angle + Math.PI/2;
+
+        let currentSpeed = this.baseSpeed * (1 + Math.min(Game.combo * 0.02, 0.80));
+        if (Game.ultimateActive) currentSpeed *= 1.5;
+        currentSpeed = Math.min(currentSpeed, Game.ultimateActive ? 650 : 450); 
+
+        if (Game.ultimateActive && Game.frameCount % (isTouchDevice ? 8 : 3) === 0) Game.getParticle().spawn(this.x + MathUtils.randomRange(-15, 15), 15, this.y + MathUtils.randomRange(-15, 15), SharedMat.sparkBlue, 'trail');
+
+        let isShooting = Game.mouse.leftDown || Game.inputs.right.active;
+
+        if (this.overdrive && this.essence === 'red' && isShooting && !this.isDashing) this.flamethrower(dt);
+
+        if (!this.isDashing) {
+            let dx = 0, dy = 0;
+            if (Game.keys['w']) dy -= 1; if (Game.keys['s']) dy += 1;
+            if (Game.keys['a']) dx -= 1; if (Game.keys['d']) dx += 1;
+            
+            if (Game.inputs.left.active) { dx = Game.inputs.left.x; dy = Game.inputs.left.y; }
+
+            if (dx !== 0 || dy !== 0) {
+                this.speed = currentSpeed;
+                this.move(dx, dy, dt);
+                this.mesh.position.y = Math.sin(Game.frameCount * 0.4) * 3; 
+            } else { this.mesh.position.y = 0; }
+        } else {
+            this.dashTimer -= dt;
+            if (this.essence === 'red' && Game.frameCount % 8 === 0) Game.getHazard().spawn(this.x, this.y, 25, 3.0, this.stats.maxDmg * 0.5, 0xff3300, 'fire');
+            this.move(Math.cos(this.dashAngle), Math.sin(this.dashAngle), dt * 4.0);
+            
+            if (this.dashTimer <= 0) {
+                this.isDashing = false;
+                if (this.overdrive && this.essence === 'red') {
+                    Game.getHazard().spawn(this.x, this.y, 80, 1.0, this.stats.maxDmg * 3, 0xff0000, 'fire'); Game.addTrauma(0.5);
+                }
+            }
+        }
+        
+        this.attackTimer -= dt;
+        if (isShooting && this.attackTimer <= 0 && !this.isDashing && !(this.overdrive && this.essence === 'red')) this.attack();
+        
+        if (this.isAttacking) {
+            this.attackSwing += dt * 30; 
+            this.weaponGroup.rotation.x = -Math.PI/2 + this.attackSwing;
+            if (this.attackSwing > Math.PI) { this.isAttacking = false; this.weaponGroup.rotation.x = 0; }
+        }
+        
+        for (let i = Game.essences.length - 1; i >= 0; i--) {
+            let e = Game.essences[i];
+            if (MathUtils.distance(this, e) < this.radius + 20) {
+                this.collectEssence(e.type); e.dispose(); Game.essences.splice(i, 1);
+                Game.getFloatingText().spawn(this.x, this.y, "ASSORBITO", '#' + ESSENCE_COLORS[e.type].toString(16).padStart(6,'0'), 14);
+            }
+        }
+
+        for (let i = Game.extraLivesDrops.length - 1; i >= 0; i--) {
+            let el = Game.extraLivesDrops[i];
+            if (MathUtils.distance(this, el) < this.radius + 20) {
+                Game.lives++; el.dispose(); Game.extraLivesDrops.splice(i, 1);
+                Game.getFloatingText().spawn(this.x, this.y, "VITA EXTRA!", '#ff66bb', 30, true);
+            }
+        }
+    }
+
+    flamethrower(dt) {
+        if (Game.frameCount % (isTouchDevice?10:6) === 0) Game.getParticle().spawn(this.x + Math.cos(this.angle)*20, 15, this.y + Math.sin(this.angle)*20, SharedMat.sparkRed, 'trail');
+        let nearby = Game.enemyGrid.findNearby(this, 180);
+        nearby.forEach(e => {
+            let ang = Math.atan2(e.y - this.y, e.x - this.x);
+            let diff = Math.atan2(Math.sin(ang - this.angle), Math.cos(ang - this.angle));
+            if (Math.abs(diff) < Math.PI/4) {
+                if (!e.flameHitTimer) e.flameHitTimer = 0;
+                e.flameHitTimer -= dt;
+                if (e.flameHitTimer <= 0) { e.takeDamage(this.stats.maxDmg * 0.8, this, false); e.flameHitTimer = 0.2; }
+            }
+        });
+    }
+
+    attack() {
+        let spdMult = 1 + Math.min(Game.combo * 0.01, 0.5);
+        if (this.overdrive && this.essence === 'blue') spdMult *= 3.0; 
+        if (Game.ultimateActive) spdMult *= 2.0; 
+        
+        this.attackTimer = 1 / (this.baseAttackSpeed * spdMult);
+        this.isAttacking = true; this.attackSwing = 0;
+        
+        let critChance = 0.05 + Math.min(Game.combo * 0.005, 0.5);
+        let isCrit = Math.random() < critChance;
+        let baseDmg = MathUtils.randomRange(this.stats.minDmg, this.stats.maxDmg) * (1 + Game.combo * 0.04);
+        if (Game.ultimateActive) baseDmg *= 2.0;
+        
+        let projType = 'arrow';
+        if (this.essence === 'red') projType = 'explosive_arrow';
+        if (this.essence === 'blue') projType = 'chain_lightning';
+        if (this.essence === 'green') projType = 'homing_arrow';
+        let piercing = (this.overdrive && this.essence === 'blue');
+
+        AudioEngine.playShoot(projType);
+
+        Game.getProjectile().spawn(this.x, this.y, this.angle, 1000, baseDmg * (isCrit ? 2 : 1), 'player', projType, piercing);
+        if (this.overdrive && this.essence === 'green') {
+            Game.getProjectile().spawn(this.x, this.y, this.angle - 0.4, 800, baseDmg * (isCrit ? 2 : 1), 'player', 'homing_arrow');
+            Game.getProjectile().spawn(this.x, this.y, this.angle + 0.4, 800, baseDmg * (isCrit ? 2 : 1), 'player', 'homing_arrow');
+        }
+    }
+
+    dash() {
+        if (this.dashCooldown > 0 && !(this.overdrive && this.essence === 'blue')) return;
+
+        this.isDashing = true; this.dashTimer = 0.25; 
+        this.dashAngle = Game.inputs.left.active ? Math.atan2(Game.inputs.left.y, Game.inputs.left.x) : this.angle;
+        this.dashCooldown = 1.0;
+
+        if (this.essence === 'blue') {
+            let dist = 250;
+            let endX = this.x + Math.cos(this.dashAngle) * dist; let endY = this.y + Math.sin(this.dashAngle) * dist;
+            Game.enemies.forEach(e => {
+                let A = this.x - endX; let B = endY - this.y; let C = (endX*this.y) - (this.x*endY);
+                let d = Math.abs(A*e.y + B*e.x + C) / Math.sqrt(A*A + B*B);
+                if (d < e.radius + 20 && MathUtils.distance(this, e) < dist) {
+                    e.takeDamage(this.stats.maxDmg * 2.0, this, true); Game.hitStop = 0.1; 
+                }
+            });
+            this.x = endX; this.y = endY; this.dashTimer = 0; this.isDashing = false;
+        }
+        
+        if (this.essence === 'green') {
+            Game.decoys.push(new Decoy(this.x, this.y));
+            Game.getHazard().spawn(this.x, this.y, 40, 3.0, this.stats.maxDmg * 0.5, 0x00ff00, 'poison');
+        }
+
+        if (this.overdrive && this.essence === 'red') {
+            Game.getHazard().spawn(this.x, this.y, 80, 1.0, this.stats.maxDmg * 3, 0xff0000, 'fire');
+        }
+    }
+
+    takeDamage(amount, source) {
+        if (this.invincibilityTimer > 0) return; 
+        
+        let wasDead = this.dead;
+        if (Game.ultimateActive) amount *= 0.5;
+        super.takeDamage(amount, source);
+        if (!wasDead) {
+            Game.addTrauma(0.8); Game.resetCombo(); 
+            if (this.stats.hp <= 0) { 
+                Game.lives--;
+                this.dead = true;
+                Game.state = 'DEAD';
+                
+                AudioEngine.playDeathMusic();
+                
+                document.getElementById('deathScreen').classList.remove('hidden');
+                
+                if (Game.lives > 0) {
+                    document.getElementById('deathTitle').innerText = "SEI CADUTO";
+                    document.getElementById('deathSubtitle').innerText = `Vite rimaste: ${Game.lives}`;
+                    document.getElementById('btn-respawn').classList.remove('hidden');
+                    document.getElementById('btn-restart').classList.add('hidden');
+                } else {
+                    document.getElementById('deathTitle').innerText = "SEI MORTO";
+                    document.getElementById('deathSubtitle').innerText = "Il Flow si è interrotto.";
+                    document.getElementById('btn-respawn').classList.add('hidden');
+                    document.getElementById('btn-restart').classList.remove('hidden');
+                }
+            }
+        }
+    }
+
+    gainXp(amount) {
+        this.xp += amount;
+        if (this.xp >= this.xpNeeded) {
+            this.level++; this.xp -= this.xpNeeded; this.xpNeeded = Math.floor(this.xpNeeded * 1.3);
+            this.stats.maxHp += 15; this.stats.hp = this.stats.maxHp;
+            this.stats.minDmg += 3; this.stats.maxDmg += 5;
+            for(let i=0; i< (isTouchDevice?10:30); i++) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.level, 'level');
+            Game.getFloatingText().spawn(this.x, this.y, "LEVEL UP!", '#ffffff', 28, true);
+        }
+    }
+}
+
+class Enemy extends Entity {
+    constructor(x, y, type, level) {
+        super(x, y, 14, 100);
+        this.type = type; this.level = level; this.attackCooldown = 0;
+        let hpMod = 1, dmgMod = 1, spdMod = 1, color = 0x666666, size = 12;
+        
+        if (type === 'goblin') { color = 0x2ca02c; size = 10; spdMod = 1.8; hpMod = 0.5; dmgMod = 1.2; this.aggroRange = 500; this.attackRange = 40; } 
+        else if (type === 'orc') { color = 0x8c564b; size = 18; spdMod = 0.8; hpMod = 1.6; dmgMod = 2.5; this.aggroRange = 450; this.attackRange = 55; } 
+        else if (type === 'skeleton_archer') { color = 0xaaaaaa; size = 14; spdMod = 1.1; hpMod = 0.4; dmgMod = 1.5; this.aggroRange = 700; this.attackRange = 400; } 
+        else if (type === 'leaper') { color = 0xaa00aa; size = 12; spdMod = 0.7; hpMod = 1.0; dmgMod = 2.2; this.aggroRange = 600; this.attackRange = 250; this.leapCooldown = 0; this.state = 'walk'; } 
+        else if (type === 'pyromancer') { color = 0xff3300; size = 12; spdMod = 0.6; hpMod = 0.8; dmgMod = 2.2; this.aggroRange = 650; this.attackRange = 450; }
+        else if (type === 'fire_demon') { color = 0xff5500; size = 14; spdMod = 1.0; hpMod = 1.1; dmgMod = 3.0; this.aggroRange = 800; this.attackRange = 600; } 
+        else if (type === 'mage') { color = 0x0055ff; size = 12; spdMod = 0.6; hpMod = 0.7; dmgMod = 2.8; this.aggroRange = 700; this.attackRange = 450; }
+        this.radius = size;
+        
+        this.stats.maxHp = Math.floor(32 * hpMod * Math.pow(1.35, level) * Game.difficultyMult); this.stats.hp = this.stats.maxHp;
+        this.stats.minDmg = Math.floor(12 * dmgMod * Math.pow(1.40, level) * Game.difficultyMult); 
+        this.stats.maxDmg = Math.floor(22 * dmgMod * Math.pow(1.40, level) * Game.difficultyMult);
+        
+        let diffSpeedMod = Game.difficultyMult < 1.0 ? 0.8 : (Game.difficultyMult > 1.0 ? 1.15 : 1.0);
+        this.baseSpeed = 100 * spdMod * Math.min(4.0, 1 + (level * 0.1)) * diffSpeedMod; this.speed = this.baseSpeed;
+        this.xpValue = Math.floor(20 * hpMod * level);
+        this.infected = false; this.slowedTimer = 0;
+
+        const geo = new THREE.CylinderGeometry(1, 1, 1, 8); 
+        this.mat = new THREE.MeshLambertMaterial({color: color});
+        this.mesh = new THREE.Mesh(geo, this.mat); 
+        this.mesh.scale.set(size, size*2, size); this.mesh.position.set(x, size, y); 
+        if(!isTouchDevice) this.mesh.castShadow = true;
+        Game.scene.add(this.mesh);
+    }
+
+    update(dt) {
+        if(this.dead) return;
+        this.updateFlash(dt);
+        
+        if (this.slowedTimer > 0) {
+            this.slowedTimer -= dt; this.speed = this.baseSpeed * 0.5; 
+            this.mesh.children.forEach(c => { if(c.material && c.material.emissive) c.material.emissive.setHex(0x004400); });
+        } else { this.speed = this.baseSpeed; }
+
+        if (this.infected && Game.frameCount % 10 === 0 && !isTouchDevice) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.sparkGreen, 'trail');
+
+        let target = Game.player;
+        if (Game.decoys.length > 0) {
+            let closestDecoy = null; let minDist = Infinity;
+            Game.decoys.forEach(d => { let dist = MathUtils.distanceSq(this, d); if(dist < minDist) { minDist = dist; closestDecoy = d; } });
+            if (Math.sqrt(minDist) < this.aggroRange) target = closestDecoy;
+        }
+
+        let distToTarget = MathUtils.distance(this, target);
+        this.angle = Math.atan2(target.y - this.y, target.x - this.x);
+        
+        if (this.attackCooldown > 0) this.attackCooldown -= dt;
+        if (this.type === 'leaper' && this.leapCooldown > 0) this.leapCooldown -= dt;
+        
+        if (this.state === 'leaping') {
+            this.leapTimer += dt;
+            let progress = this.leapTimer / this.leapDuration;
+            if (progress >= 1) {
+                this.state = 'walk'; this.mesh.position.y = this.radius;
+                if (MathUtils.distanceSq(this, Game.player) < 70*70) Game.player.takeDamage(this.stats.maxDmg * 1.5, this);
+                Game.addTrauma(0.3); 
+            } else {
+                let currentHeight = this.radius + Math.sin(progress * Math.PI) * 120;
+                this.x += Math.cos(this.leapAngle) * (300 * dt); this.y += Math.sin(this.leapAngle) * (300 * dt);
+                this.mesh.position.set(this.x, currentHeight, this.y);
+            }
+            return;
+        }
+
+        if (distToTarget < this.aggroRange) {
+            if (distToTarget > this.attackRange) {
+                this.move(Math.cos(this.angle), Math.sin(this.angle), dt);
+                this.mesh.position.y = this.radius + Math.sin(Game.frameCount * 0.4) * 4;
+            } else {
+                if (this.type === 'leaper' && this.leapCooldown <= 0) {
+                    this.state = 'leaping'; this.leapTimer = 0; this.leapDuration = 0.5; this.leapAngle = this.angle; this.leapCooldown = 2.0; 
+                } else if (this.attackCooldown <= 0 && target === Game.player) { this.attack(); }
+            }
+        }
+    }
+    
+    attack() {
+        this.attackCooldown = 0.9; 
+        if (this.type === 'skeleton_archer') {
+            Game.getProjectile().spawn(this.x, this.y, this.angle, 250, MathUtils.randomRange(this.stats.minDmg, this.stats.maxDmg), 'enemy', 'arrow');
+            this.attackCooldown = 1.0;
+        } else if (this.type === 'mage') {
+            Game.getProjectile().spawn(this.x, this.y, this.angle, 180, MathUtils.randomRange(this.stats.minDmg, this.stats.maxDmg) * 1.5, 'enemy', 'enemy_bolt');
+            this.attackCooldown = 1.2;
+        } else if (this.type === 'fire_demon') {
+            Game.getProjectile().spawn(this.x, this.y, this.angle, 100, MathUtils.randomRange(this.stats.minDmg, this.stats.maxDmg) * 3.0, 'enemy', 'enemy_fireball');
+            this.attackCooldown = 2.5; 
+        } else if (this.type === 'pyromancer') {
+            Game.getProjectile().spawn(this.x, this.y, this.angle, 130, MathUtils.randomRange(this.stats.minDmg, this.stats.maxDmg) * 1.5, 'enemy', 'fire_shape');
+            this.attackCooldown = 2.0; 
+        } else if (this.type !== 'leaper') {
+            Game.player.takeDamage(MathUtils.randomRange(this.stats.minDmg, this.stats.maxDmg), this);
+            this.x += Math.cos(this.angle) * 18; this.y += Math.sin(this.angle) * 18; 
+            this.mesh.position.set(this.x, this.radius, this.y);
+        }
+    }
+
+    takeDamage(amount, source, isCrit = false) {
+        super.takeDamage(amount, source, isCrit);
+        if (Game.player.overdrive && Game.player.essence === 'green') this.infected = true;
+    }
+    
+    onDeath() {
+        Game.player.gainXp(this.xpValue);
+        let pCount = isTouchDevice ? 3 : 15;
+        for(let i=0; i< pCount; i++) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.blood, 'blood');
+
+        // Usa le decalcomanie di sangue dal pool! Nessuna nuova geometria creata.
+        let decal = Game.bloodDecals[Game.bloodDecalIndex];
+        decal.position.set(this.x, 1, this.y);
+        decal.rotation.z = Math.random() * Math.PI;
+        decal.scale.setScalar(1.0); // Resetta la scala
+        decal.userData.life = MathUtils.randomRange(3.0, 5.0); // Vita tra i 3 e i 5 secondi
+        decal.userData.active = true;
+        decal.visible = true;
+        Game.bloodDecalIndex = (Game.bloodDecalIndex + 1) % Game.bloodDecals.length;
+        
+        this.mat.dispose(); Game.scene.remove(this.mesh);
+
+        if (this.infected) {
+            Game.addTrauma(0.3);
+            for(let i=0; i<5; i++) Game.getProjectile().spawn(this.x, this.y, (Math.PI*2/5)*i, 600, Game.player.stats.maxDmg * 1.5, 'player', 'homing_arrow');
+            Game.getHazard().spawn(this.x, this.y, 40, 3.0, Game.player.stats.maxDmg, 0x00ff00, 'poison');
+        }
+
+        if (Math.random() < 0.02) { 
+            Game.extraLivesDrops.push(new ExtraLife(this.x, this.y));
+        } else if (Math.random() < 0.25 + (Game.combo * 0.005)) { 
+            let types = ['red', 'blue', 'green'];
+            Game.essences.push(new Essence(this.x, this.y, types[Math.floor(Math.random() * types.length)]));
+        }
+    }
+}
+
+class Projectile {
+    constructor() {
+        this.active = false;
+        this.mesh = new THREE.Mesh(SharedGeo.sphere, SharedMat.arrow);
+        this.light = new THREE.PointLight(0xffffff, 1, 100);
+        this.mesh.add(this.light);
+        this.mesh.visible = false;
+        Game.scene.add(this.mesh);
+    }
+
+    spawn(x, y, angle, speed, damage, owner, type, piercing=false) {
+        this.active = true; this.mesh.visible = true;
+        this.x = x; this.y = y; this.angle = angle;
+        this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
+        this.damage = damage; this.owner = owner; this.type = type; this.piercing = piercing;
+        this.bounceCount = (type === 'chain_lightning') ? 2 : 0;
+        this.hitEnemies = []; this.life = 2;
+        
+        this.radius = 6; let mat = SharedMat.arrow; let geo = SharedGeo.sphere;
+
+        if (type === 'arrow') { mat = SharedMat.arrow; geo = SharedGeo.cylinder; }
+        if (type === 'explosive_arrow') { mat = SharedMat.explosiveArrow; this.radius = 10; }
+        if (type === 'chain_lightning') { mat = SharedMat.chainLightning; this.radius = 10; }
+        if (type === 'homing_arrow') { mat = SharedMat.homingArrow; this.radius = 8; geo = SharedGeo.cylinder; }
+        if (type === 'enemy_fireball') { mat = SharedMat.enemyFireball; this.radius = 25; } 
+        if (type === 'enemy_bolt') { mat = SharedMat.enemyBolt; this.radius = 16; }
+        if (type === 'fire_shape') { mat = SharedMat.fireShape; this.radius = 20; geo = SharedGeo.icosahedron; }
+        
+        this.mesh.geometry = geo; this.mesh.material = mat; this.mesh.position.set(x, 15, y);
+        
+        if (type === 'arrow' || type === 'homing_arrow') { 
+            this.mesh.scale.set(2, 20, 2); this.mesh.rotation.z = Math.PI/2; this.mesh.rotation.y = -angle; this.mesh.rotation.x = 0;
+        } else { this.mesh.scale.setScalar(this.radius); this.mesh.rotation.set(0,0,0); }
+        
+        let hasLight = (type === 'enemy_fireball' || type === 'fire_shape' || type === 'explosive_arrow');
+        if (hasLight) {
+            this.light.visible = true; this.light.color = mat.color;
+            this.light.intensity = (type === 'enemy_fireball' || type === 'fire_shape') ? 4 : 2;
+            this.light.distance = (type === 'enemy_fireball' || type === 'fire_shape') ? 500 : 300;
+        } else { this.light.visible = false; }
+    }
+
+    update(dt) {
+        if (this.type === 'homing_arrow') {
+            let nearby = Game.enemyGrid.findNearby(this, 400);
+            let closest = null; let minDist = 400*400;
+            for(let i=0; i<nearby.length; i++) {
+                let e = nearby[i];
+                if(!this.hitEnemies.includes(e.id) && !e.dead) { let d = MathUtils.distanceSq(this, e); if(d < minDist) { minDist = d; closest = e; } }
+            }
+            if (closest) {
+                let targetAngle = Math.atan2(closest.y - this.y, closest.x - this.x);
+                let diff = targetAngle - this.angle;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                this.angle += diff * 5.0 * dt; 
+                let speed = Math.hypot(this.vx, this.vy);
+                this.vx = Math.cos(this.angle) * speed; this.vy = Math.sin(this.angle) * speed;
+                this.mesh.rotation.y = -this.angle;
+            }
+        }
+
+        this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt;
+        this.mesh.position.set(this.x, 15, this.y);
+
+        if (this.type === 'fire_shape') { this.mesh.rotation.x += dt * 5; this.mesh.rotation.y += dt * 5; }
+
+        if (Game.map.isSolid(this.x, this.y)) { this.handleHit(null); return; }
+        
+        if (this.owner === 'player') {
+            let nearby = Game.enemyGrid.findNearby(this, this.radius + 30);
+            for(let i=0; i<nearby.length; i++) {
+                let e = nearby[i];
+                if (!this.active) return;
+                if (!this.hitEnemies.includes(e.id) && MathUtils.distanceSq(this, e) < (this.radius + e.radius)**2) {
+                    e.takeDamage(this.damage, Game.player, Math.random() < 0.1 + Game.combo*0.005); 
+                    if(this.type === 'homing_arrow') e.slowedTimer = 2.0;
+                    this.handleHit(e);
+                }
+            }
+        } else {
+            if (MathUtils.distanceSq(this, Game.player) < (this.radius + Game.player.radius)**2) {
+                if (this.type !== 'fire_shape') Game.player.takeDamage(this.damage, null); 
+                this.handleHit(null); 
+            }
+        }
+        if (this.life <= 0) this.destroy();
+        
+        if(this.active && this.type !== 'arrow' && Game.frameCount % (isTouchDevice?6:3) === 0) Game.getParticle().spawn(this.x, 15, this.y, this.mesh.material, 'trail');
+    }
+
+    handleHit(target) {
+        if (target) this.hitEnemies.push(target.id);
+        if (this.type === 'chain_lightning' && target && this.bounceCount > 0 && !this.piercing) {
+            this.bounceCount--;
+            let nearby = Game.enemyGrid.findNearby(this, 300);
+            let closest = null; let minDist = 300*300;
+            for(let i=0; i<nearby.length; i++) {
+                let e = nearby[i];
+                if(!this.hitEnemies.includes(e.id) && !e.dead) { let d = MathUtils.distanceSq(this, e); if(d < minDist) { minDist = d; closest = e; } }
+            }
+            if (closest) {
+                this.angle = Math.atan2(closest.y - this.y, closest.x - this.x);
+                let speed = Math.hypot(this.vx, this.vy);
+                this.vx = Math.cos(this.angle) * speed; this.vy = Math.sin(this.angle) * speed;
+                this.damage *= 0.8; 
+                return; 
+            }
+        }
+        if (!this.piercing) this.destroy();
+    }
+
+    destroy() {
+        this.active = false; this.mesh.visible = false;
+        
+        let pMat = this.mesh.material;
+        let count = isTouchDevice ? 2 : 6;
+        for(let i=0; i<count; i++) Game.getParticle().spawn(this.x, 15, this.y, pMat, 'spark');
+        
+        if (this.type === 'fire_shape') Game.getHazard().spawn(this.x, this.y, 45, 8.0, this.damage, 0xff3300, 'enemy_fire');
+
+        if (this.type === 'explosive_arrow') {
+            Game.addTrauma(0.3);
+            let nearby = Game.enemyGrid.findNearby(this, 120);
+            for(let i=0; i<nearby.length; i++) {
+                let e = nearby[i];
+                if (!e.dead && MathUtils.distanceSq(this, e) < 120*120) e.takeDamage(this.damage * 1.5, Game.player, false); 
+            }
+        }
+    }
+}
+
+class Particle {
+    constructor() { 
+        this.active = false; 
+        this.mesh = new THREE.Mesh(SharedGeo.box, SharedMat.sparkWhite); 
+        this.mesh.visible = false;
+        Game.scene.add(this.mesh);
+    }
+    spawn(x, y, z, mat, type='spark') {
+        this.active = true; this.life = Math.random()*0.3 + 0.2; this.maxLife = this.life; this.type = type;
+        this.baseSize = type === 'blood' ? 6 : (type==='level'? 8 : 4);
+        
+        this.mesh.material = mat; this.mesh.position.set(x, y, z); this.mesh.scale.setScalar(this.baseSize);
+        
+        let a = Math.random() * Math.PI * 2; 
+        let speed = type==='blood' ? Math.random()*150+50 : Math.random()*100+50;
+        this.vx = Math.cos(a) * speed; this.vy = type==='trail' ? Math.random()*20 : Math.random()*200+50; this.vz = Math.sin(a) * speed;
+        this.mesh.visible = true;
+    }
+    update(dt) {
+        if (!this.active) return;
+        if(this.type === 'blood' || this.type === 'spark') this.vy -= 600 * dt; 
+        this.mesh.position.x += this.vx * dt; this.mesh.position.y += this.vy * dt; this.mesh.position.z += this.vz * dt;
+        
+        if (this.mesh.position.y < 2) { this.mesh.position.y = 2; this.vx *= 0.5; this.vz *= 0.5; this.vy *= -0.3; } 
+        
+        let currentSize = this.baseSize * (this.life / this.maxLife);
+        this.mesh.scale.setScalar(Math.max(0.01, currentSize));
+        
+        this.life -= dt;
+        if(this.life <= 0) { this.active = false; this.mesh.visible = false; }
+    }
+}
+
+class FloatingText {
+    constructor() { this.active = false; }
+    spawn(x, z, text, color, size, isCrit=false) {
+        this.active = true;
+        this.x = x + MathUtils.randomRange(-15, 15); this.y = z; this.h = 40;
+        this.text = text; this.color = color; this.size = size; this.isCrit = isCrit;
+        this.life = isCrit ? 1.0 : 0.7; this.maxLife = this.life;
+        this.vy = isCrit ? 60 : 30;
+    }
+    update(dt) { 
+        if(!this.active) return;
+        this.h += this.vy * dt; this.vy -= 100*dt; this.life -= dt; 
+        if(this.life <= 0) this.active = false;
+    } 
+}
+
+function clearScene() {
+    Game.scene.remove(Game.map.mapGroup);
+    Game.enemies.forEach(e => { e.mat.dispose(); Game.scene.remove(e.mesh); });
+    
+    // Disattiva gli elementi dal pool invece di rimuoverli
+    Game.projectiles.forEach(p => { p.active = false; p.mesh.visible = false; });
+    Game.hazards.forEach(h => { h.active = false; h.mesh.visible = false; });
+    Game.particles.forEach(p => { p.active = false; p.mesh.visible = false; });
+    Game.floatingTexts.forEach(f => { f.active = false; });
+    Game.bloodDecals.forEach(b => { b.visible = false; b.userData.active = false; });
+
+    Game.decoys.forEach(d => { d.mat.dispose(); Game.scene.remove(d.mesh); });
+    Game.essences.forEach(e => { e.dispose(); });
+    Game.extraLivesDrops.forEach(el => { el.dispose(); });
+    if(Game.player) Game.scene.remove(Game.player.mesh);
+}
+
+function respawnPlayer() {
+    document.getElementById('deathScreen').classList.add('hidden');
+    
+    let pos = Game.map.getRandomFloorTile();
+    let attempts = 0;
+    while(attempts < 100) {
+        let isSafe = true;
+        for(let e of Game.enemies) {
+            if(!e.dead && MathUtils.distanceSq({x: pos.x*TILE_SIZE, y: pos.y*TILE_SIZE}, e) < (TILE_SIZE*10)**2) {
+                isSafe = false; break;
+            }
+        }
+        if(isSafe) break;
+        pos = Game.map.getRandomFloorTile();
+        attempts++;
+    }
+    
+    Game.player.x = pos.x * TILE_SIZE + TILE_SIZE/2; 
+    Game.player.y = pos.y * TILE_SIZE + TILE_SIZE/2;
+    Game.player.mesh.position.set(Game.player.x, 0, Game.player.y);
+    Game.player.stats.hp = Game.player.stats.maxHp;
+    Game.player.dead = false;
+    Game.player.invincibilityTimer = 3.0; 
+    Game.player.mesh.children.forEach(child => child.visible = true);
+    
+    Game.snapCamera();
+    Game.state = 'PLAYING';
+    Game.getFloatingText().spawn(Game.player.x, Game.player.y, "RESPAWN!", '#ff66bb', 40, true);
+}
+
+function startGameFromMenu() {
+    let diff = parseFloat(document.getElementById('gameDifficulty').value) || 1.0;
+    AudioEngine.stopMenuMusic(); Game.startGame(diff);
+}
+
+function restartGame() {
+    document.getElementById('deathScreen').classList.add('hidden');
+    clearScene(); Game.state = 'PLAYING'; Game.floor = 1; Game.lives = 3;
+    Game.enemies = []; Game.decoys = []; Game.essences = []; Game.extraLivesDrops = [];
+    Game.map = new GameMap(CHUNK_SIZE, CHUNK_SIZE); Game.map.generate();
+    Game.enemyGrid = new SpatialHashGrid([[-1000, -1000], [CHUNK_SIZE*TILE_SIZE+1000, CHUNK_SIZE*TILE_SIZE+1000]], [200, 200]);
+    let pos = Game.map.getRandomFloorTile();
+    Game.player = new Player(pos.x * TILE_SIZE + TILE_SIZE/2, pos.y * TILE_SIZE + TILE_SIZE/2);
+    Game.floorMaxKills = 20 + (Game.floor * 10); Game.floorKills = 0; Game.resetCombo();
+    Game.snapCamera(); Game.spawnEnemies(); 
+}
+
+function nextFloor() {
+    AudioEngine.playDescendSound();
+    document.getElementById('floorScreen').classList.add('hidden');
+    clearScene(); Game.state = 'PLAYING'; Game.floor++;
+    Game.decoys = []; Game.essences = []; Game.extraLivesDrops = [];
+    Game.map = new GameMap(CHUNK_SIZE, CHUNK_SIZE); Game.map.generate();
+    Game.enemyGrid = new SpatialHashGrid([[-1000, -1000], [CHUNK_SIZE*TILE_SIZE+1000, CHUNK_SIZE*TILE_SIZE+1000]], [200, 200]);
+    let pos = Game.map.getRandomFloorTile();
+    Game.player.x = pos.x * TILE_SIZE + TILE_SIZE/2; Game.player.y = pos.y * TILE_SIZE + TILE_SIZE/2;
+    Game.player.mesh.position.set(Game.player.x, 0, Game.player.y); Game.scene.add(Game.player.mesh);
+    Game.player.stats.hp = Game.player.stats.maxHp; 
+    Game.floorMaxKills = 20 + (Game.floor * 10); Game.floorKills = 0; Game.resetCombo();
+    Game.snapCamera(); Game.spawnEnemies();
+    Game.getFloatingText().spawn(Game.player.x, Game.player.y, `DISCESA AL PIANO ${Game.floor}`, '#ff0000', 40, true);
+}
+
+window.onload = () => {
+    Game.init();
+    
+    const initScreen = document.getElementById('initScreen');
+    const mainMenu = document.getElementById('mainMenu');
+    
+    const handleInit = () => {
+        AudioEngine.init();
+        if (AudioEngine.ctx && AudioEngine.ctx.state === 'suspended') {
+            AudioEngine.ctx.resume();
+        }
+        initScreen.classList.add('hidden');
+        mainMenu.classList.remove('hidden');
+    };
+
+    initScreen.addEventListener('click', handleInit);
+};
+</script>
+</body>
+</html>
