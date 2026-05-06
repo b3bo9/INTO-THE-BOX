@@ -71,7 +71,7 @@
             <!-- Meccaniche Base (Compatto) -->
             <div class="bg-gradient-to-b from-red-950/40 to-black/60 border border-red-900/30 p-3 sm:p-4 rounded-xl text-center shadow-inner flex flex-col items-center gap-2">
                 <div class="flex items-center gap-2">
-                    <span class="text-[11px] sm:text-xs text-gray-400 mr-1">I nemici rilasciano <span class="text-white font-bold drop-shadow-[0_0_5px_rgba(255,255,255,0.6)]">essenze</span></span>
+                    <span class="text-[11px] sm:text-xs text-gray-400 mr-1">I nemici rilasciano <span class="text-white font-bold drop-shadow-[0_0_5px_rgba(255,255,255,0.6)]">ESSENZE</span></span>
                     <span class="w-3 h-3 rounded-full bg-red-600 shadow-[0_0_8px_#ff0000]"></span>
                     <span class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_#0088ff]"></span>
                     <span class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_#00ff00]"></span>
@@ -109,10 +109,13 @@
                 <i class="fa-solid fa-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none text-sm"></i>
             </div>
 
-            <!-- Tasto Play -->
-            <button onmouseenter="AudioEngine.playHover()" onclick="AudioEngine.playClick(); startGameFromMenu()" class="w-full bg-gradient-to-r from-red-800 to-red-600 hover:from-red-600 hover:to-red-500 text-white font-black py-4 rounded-xl text-xl shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:shadow-[0_0_30px_rgba(220,38,38,0.8)] transition-all transform hover:scale-[1.03] active:scale-95 uppercase tracking-widest flex justify-center items-center gap-2">
-                <i class="fa-solid fa-play"></i> Gioca
-            </button>
+            <!-- Tasto Play e Credits -->
+            <div class="flex flex-col gap-2 mt-1">
+                <button onmouseenter="AudioEngine.playHover()" onclick="AudioEngine.playClick(); startGameFromMenu()" class="w-full bg-gradient-to-r from-red-800 to-red-600 hover:from-red-600 hover:to-red-500 text-white font-black py-4 rounded-xl text-xl shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:shadow-[0_0_30px_rgba(220,38,38,0.8)] transition-all transform hover:scale-[1.03] active:scale-95 uppercase tracking-widest flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-play"></i> Gioca
+                </button>
+                <p class="text-[9px] sm:text-[10px] text-gray-500/70 font-bold uppercase tracking-widest text-center mt-1">made by Alberto Costa 2026</p>
+            </div>
         </div>
     </div>
 
@@ -951,7 +954,16 @@ const Game = {
     startGame(diffMult) {
         document.getElementById('mainMenu').classList.add('hidden');
         document.getElementById('hud').classList.remove('hidden');
+        
+        // Riattiva i controlli se si è su smartphone
+        if (isTouchDevice) document.getElementById('mobile-controls').classList.remove('hidden');
+
         this.difficultyMult = diffMult || 1.0;
+        
+        // Pulisce totalmente i nemici, il livello e le statistiche della partita precedente
+        this.floor = 1;
+        this.enemies = []; this.decoys = []; this.essences = []; this.extraLivesDrops = [];
+        this.ultimateCharge = 0; this.ultimateActive = false;
 
         this.map = new GameMap(CHUNK_SIZE, CHUNK_SIZE); this.map.generate();
         this.enemyGrid = new SpatialHashGrid([[-1000, -1000], [CHUNK_SIZE*TILE_SIZE+1000, CHUNK_SIZE*TILE_SIZE+1000]], [200, 200]);
