@@ -161,12 +161,18 @@
     <div id="deathScreen" class="absolute inset-0 bg-red-950/90 flex flex-col items-center justify-center z-[100] hidden backdrop-blur-md pointer-events-auto">
         <h1 id="deathTitle" class="text-6xl sm:text-8xl font-black text-red-600 mb-2 drop-shadow-[0_0_30px_rgba(220,38,38,1)] tracking-tighter uppercase">Sei Morto</h1>
         <p id="deathSubtitle" class="text-lg sm:text-2xl text-red-300 mb-10 font-bold">Il Flow si è interrotto.</p>
-        <button id="btn-restart" onclick="restartGame()" class="bg-black hover:bg-gray-900 text-red-500 font-black py-4 px-8 sm:px-12 rounded-xl text-xl sm:text-2xl border-4 border-red-800 shadow-[0_0_30px_rgba(220,38,38,0.8)] transition-all hover:scale-110 active:scale-95">
-            RINASCI NEL SANGUE
-        </button>
-        <button id="btn-respawn" onclick="respawnPlayer()" class="hidden bg-black hover:bg-gray-900 text-pink-500 font-black py-4 px-8 sm:px-12 rounded-xl text-xl sm:text-2xl border-4 border-pink-800 shadow-[0_0_30px_rgba(255,105,180,0.8)] transition-all hover:scale-110 active:scale-95">
-            RITORNA IN BATTAGLIA
-        </button>
+        
+        <div class="flex flex-col gap-4 items-center w-full max-w-[350px]">
+            <button id="btn-restart" onclick="restartGame()" class="bg-black hover:bg-gray-900 text-red-500 font-black py-4 px-8 sm:px-12 rounded-xl text-xl sm:text-2xl border-4 border-red-800 shadow-[0_0_30px_rgba(220,38,38,0.8)] transition-all hover:scale-110 active:scale-95 w-full">
+                RINASCI NEL SANGUE
+            </button>
+            <button id="btn-respawn" onclick="respawnPlayer()" class="hidden bg-black hover:bg-gray-900 text-pink-500 font-black py-4 px-8 sm:px-12 rounded-xl text-xl sm:text-2xl border-4 border-pink-800 shadow-[0_0_30px_rgba(255,105,180,0.8)] transition-all hover:scale-110 active:scale-95 w-full">
+                RITORNA IN BATTAGLIA
+            </button>
+            <button onclick="goToMainMenu()" class="bg-black hover:bg-gray-900 text-gray-400 font-bold py-3 px-6 sm:px-8 rounded-xl text-lg sm:text-xl border-2 border-gray-700 transition-all hover:scale-110 active:scale-95 w-full mt-2">
+                TORNA AL MENU
+            </button>
+        </div>
     </div>
 
     <div id="floorScreen" class="absolute inset-0 bg-blue-950/90 flex flex-col items-center justify-center z-[100] hidden backdrop-blur-md pointer-events-auto">
@@ -1939,6 +1945,17 @@ function respawnPlayer() {
     Game.snapCamera();
     Game.state = 'PLAYING';
     Game.getFloatingText().spawn(Game.player.x, Game.player.y, "RESPAWN!", '#ff66bb', 40, true);
+}
+
+function goToMainMenu() {
+    document.getElementById('deathScreen').classList.add('hidden');
+    document.getElementById('hud').classList.add('hidden');
+    document.getElementById('mobile-controls').classList.add('hidden');
+    document.getElementById('mainMenu').classList.remove('hidden');
+    
+    clearScene();
+    Game.state = 'MENU';
+    AudioEngine.playMenuMusic();
 }
 
 function startGameFromMenu() {
