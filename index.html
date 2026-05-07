@@ -51,6 +51,23 @@
         .menu-glow {
             animation: menuPulse 4s infinite ease-in-out;
         }
+
+        /* Effetti Glow per le Essenze nel Menù */
+        @keyframes pulse-glow-red {
+            0%, 100% { box-shadow: 0 0 5px #ff0000; transform: scale(1); }
+            50% { box-shadow: 0 0 15px #ff0000, 0 0 6px #ffaaaa inset; transform: scale(1.15); }
+        }
+        @keyframes pulse-glow-blue {
+            0%, 100% { box-shadow: 0 0 5px #0088ff; transform: scale(1); }
+            50% { box-shadow: 0 0 15px #0088ff, 0 0 6px #aaaaff inset; transform: scale(1.15); }
+        }
+        @keyframes pulse-glow-green {
+            0%, 100% { box-shadow: 0 0 5px #00ff00; transform: scale(1); }
+            50% { box-shadow: 0 0 15px #00ff00, 0 0 6px #aaffaa inset; transform: scale(1.15); }
+        }
+        .dot-glow-red { animation: pulse-glow-red 2s infinite ease-in-out; }
+        .dot-glow-blue { animation: pulse-glow-blue 2s infinite ease-in-out 0.6s; }
+        .dot-glow-green { animation: pulse-glow-green 2s infinite ease-in-out 1.2s; }
     </style>
 </head>
 <body class="text-white selection:bg-red-900">
@@ -72,9 +89,9 @@
             <div class="bg-gradient-to-b from-red-950/40 to-black/60 border border-red-900/30 p-3 sm:p-4 rounded-xl text-center shadow-inner flex flex-col items-center gap-2">
                 <div class="flex items-center gap-2">
                     <span class="text-[11px] sm:text-xs text-gray-400 mr-1">I nemici rilasciano <span class="text-white font-bold drop-shadow-[0_0_5px_rgba(255,255,255,0.6)]">ESSENZE</span></span>
-                    <span class="w-3 h-3 rounded-full bg-red-600 shadow-[0_0_8px_#ff0000]"></span>
-                    <span class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_#0088ff]"></span>
-                    <span class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_#00ff00]"></span>
+                    <span class="w-3 h-3 rounded-full bg-red-600 dot-glow-red"></span>
+                    <span class="w-3 h-3 rounded-full bg-blue-500 dot-glow-blue"></span>
+                    <span class="w-3 h-3 rounded-full bg-green-500 dot-glow-green"></span>
                 </div>
                 <p class="text-[11px] sm:text-xs text-gray-400 leading-tight mt-1">
                     Raccogline 3 uguali per scatenare l'<span class="text-cyan-400 font-black animate-pulse drop-shadow-[0_0_8px_rgba(0,255,255,0.8)]">OVERDRIVE</span>
@@ -102,9 +119,9 @@
             <!-- Difficoltà -->
             <div class="relative">
                 <select id="gameDifficulty" onmouseenter="AudioEngine.playHover()" class="w-full bg-red-950/20 text-white border border-red-900/50 py-3 rounded-xl focus:outline-none focus:border-red-500 transition-colors appearance-none cursor-pointer text-xs sm:text-sm font-bold text-center tracking-wide">
-                    <option value="0.6" class="text-black bg-white">🟢 Difficoltà: Facile</option>
-                    <option value="1.0" class="text-black bg-white" selected>🟡 Difficoltà: Normale</option>
-                    <option value="1.6" class="text-black bg-white">🔴 Difficoltà: Difficile</option>
+                    <option value="0.6" class="text-black bg-white" selected>🟢 Difficoltà: Normale</option>
+                    <option value="1.0" class="text-black bg-white">🟡 Difficoltà: Difficile</option>
+                    <option value="1.6" class="text-black bg-white">🔴 Difficoltà: INFERNO</option>
                 </select>
                 <i class="fa-solid fa-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none text-sm"></i>
             </div>
@@ -114,7 +131,7 @@
                 <button onmouseenter="AudioEngine.playHover()" onclick="AudioEngine.playClick(); startGameFromMenu()" class="w-full bg-gradient-to-r from-red-800 to-red-600 hover:from-red-600 hover:to-red-500 text-white font-black py-4 rounded-xl text-xl shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:shadow-[0_0_30px_rgba(220,38,38,0.8)] transition-all transform hover:scale-[1.03] active:scale-95 uppercase tracking-widest flex justify-center items-center gap-2">
                     <i class="fa-solid fa-play"></i> Gioca
                 </button>
-                <p class="text-[9px] sm:text-[10px] text-gray-500/70 font-bold uppercase tracking-widest text-center mt-1">made by Alberto Costa 2026</p>
+                <p class="text-[9px] sm:text-[10px] text-gray-500/70 font-bold uppercase tracking-widest text-center mt-1">Alberto Costa 2026</p>
             </div>
         </div>
     </div>
@@ -231,7 +248,7 @@
 
     <div id="floorScreen" class="absolute inset-0 bg-blue-950/90 flex flex-col items-center justify-center z-[100] hidden backdrop-blur-md pointer-events-auto">
         <h1 class="text-4xl sm:text-7xl font-black text-blue-400 mb-4 drop-shadow-[0_0_30px_rgba(96,165,250,1)] uppercase tracking-tight text-center">Massacro Concluso</h1>
-        <p class="text-sm sm:text-xl text-blue-200 mb-10 font-bold text-center px-4">L'oscurità si fa più densa al piano inferiore...</p>
+        <p class="text-sm sm:text-xl text-blue-200 mb-10 font-bold text-center px-4">L'oscurità si intensifica al piano inferiore...</p>
         <button onclick="nextFloor()" class="bg-black hover:bg-gray-900 text-blue-500 font-black py-4 px-8 sm:px-12 rounded-xl text-xl sm:text-2xl border-4 border-blue-600 shadow-[0_0_30px_rgba(59,130,246,0.6)] transition-all hover:scale-110 active:scale-95">
             SCENDI PIÙ A FONDO
         </button>
@@ -464,13 +481,13 @@ const DEATH_QUOTES = [
     "L'oscurità reclama un'altra anima.",
     "Non sei il primo a cadere, e non sarai l'ultimo.",
     "La scatola si chiude su di te.",
-    "Il sangue si asciuga, la battaglia continua.",
+    "Cenere alla cenere.",
     "I demoni banchettano con i tuoi resti.",
     "Un flebile respiro, poi il buio assoluto.",
     "Hai combattuto valorosamente, ma la scatola vince sempre.",
     "Le ombre sorridono nella tua assenza.",
     "Nessuno ricorderà il tuo nome qua giù.",
-    "La tua essenza svanisce nel vuoto."
+    "La tua essenza svanisce nell'oscurità."
 ];
 
 const SharedGeo = {
@@ -1203,7 +1220,6 @@ class Hazard {
     constructor() {
         this.active = false;
         this.hitCooldown = {}; 
-        this.tickTimer = 0; 
         
         this.mesh = new THREE.Mesh(SharedGeo.cylinder, SharedMat.hazardFire);
         this.light = new THREE.PointLight(0xffffff, 1.0, 100);
@@ -1222,7 +1238,9 @@ class Hazard {
         this.damage = damage; 
         this.type = type; 
         this.hitCooldown = {};
-        this.tickTimer = 0;
+        
+        // Imposta l'attivazione ritardata a 1 secondo per le pozze nemiche (effetto avviso visivo)
+        this.activationTimer = (type === 'enemy_fire') ? 1.0 : 0.0;
 
         this.mesh.position.set(x, 1, z); 
         this.mesh.scale.set(this.radius, 2, this.radius);
@@ -1240,37 +1258,48 @@ class Hazard {
     update(dt) {
         if (!this.active) return;
         this.life -= dt; this.mesh.rotation.y += dt; 
-        this.mesh.material.opacity = 0.2 + Math.sin(this.life * 5) * 0.2; 
         
-        if (Game.frameCount % 5 === 0 && !isTouchDevice) { 
+        // Effetto visivo di "caricamento": la pozza tremola prima di accendersi del tutto
+        if (this.activationTimer > 0) {
+            this.activationTimer -= dt;
+            this.mesh.material.opacity = 0.1 + (1.0 - this.activationTimer) * 0.1;
+        } else {
+            this.mesh.material.opacity = 0.2 + Math.sin(this.life * 5) * 0.2; 
+        }
+        
+        if (Game.frameCount % 5 === 0 && !isTouchDevice && this.activationTimer <= 0) { 
             let p = Game.getParticle();
             let mat = this.type === 'poison' ? SharedMat.sparkGreen : SharedMat.sparkRed;
             p.spawn(this.x + MathUtils.randomRange(-this.radius, this.radius), 2, 
                     this.y + MathUtils.randomRange(-this.radius, this.radius), mat, 'trail');
         }
 
-        this.tickTimer += dt;
-        if (this.tickTimer >= 0.2) { 
-            this.tickTimer = 0;
+        // Riduce fluidamente tutti i cooldown registrati per questa pozza
+        for (let key in this.hitCooldown) {
+            this.hitCooldown[key] -= dt;
+        }
+
+        // Danni attivi solo dopo il periodo di avviso (activationTimer)
+        if (this.activationTimer <= 0) {
             if (this.type === 'fire' || this.type === 'poison') {
                 let nearby = Game.enemyGrid.findNearby(this, this.radius);
                 for (let i=0; i<nearby.length; i++) {
                     let e = nearby[i];
-                    if(!this.hitCooldown[e.id]) this.hitCooldown[e.id] = 0;
-                    this.hitCooldown[e.id] -= 0.2;
+                    if (this.hitCooldown[e.id] === undefined) this.hitCooldown[e.id] = 0;
                     if (this.hitCooldown[e.id] <= 0 && MathUtils.distanceSq(this, e) < (this.radius + e.radius)**2) {
                         e.takeDamage(this.damage, Game.player, false);
                         if(this.type === 'poison') e.slowedTimer = 2.0; 
-                        this.hitCooldown[e.id] = 0.5; 
+                        this.hitCooldown[e.id] = 0.5; // Tick sui nemici ogni 0.5s
                     }
                 }
+            }
 
-                if (this.type === 'enemy_fire') {
-                    if(!this.hitCooldown['player']) this.hitCooldown['player'] = 0;
-                    this.hitCooldown['player'] -= 0.2;
-                    if (this.hitCooldown['player'] <= 0 && MathUtils.distanceSq(this, Game.player) < (this.radius + Game.player.radius)**2) {
-                        Game.player.takeDamage(this.damage, null); this.hitCooldown['player'] = 0.3;
-                    }
+            // Controllo indipendente dei danni sul giocatore per le pozze nemiche
+            if (this.type === 'enemy_fire') {
+                if (this.hitCooldown['player'] === undefined) this.hitCooldown['player'] = 0;
+                if (this.hitCooldown['player'] <= 0 && MathUtils.distanceSq(this, Game.player) < (this.radius + Game.player.radius)**2) {
+                    Game.player.takeDamage(this.damage, null);
+                    this.hitCooldown['player'] = 1.0; // Tick esattamente ogni 1 secondo sul giocatore
                 }
             }
         }
