@@ -1916,14 +1916,15 @@ class BossEnemy extends Enemy {
         this.radius = 35; 
         this.aggroRange = 2000; 
         this.attackRange = 600; 
-        this.spawnMinionTimer = 3.0; 
+        this.spawnMinionTimer = 2.0; 
+        this.hazardTimer = 4.0; // Nuovo timer per evocare pozze di fuoco sotto il giocatore
         
-        this.stats.maxHp = Math.floor(1500 * Math.pow(1.4, level/5) * Game.difficultyMult);
+        this.stats.maxHp = Math.floor(2500 * Math.pow(1.4, level/5) * Game.difficultyMult);
         this.stats.hp = this.stats.maxHp;
         this.stats.minDmg = Math.floor(30 * Math.pow(1.2, level/5) * Game.difficultyMult);
         this.stats.maxDmg = Math.floor(50 * Math.pow(1.2, level/5) * Game.difficultyMult);
         
-        this.baseSpeed = 120; this.speed = this.baseSpeed;
+        this.baseSpeed = 160; this.speed = this.baseSpeed; // Velocità aumentata
         this.xpValue = 600 * (level/5);
 
         this.mesh.scale.set(this.radius, this.radius * 2, this.radius);
@@ -1941,7 +1942,14 @@ class BossEnemy extends Enemy {
         this.spawnMinionTimer -= dt;
         if (this.spawnMinionTimer <= 0) {
             this.spawnMinions();
-            this.spawnMinionTimer = 6.0 + Math.random() * 4.0;
+            this.spawnMinionTimer = 5.0 + Math.random() * 3.0; // Spawn leggermente più rapido
+        }
+
+        // Logica Pozze di Fuoco a ricerca
+        this.hazardTimer -= dt;
+        if (this.hazardTimer <= 0) {
+            Game.getHazard().spawn(Game.player.x, Game.player.y, 45, 3.5, this.stats.maxDmg * 0.5, 0xff3300, 'enemy_fire');
+            this.hazardTimer = 4.0;
         }
     }
 
@@ -1966,11 +1974,12 @@ class BossEnemy extends Enemy {
     }
 
     attack() {
-        this.attackCooldown = 2.5; 
+        this.attackCooldown = 1.8; // Frequenza di attacco molto più alta
         AudioEngine.playShoot('enemy_fireball');
-        for(let i=0; i<8; i++) {
-            let a = this.angle + (Math.PI*2/8) * i;
-            Game.getProjectile().spawn(this.x, this.y, a, 150, this.stats.maxDmg, 'enemy', 'enemy_fireball');
+        for(let i=0; i<12; i++) { // 12 palle di fuoco invece di 8
+            let a = this.angle + (Math.PI*2/12) * i;
+            // Proiettili più veloci (200 invece di 150)
+            Game.getProjectile().spawn(this.x, this.y, a, 200, this.stats.maxDmg, 'enemy', 'enemy_fireball');
         }
     }
 
