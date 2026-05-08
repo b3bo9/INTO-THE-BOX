@@ -600,7 +600,7 @@ const ScoreManager = {
 const RelicSystem = {
     allRelics: [
         // COMUNI (70%)
-        { id: 'c1', name: "Pietra Affilata", desc: "+3% Probabilità Colpo Critico", rarity: "common", apply: (p) => p.modifiers.critChance += 0.03 },
+        { id: 'c1', name: "Prisma della Concentrazione", desc: "+3% Probabilità Colpo Critico", rarity: "common", apply: (p) => p.modifiers.critChance += 0.03 },
         { id: 'c2', name: "Siero d'Adrenalina", desc: "+5% Velocità d'Attacco", rarity: "common", apply: (p) => p.modifiers.atkSpeedMult += 0.05 },
         { id: 'c3', name: "Piuma di Fenice", desc: "+5% Velocità di Movimento", rarity: "common", apply: (p) => p.modifiers.speedMult += 0.05 },
         { id: 'c4', name: "Essenza Vitale", desc: "+15 HP Massimi", rarity: "common", apply: (p) => { p.stats.maxHp += 15; p.stats.hp += 15; } },
@@ -616,11 +616,11 @@ const RelicSystem = {
         { id: 'e1', name: "Calice del Vampiro", desc: "Ogni uccisione ha il 2% di curare 1 HP", rarity: "epic", apply: (p) => p.modifiers.vampirism += 0.02 },
         { id: 'e2', name: "Scia Infernale", desc: "Lo scatto lascia fiamme dannose", rarity: "epic", apply: (p) => p.modifiers.fireTrail = true },
         { id: 'e3', name: "Nucleo Sovraccarico", desc: "La modalità Ascensione dura 3s in più", rarity: "epic", apply: (p) => p.modifiers.ascensionDurationAdd += 3.0 },
-        { id: 'e4', name: "Lente Instabile", desc: "+20% Danni, ma -8% Velocità", rarity: "epic", apply: (p) => { p.modifiers.dmgMult += 0.20; p.modifiers.speedMult -= 0.08; } },
+        { id: 'e4', name: "Fardello del Sangue", desc: "+20% Danni, ma -8% Velocità", rarity: "epic", apply: (p) => { p.modifiers.dmgMult += 0.20; p.modifiers.speedMult -= 0.08; } },
         
         // LEGGENDARIE (2%)
-        { id: 'l1', name: "Vetro di Malaugurio", desc: "Danni Critici Raddoppiati, ma subisci +25% danni", rarity: "legendary", apply: (p) => { p.modifiers.critDmgMult = 2.0; p.modifiers.dmgTakenMult += 0.25; } },
-        { id: 'l2', name: "Esecutore Spietato", desc: "+50% danni ai nemici con vita < 30%", rarity: "legendary", apply: (p) => p.modifiers.executioner = true }
+        { id: 'l1', name: "Pergamena della Follia", desc: "Danni Critici Raddoppiati, ma subisci +25% danni", rarity: "legendary", apply: (p) => { p.modifiers.critDmgMult = 2.0; p.modifiers.dmgTakenMult += 0.25; } },
+        { id: 'l2', name: "Croce del Giudizio", desc: "+50% danni ai nemici con vita < 30%", rarity: "legendary", apply: (p) => p.modifiers.executioner = true }
     ],
 
     getRandomRarity() {
@@ -639,14 +639,12 @@ const RelicSystem = {
             let targetRarity = this.getRandomRarity();
             let poolForRarity = availablePool.filter(r => r.rarity === targetRarity);
             
-            // Fallback se finiamo le reliquie di una rarità (improbabile, ma sicuro)
             if (poolForRarity.length === 0) poolForRarity = availablePool;
             
             let randomIndex = Math.floor(Math.random() * poolForRarity.length);
             let selectedRelic = poolForRarity[randomIndex];
             
             choices.push(selectedRelic);
-            // Rimuovi dalla pool per evitare duplicati nella stessa scelta
             availablePool = availablePool.filter(r => r.id !== selectedRelic.id); 
         }
         return choices;
@@ -657,7 +655,8 @@ const RelicSystem = {
         container.innerHTML = '';
         let choices = this.getChoices();
 
-        choices.forEach(relic => {
+        for(let i=0; i<choices.length; i++) {
+            let relic = choices[i];
             let colorClass = "rarity-common bg-gray-900/80 text-gray-300";
             let icon = "fa-gem";
             let rarityLabel = "COMUNE";
@@ -682,12 +681,11 @@ const RelicSystem = {
                 Game.getFloatingText().spawn(Game.player.x, Game.player.y, "POTERE ACQUISITO", '#ffff00', 40, true);
                 document.getElementById('relicScreen').classList.add('hidden');
                 
-                // Passa allo schermo del piano successivo
                 Game.state = 'FLOOR_TRANSITION';
                 document.getElementById('floorScreen').classList.remove('hidden');
             };
             container.appendChild(card);
-        });
+        }
 
         document.getElementById('relicScreen').classList.remove('hidden');
     }
@@ -761,69 +759,93 @@ const SharedMat = {
     spriteBlue: new THREE.SpriteMaterial({color: 0x00ffff, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
     spriteGreen: new THREE.SpriteMaterial({color: 0x00ff00, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
     spriteWhite: new THREE.SpriteMaterial({color: 0xffffff, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
+    spritePink: new THREE.SpriteMaterial({color: 0xff66bb, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
     spriteBlood: new THREE.SpriteMaterial({color: 0x990000, map: GLOW_TEX, transparent: true, depthWrite: false}),
 
     // Materiali Standard e Magie per la scena
     arrow: new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.2, metalness: 0.8}),
-    homingArrow: new THREE.MeshBasicMaterial({color: 0x00ff00, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
-    explosiveArrow: new THREE.MeshBasicMaterial({color: 0xff0000, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
-    chainLightning: new THREE.MeshBasicMaterial({color: 0x00ffff, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
-    enemyFireball: new THREE.MeshBasicMaterial({color: 0xff0055, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
-    enemyBolt: new THREE.MeshBasicMaterial({color: 0x00ffff, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
-    fireShape: new THREE.MeshBasicMaterial({color: 0xff3300, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
+    homingArrow: new THREE.MeshBasicMaterial({color: 0x00ff00, blending: THREE.AdditiveBlending}),
+    explosiveArrow: new THREE.MeshBasicMaterial({color: 0xff0000, blending: THREE.AdditiveBlending}),
+    chainLightning: new THREE.MeshBasicMaterial({color: 0x00ffff, blending: THREE.AdditiveBlending}),
+    enemyFireball: new THREE.MeshBasicMaterial({color: 0xff0055, blending: THREE.AdditiveBlending}),
+    enemyBolt: new THREE.MeshBasicMaterial({color: 0x00ffff, blending: THREE.AdditiveBlending}),
+    fireShape: new THREE.MeshBasicMaterial({color: 0xff3300, blending: THREE.AdditiveBlending}),
     hazardFire: new THREE.MeshBasicMaterial({color: 0xff3300, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending}),
     hazardPoison: new THREE.MeshBasicMaterial({color: 0x00ff00, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending}),
     hazardEnemy: new THREE.MeshBasicMaterial({color: 0xff0000, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending})
 };
 
-// --- CLASSI DI GIOCO RE-INTRODOTTE ---
+// --- CLASSI DI GIOCO OTTMIZZATE A ZERO-ALLOCAZIONE LUCI ---
 
 class Essence {
-    constructor(x, y, type) {
-        this.x = x; this.y = y; this.type = type; 
-        let color = ESSENCE_COLORS[type];
-        this.mesh = new THREE.Group(); this.mesh.position.set(x, 10, y);
-
-        this.coreMat = new THREE.MeshBasicMaterial({color: color, blending: THREE.AdditiveBlending});
+    constructor() {
+        this.active = false;
+        this.type = 'red';
+        this.group = new THREE.Group();
+        this.coreMat = new THREE.MeshBasicMaterial({blending: THREE.AdditiveBlending});
         let core = new THREE.Mesh(SharedGeo.sphere, this.coreMat); core.scale.setScalar(6);
-        
-        this.haloMat = new THREE.MeshBasicMaterial({color: color, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending});
+        this.haloMat = new THREE.MeshBasicMaterial({transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending});
         let halo = new THREE.Mesh(SharedGeo.sphere, this.haloMat); halo.scale.setScalar(12);
         
-        this.light = new THREE.PointLight(color, 2, 100);
-        this.mesh.add(core); this.mesh.add(halo); this.mesh.add(this.light);
-        Game.scene.add(this.mesh);
+        this.glow = new THREE.Sprite(SharedMat.spriteWhite);
+        this.glow.scale.set(30, 30, 1);
+        
+        this.group.add(core); this.group.add(halo); this.group.add(this.glow);
+        this.group.visible = false;
+        Game.scene.add(this.group);
     }
-    dispose() { this.coreMat.dispose(); this.haloMat.dispose(); Game.scene.remove(this.mesh); }
+    spawn(x, y, type) {
+        this.active = true; this.x = x; this.y = y; this.type = type; 
+        let color = ESSENCE_COLORS[type];
+        this.coreMat.color.setHex(color);
+        this.haloMat.color.setHex(color);
+        if(type === 'red') this.glow.material = SharedMat.spriteRed;
+        else if(type === 'blue') this.glow.material = SharedMat.spriteBlue;
+        else this.glow.material = SharedMat.spriteGreen;
+        
+        this.group.position.set(x, 10, y);
+        this.group.visible = true;
+    }
+    destroy() { this.active = false; this.group.visible = false; }
 }
 
 class ExtraLife {
-    constructor(x, y) {
-        this.x = x; this.y = y; 
-        this.mesh = new THREE.Group(); this.mesh.position.set(x, 10, y);
-
+    constructor() {
+        this.active = false;
+        this.group = new THREE.Group();
         this.mat = new THREE.MeshBasicMaterial({color: 0xff66bb, blending: THREE.AdditiveBlending});
         let core = new THREE.Mesh(SharedGeo.icosahedron, this.mat); core.scale.setScalar(8);
         
-        this.light = new THREE.PointLight(0xff66bb, 2, 100);
-        this.mesh.add(core); this.mesh.add(this.light);
-        Game.scene.add(this.mesh);
+        this.glow = new THREE.Sprite(SharedMat.spritePink);
+        this.glow.scale.set(30, 30, 1);
+        
+        this.group.add(core); this.group.add(this.glow);
+        this.group.visible = false;
+        Game.scene.add(this.group);
     }
-    dispose() { this.mat.dispose(); Game.scene.remove(this.mesh); }
+    spawn(x, y) {
+        this.active = true; this.x = x; this.y = y; 
+        this.group.position.set(x, 10, y);
+        this.group.visible = true;
+    }
+    destroy() { this.active = false; this.group.visible = false; }
 }
 
 class Hazard {
     constructor() {
         this.active = false;
         this.hitCooldown = {}; 
+        this.updateOffset = Math.floor(Math.random() * 6); // Scaglionamento danni
         
+        this.group = new THREE.Group();
         this.mesh = new THREE.Mesh(SharedGeo.cylinder, SharedMat.hazardFire);
-        this.light = new THREE.PointLight(0xffffff, 1.0, 100);
-        this.light.position.y = 10; 
-        this.mesh.add(this.light);
+        this.glow = new THREE.Sprite(SharedMat.spriteRed);
+        this.glow.position.y = 5;
         
-        this.mesh.visible = false;
-        Game.scene.add(this.mesh);
+        this.group.add(this.mesh);
+        this.group.add(this.glow);
+        this.group.visible = false;
+        Game.scene.add(this.group);
     }
 
     spawn(x, z, radius, duration, damage, colorHex, type='fire') {
@@ -835,27 +857,24 @@ class Hazard {
         this.type = type; 
         this.hitCooldown = {};
         
-        // Imposta l'attivazione ritardata a 1 secondo per le pozze nemiche (effetto avviso visivo)
         this.activationTimer = (type === 'enemy_fire') ? 1.0 : 0.0;
 
-        this.mesh.position.set(x, 1, z); 
+        this.group.position.set(x, 1, z); 
         this.mesh.scale.set(this.radius, 2, this.radius);
         
-        if (type === 'poison') this.mesh.material = SharedMat.hazardPoison;
-        else if (type === 'enemy_fire') this.mesh.material = SharedMat.hazardEnemy;
-        else this.mesh.material = SharedMat.hazardFire;
+        if (type === 'poison') { this.mesh.material = SharedMat.hazardPoison; this.glow.material = SharedMat.spriteGreen; }
+        else if (type === 'enemy_fire') { this.mesh.material = SharedMat.hazardEnemy; this.glow.material = SharedMat.spriteRed; }
+        else { this.mesh.material = SharedMat.hazardFire; this.glow.material = SharedMat.spriteRed; }
 
-        this.light.color.setHex(colorHex);
-        this.light.distance = radius * 1.5;
-
-        this.mesh.visible = true;
+        this.glow.scale.set(radius * 3, radius * 3, 1);
+        this.group.visible = true;
     }
 
     update(dt) {
         if (!this.active) return;
-        this.life -= dt; this.mesh.rotation.y += dt; 
+        this.life -= dt; 
+        this.mesh.rotation.y += dt; 
         
-        // Effetto visivo di "caricamento": la pozza tremola prima di accendersi del tutto
         if (this.activationTimer > 0) {
             this.activationTimer -= dt;
             this.mesh.material.opacity = 0.1 + (1.0 - this.activationTimer) * 0.1;
@@ -863,69 +882,76 @@ class Hazard {
             this.mesh.material.opacity = 0.2 + Math.sin(this.life * 5) * 0.2; 
         }
         
-        if (Game.frameCount % 5 === 0 && !isTouchDevice && this.activationTimer <= 0) { 
+        if ((Game.frameCount + this.updateOffset) % 5 === 0 && !isTouchDevice && this.activationTimer <= 0) { 
             let p = Game.getParticle();
-            let mat = this.type === 'poison' ? SharedMat.sparkGreen : SharedMat.sparkRed;
+            let mat = this.type === 'poison' ? SharedMat.spriteGreen : SharedMat.spriteRed;
             p.spawn(this.x + MathUtils.randomRange(-this.radius, this.radius), 2, 
                     this.y + MathUtils.randomRange(-this.radius, this.radius), mat, 'trail');
         }
 
-        // Riduce fluidamente tutti i cooldown registrati per questa pozza
         for (let key in this.hitCooldown) {
             this.hitCooldown[key] -= dt;
         }
 
-        // Danni attivi solo dopo il periodo di avviso (activationTimer)
         if (this.activationTimer <= 0) {
-            if (this.type === 'fire' || this.type === 'poison') {
-                let nearby = Game.enemyGrid.findNearby(this, this.radius);
-                for (let i=0; i<nearby.length; i++) {
-                    let e = nearby[i];
-                    if (this.hitCooldown[e.id] === undefined) this.hitCooldown[e.id] = 0;
-                    if (this.hitCooldown[e.id] <= 0 && MathUtils.distanceSq(this, e) < (this.radius + e.radius)**2) {
-                        e.takeDamage(this.damage, Game.player, false);
-                        if(this.type === 'poison') e.slowedTimer = 2.0; 
-                        this.hitCooldown[e.id] = 0.5; // Tick sui nemici ogni 0.5s
+            // Ottimizzazione: calcola le collisioni ad area solo 10 volte al secondo invece di 60 e sfalsate per ID
+            if ((Game.frameCount + this.updateOffset) % 6 === 0) {
+                if (this.type === 'fire' || this.type === 'poison') {
+                    let nearby = Game.enemyGrid.findNearby(this, this.radius);
+                    for (let i=0, len=nearby.length; i<len; i++) {
+                        let e = nearby[i];
+                        if (this.hitCooldown[e.id] === undefined) this.hitCooldown[e.id] = 0;
+                        if (this.hitCooldown[e.id] <= 0 && MathUtils.distanceSq(this, e) < (this.radius + e.radius)**2) {
+                            e.takeDamage(this.damage, Game.player, false, false);
+                            if(this.type === 'poison') e.slowedTimer = 2.0; 
+                            this.hitCooldown[e.id] = 0.5;
+                        }
                     }
                 }
             }
 
-            // Controllo indipendente dei danni sul giocatore per le pozze nemiche
-            if (this.type === 'enemy_fire') {
+            if (this.type === 'enemy_fire' && (Game.frameCount + this.updateOffset) % 6 === 0) {
                 if (this.hitCooldown['player'] === undefined) this.hitCooldown['player'] = 0;
                 if (this.hitCooldown['player'] <= 0 && MathUtils.distanceSq(this, Game.player) < (this.radius + Game.player.radius)**2) {
                     Game.player.takeDamage(this.damage, null);
-                    this.hitCooldown['player'] = 1.0; // Tick esattamente ogni 1 secondo sul giocatore
+                    this.hitCooldown['player'] = 1.0;
                 }
             }
         }
 
         if (this.life <= 0) { 
             this.active = false;
-            this.mesh.visible = false;
+            this.group.visible = false;
         }
     }
 }
 
 class Decoy {
-    constructor(x, y) {
-        this.x = x; this.y = y; this.life = 3.0; this.radius = 16;
+    constructor() {
+        this.active = false;
         this.mat = new THREE.MeshBasicMaterial({color: 0x00ff00, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending});
         this.mesh = new THREE.Mesh(SharedGeo.cylinder, this.mat); 
-        this.mesh.position.set(x, 12, y); this.mesh.scale.set(10, 24, 10);
+        this.mesh.scale.set(10, 24, 10);
+        this.mesh.visible = false;
         Game.scene.add(this.mesh);
     }
-    update(dt) {
-        this.life -= dt; this.mesh.material.opacity = (this.life / 3.0) * 0.5;
-        if(this.life <= 0) { this.mat.dispose(); Game.scene.remove(this.mesh); }
+    spawn(x, y) {
+        this.active = true; this.x = x; this.y = y; this.life = 3.0; this.radius = 16;
+        this.mesh.position.set(x, 12, y);
+        this.mesh.visible = true;
     }
+    update(dt) {
+        if (!this.active) return;
+        this.life -= dt; this.mesh.material.opacity = (this.life / 3.0) * 0.5;
+        if(this.life <= 0) this.destroy();
+    }
+    destroy() { this.active = false; this.mesh.visible = false; }
 }
 
 // --- SPATIAL HASHING ---
 class SpatialHashGrid {
     constructor(bounds, dimensions) {
         this.bounds = bounds; this.dimensions = dimensions; this.cells = new Map();
-        // Ottimizzazione Zero-Allocazione: array pre-generati per evitare il Garbage Collector
         this._tempKeys = []; 
         this._tempResults = [];
         this._seen = new Set();
@@ -960,12 +986,12 @@ class SpatialHashGrid {
         for(let i=0; i<this._tempKeys.length; i++) {
             let cell = this.cells.get(this._tempKeys[i]);
             if (cell) {
-                cell.forEach(other => { 
+                for (const other of cell) { 
                     if (client !== other && !this._seen.has(other.id)) { 
                         this._seen.add(other.id);
                         this._tempResults.push(other); 
                     } 
-                });
+                }
             }
         }
         return this._tempResults;
@@ -1028,7 +1054,7 @@ const TouchControls = {
             identifier = null; stick.style.transform = `translate(-50%, -50%) translate(0px, 0px)`; Game.inputs[side] = { x: 0, y: 0, active: false };
         };
         const updateStick = (clientX, clientY) => {
-            let dx = clientX - cx; let dy = clientY - cy; let distance = Math.hypot(dx, dy);
+            let dx = clientX - cx; let dy = clientY - cy; let distance = Math.sqrt(dx*dx + dy*dy);
             let nx = dx / distance || 0; let ny = dy / distance || 0;
             if (distance > maxR) { dx = nx * maxR; dy = ny * maxR; }
             stick.style.transform = `translate(-50%, -50%) translate(${dx}px, ${dy}px)`; Game.inputs[side] = { x: nx, y: ny, active: true };
@@ -1124,7 +1150,7 @@ const UI = {
         } else {
             let uPct = `${Game.ultimateCharge}%`;
             if (this.cache.ultCharge !== uPct || this.cache.ultActive) {
-                this.els.ultFill.style.width = uPct; this.els.ultFill.style.background = ''; // Torna al gradient tailwind
+                this.els.ultFill.style.width = uPct; this.els.ultFill.style.background = ''; 
                 if (Game.ultimateCharge >= 100) {
                     this.els.ultText.classList.remove('hidden');
                     if(isTouchDevice) { 
@@ -1181,6 +1207,11 @@ const Game = {
     
     // Variabili per l'ottimizzazione matematica globale (Zero-Allocazione)
     _vec2: new THREE.Vector2(), _vec3: new THREE.Vector3(), _plane: new THREE.Plane(new THREE.Vector3(0, 1, 0), 0),
+    _vec3Screen: new THREE.Vector3(), // Pre-allocazione per i calcoli di interfaccia
+    
+    // Indici per il Round-Robin Object Pooling Globale (Previene Memory Leaks)
+    _particleIdx: 0, _projectileIdx: 0, _hazardIdx: 0, _textIdx: 0,
+    _essenceIdx: 0, _extraLifeIdx: 0, _decoyIdx: 0,
     
     lastTime: 0, accumulator: 0, state: 'MENU',
     floor: 1, floorMaxKills: 0, floorKills: 0, totalKills: 0, frameCount: 0, isBossFloor: false,
@@ -1188,7 +1219,7 @@ const Game = {
     ultimateCharge: 0, ultimateActive: false, ultimateTimer: 0,
     lives: 3, playTime: 0, bossDefeatedTimer: 0,
 
-    // Collections per Object Pooling
+    // Collections
     player: null, map: null, enemyGrid: null,
     enemies: [], projectiles: [], particles: [], essences: [], extraLivesDrops: [], 
     floatingTexts: [], hazards: [], decoys: [], bloodDecals: [], bloodDecalIndex: 0,
@@ -1217,7 +1248,6 @@ const Game = {
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(this.renderer.domElement);
         
-        // HemisphereLight per ombreggiature naturali migliori rispetto all'AmbientLight piatta
         const hemiLight = new THREE.HemisphereLight(0x2a2a3a, 0x050510, 1.5);
         this.scene.add(hemiLight);
 
@@ -1231,10 +1261,13 @@ const Game = {
     },
 
     initPools() {
-        this.particles = Array.from({length: isTouchDevice ? 300 : 800}, () => new Particle());
-        this.projectiles = Array.from({length: 100}, () => new Projectile());
-        this.floatingTexts = Array.from({length: 60}, () => new FloatingText());
-        this.hazards = Array.from({length: 30}, () => new Hazard());
+        this.particles = Array.from({length: isTouchDevice ? 400 : 1000}, () => new Particle());
+        this.projectiles = Array.from({length: 300}, () => new Projectile());
+        this.floatingTexts = Array.from({length: 100}, () => new FloatingText());
+        this.hazards = Array.from({length: 60}, () => new Hazard());
+        this.essences = Array.from({length: 50}, () => new Essence());
+        this.extraLivesDrops = Array.from({length: 10}, () => new ExtraLife());
+        this.decoys = Array.from({length: 10}, () => new Decoy());
 
         this.bloodDecals = [];
         this.bloodDecalIndex = 0;
@@ -1248,27 +1281,15 @@ const Game = {
         }
     },
 
-    getParticle() {
-        let p = this.particles.find(p => !p.active);
-        if(!p) { p = new Particle(); this.particles.push(p); }
-        return p;
-    },
-    getProjectile() {
-        let p = this.projectiles.find(p => !p.active);
-        if(!p) { p = new Projectile(); this.projectiles.push(p); }
-        return p;
-    },
-    getFloatingText() {
-        let f = this.floatingTexts.find(f => !f.active);
-        if(!f) { f = new FloatingText(); this.floatingTexts.push(f); }
-        return f;
-    },
-    getHazard() {
-        let h = this.hazards.find(h => !h.active);
-        if(!h) { h = new Hazard(); this.hazards.push(h); }
-        return h;
-    },
-    
+    // Getter O(1) con Array Circolari
+    getParticle() { let p = this.particles[this._particleIdx]; this._particleIdx = (this._particleIdx + 1) % this.particles.length; return p; },
+    getProjectile() { let p = this.projectiles[this._projectileIdx]; this._projectileIdx = (this._projectileIdx + 1) % this.projectiles.length; return p; },
+    getFloatingText() { let f = this.floatingTexts[this._textIdx]; this._textIdx = (this._textIdx + 1) % this.floatingTexts.length; return f; },
+    getHazard() { let h = this.hazards[this._hazardIdx]; this._hazardIdx = (this._hazardIdx + 1) % this.hazards.length; return h; },
+    getEssence() { let e = this.essences[this._essenceIdx]; this._essenceIdx = (this._essenceIdx + 1) % this.essences.length; return e; },
+    getExtraLife() { let e = this.extraLivesDrops[this._extraLifeIdx]; this._extraLifeIdx = (this._extraLifeIdx + 1) % this.extraLivesDrops.length; return e; },
+    getDecoy() { let d = this.decoys[this._decoyIdx]; this._decoyIdx = (this._decoyIdx + 1) % this.decoys.length; return d; },
+
     addCombo(amount = 1) { this.combo += amount; this.comboTimer = this.comboMaxTime; UI.triggerComboAnim(this.combo); },
     resetCombo() { this.combo = 0; this.comboTimer = 0; },
     addUltimateCharge(amount) { if (!this.ultimateActive) this.ultimateCharge = Math.min(100, this.ultimateCharge + amount); },
@@ -1369,7 +1390,6 @@ const Game = {
 
     updateMouseWorld() {
         if (isTouchDevice && this.inputs.right.active) return; 
-        // Zero-Allocazione: Usiamo i vettori pre-calcolati invece di usare "new" ad ogni frame
         this._vec2.set((this.mouse.x / this.width) * 2 - 1, -(this.mouse.y / this.height) * 2 + 1);
         this.raycaster.setFromCamera(this._vec2, this.camera);
         this.raycaster.ray.intersectPlane(this._plane, this._vec3);
@@ -1401,7 +1421,6 @@ const Game = {
         this.map.generate(this.isBossFloor);
         this.enemyGrid = new SpatialHashGrid([[-1000, -1000], [CHUNK_SIZE*TILE_SIZE+1000, CHUNK_SIZE*TILE_SIZE+1000]], [200, 200]);
         
-        // Attiva scudo reliquia
         if (this.player && this.player.modifiers.shieldActive) {
             this.player.modifiers.shieldConsumed = false;
         }
@@ -1449,7 +1468,7 @@ const Game = {
         this.difficultyMult = diffMult || 1.0;
         
         this.floor = 1; this.totalKills = 0; this.lives = 3; this.playTime = 0;
-        this.enemies = []; this.decoys = []; this.essences = []; this.extraLivesDrops = [];
+        this.enemies = []; 
         this.ultimateCharge = 0; this.ultimateActive = false;
         
         if (this.player) {
@@ -1457,6 +1476,7 @@ const Game = {
             this.player = null; 
         }
 
+        clearScene();
         this.setupFloor();
         this.state = 'PLAYING';
     },
@@ -1495,23 +1515,33 @@ const Game = {
             }
         }
         
-        for (let i = 0; i < this.projectiles.length; i++) if(this.projectiles[i].active) this.projectiles[i].update(dt);
-        for (let i = 0; i < this.hazards.length; i++) if(this.hazards[i].active) this.hazards[i].update(dt);
-        
-        for (let i = this.decoys.length - 1; i >= 0; i--) {
-            this.decoys[i].update(dt);
-            if (this.decoys[i].life <= 0) this.decoys.splice(i, 1);
+        for (let i = 0, len = this.projectiles.length; i < len; i++) if(this.projectiles[i].active) this.projectiles[i].update(dt);
+        for (let i = 0, len = this.hazards.length; i < len; i++) if(this.hazards[i].active) this.hazards[i].update(dt);
+        for (let i = 0, len = this.decoys.length; i < len; i++) if(this.decoys[i].active) this.decoys[i].update(dt);
+        for (let i = 0, len = this.particles.length; i < len; i++) if(this.particles[i].active) this.particles[i].update(dt);
+        for (let i = 0, len = this.floatingTexts.length; i < len; i++) if(this.floatingTexts[i].active) this.floatingTexts[i].update(dt);
+
+        for(let i = 0, len = this.essences.length; i < len; i++) {
+            let e = this.essences[i];
+            if(e.active) {
+                e.group.rotation.y += dt; e.group.position.y = 10 + Math.sin(this.frameCount * 0.05) * 5;
+                if (MathUtils.distanceSq(this.player, e) < (this.player.radius + 20)**2) {
+                    this.player.collectEssence(e.type); e.destroy();
+                    this.getFloatingText().spawn(this.player.x, this.player.y, "ASSORBITO", '#' + ESSENCE_COLORS[e.type].toString(16).padStart(6,'0'), 14);
+                }
+            }
         }
-        for (let i = 0; i < this.particles.length; i++) if(this.particles[i].active) this.particles[i].update(dt);
-        for (let i = 0; i < this.floatingTexts.length; i++) if(this.floatingTexts[i].active) this.floatingTexts[i].update(dt);
 
-        this.essences.forEach(e => { 
-            e.mesh.rotation.y += dt; e.mesh.position.y = 10 + Math.sin(this.frameCount * 0.05) * 5;
-        });
-
-        this.extraLivesDrops.forEach(el => { 
-            el.mesh.rotation.y += dt * 2; el.mesh.position.y = 10 + Math.sin(this.frameCount * 0.1) * 5;
-        });
+        for(let i = 0, len = this.extraLivesDrops.length; i < len; i++) {
+            let el = this.extraLivesDrops[i];
+            if(el.active) {
+                el.group.rotation.y += dt * 2; el.group.position.y = 10 + Math.sin(this.frameCount * 0.1) * 5;
+                if (MathUtils.distanceSq(this.player, el) < (this.player.radius + 20)**2) {
+                    this.lives++; el.destroy();
+                    this.getFloatingText().spawn(this.player.x, this.player.y, "VITA EXTRA!", '#ff66bb', 30, true);
+                }
+            }
+        }
 
         for (let i = 0; i < this.bloodDecals.length; i++) {
             let d = this.bloodDecals[i];
@@ -1547,26 +1577,30 @@ const Game = {
         this.uiCtx.clearRect(0, 0, this.width, this.height);
         
         const toScreenPosition = (x, y, z) => {
-            const vec = new THREE.Vector3(x, y, z); vec.project(this.camera);
-            vec.x = (vec.x * 0.5 + 0.5) * this.width; vec.y = -(vec.y * 0.5 - 0.5) * this.height;
-            return vec;
+            Game._vec3Screen.set(x, y, z);
+            Game._vec3Screen.project(this.camera);
+            Game._vec3Screen.x = (Game._vec3Screen.x * 0.5 + 0.5) * this.width;
+            Game._vec3Screen.y = -(Game._vec3Screen.y * 0.5 - 0.5) * this.height;
+            return Game._vec3Screen;
         };
 
         this.uiCtx.fillStyle = 'rgba(0,0,0,0.8)';
-        this.enemies.forEach(e => {
+        for(let i=0, len=this.enemies.length; i<len; i++) {
+            let e = this.enemies[i];
             if (e.stats.hp < e.stats.maxHp) {
                 let pos = toScreenPosition(e.x, e.radius + 35, e.y);
                 if(pos.z < 1) this.uiCtx.fillRect(pos.x - 16, pos.y-2, 32, 6);
             }
-        });
+        }
         
         this.uiCtx.fillStyle = '#ff0000';
-        this.enemies.forEach(e => {
+        for(let i=0, len=this.enemies.length; i<len; i++) {
+            let e = this.enemies[i];
             if (e.stats.hp < e.stats.maxHp) {
                 let pos = toScreenPosition(e.x, e.radius + 35, e.y);
                 if(pos.z < 1) this.uiCtx.fillRect(pos.x - 15, pos.y-1, 30 * (e.stats.hp / e.stats.maxHp), 4);
             }
-        });
+        }
 
         for (let i = 0; i < this.floatingTexts.length; i++) {
             let ft = this.floatingTexts[i];
@@ -1663,13 +1697,6 @@ class GameMap {
                     }
                 } else {
                     dummy.position.y = TILE_SIZE*0.75; dummy.updateMatrix(); wallMesh.setMatrixAt(wIdx++, dummy.matrix);
-                    if (Math.random() < 0.03 && this.isAdjacentToFloor(x,y)) { 
-                        if (!AppSettings.lowGraphics) { // Disable wall torches in low graphics
-                            let l = new THREE.PointLight(0xffaa00, 1.0, 200); l.position.set(x*TILE_SIZE, 40, y*TILE_SIZE);
-                            let f = new THREE.Mesh(new THREE.SphereGeometry(6, 4, 4), new THREE.MeshBasicMaterial({color: 0xffaa00, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending}));
-                            l.add(f); this.mapGroup.add(l);
-                        }
-                    }
                 }
             }
         }
@@ -1709,9 +1736,10 @@ class Entity {
         this.angle = 0; this.dead = false; this.mesh = new THREE.Group();
         this.stats = { hp: 100, maxHp: 100, minDmg: 5, maxDmg: 10 };
         this.flashTimer = 0;
+        this.flashMats = []; 
     }
     move(dx, dy, dt) {
-        let len = Math.hypot(dx, dy);
+        let len = Math.sqrt(dx*dx + dy*dy);
         if (len > 0) { dx /= len; dy /= len; }
         
         let totalDist = this.speed * dt;
@@ -1752,13 +1780,16 @@ class Entity {
         for(let i=0; i<pCount; i++) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteBlood, 'blood');
         
         this.flashTimer = 0.1;
-        this.mesh.children.forEach(c => { if(c.material && c.material.emissive) c.material.emissive.setHex(0x555555); });
+        for (let i = 0; i < this.flashMats.length; i++) this.flashMats[i].emissive.setHex(0x555555);
+
         if (this.stats.hp <= 0) { this.stats.hp = 0; this.dead = true; }
     }
     updateFlash(dt) {
         if (this.flashTimer > 0) {
             this.flashTimer -= dt;
-            if (this.flashTimer <= 0) this.mesh.children.forEach(c => { if(c.material && c.material.emissive) c.material.emissive.setHex(0x000000); });
+            if (this.flashTimer <= 0) {
+                for (let i = 0; i < this.flashMats.length; i++) this.flashMats[i].emissive.setHex(0x000000);
+            }
         }
     }
 }
@@ -1774,27 +1805,15 @@ class Player extends Entity {
         this.essence = null; this.essenceStacks = 0; this.essenceTimer = 0; this.overdrive = false;
         this.invincibilityTimer = 0;
         
-        // MODIFICATORI RELIQUIE
         this.modifiers = {
-            critChance: 0.05,
-            dmgMult: 1.0,
-            speedMult: 1.0,
-            atkSpeedMult: 1.0,
-            dashCooldownMult: 1.0,
-            vampirism: 0, 
-            fireTrail: false,
-            ascensionDurationAdd: 0,
-            dmgTakenMult: 1.0,
-            xpMult: 1.0,
-            healDropMult: 1.0,
-            executioner: false,
-            shieldActive: false,
-            shieldConsumed: false,
-            essenceDurationMult: 1.0,
-            critDmgMult: 1.0
+            critChance: 0.05, dmgMult: 1.0, speedMult: 1.0, atkSpeedMult: 1.0, dashCooldownMult: 1.0,
+            vampirism: 0, fireTrail: false, ascensionDurationAdd: 0, dmgTakenMult: 1.0,
+            xpMult: 1.0, healDropMult: 1.0, executioner: false, shieldActive: false,
+            shieldConsumed: false, essenceDurationMult: 1.0, critDmgMult: 1.0
         };
 
         this.initMesh();
+        this.mesh.traverse(c => { if(c.material && c.material.emissive) this.flashMats.push(c.material); });
     }
     initMesh() {
         const isHighQ = !AppSettings.lowGraphics;
@@ -1911,7 +1930,6 @@ class Player extends Entity {
             this.dashTimer -= dt;
             if (this.essence === 'red' && Game.frameCount % 8 === 0) Game.getHazard().spawn(this.x, this.y, 25, 3.0, this.stats.maxDmg * 0.5, 0xff3300, 'fire');
             
-            // Reliquia: Scia Infernale
             if (this.modifiers.fireTrail && Game.frameCount % 5 === 0) {
                 Game.getHazard().spawn(this.x, this.y, 20, 1.5, this.stats.maxDmg * 0.8, 0xffaa00, 'fire');
             }
@@ -1934,22 +1952,6 @@ class Player extends Entity {
             this.weaponGroup.rotation.x = -Math.PI/2 + this.attackSwing;
             if (this.attackSwing > Math.PI) { this.isAttacking = false; this.weaponGroup.rotation.x = 0; }
         }
-        
-        for (let i = Game.essences.length - 1; i >= 0; i--) {
-            let e = Game.essences[i];
-            if (MathUtils.distance(this, e) < this.radius + 20) {
-                this.collectEssence(e.type); e.dispose(); Game.essences.splice(i, 1);
-                Game.getFloatingText().spawn(this.x, this.y, "ASSORBITO", '#' + ESSENCE_COLORS[e.type].toString(16).padStart(6,'0'), 14);
-            }
-        }
-
-        for (let i = Game.extraLivesDrops.length - 1; i >= 0; i--) {
-            let el = Game.extraLivesDrops[i];
-            if (MathUtils.distance(this, el) < this.radius + 20) {
-                Game.lives++; el.dispose(); Game.extraLivesDrops.splice(i, 1);
-                Game.getFloatingText().spawn(this.x, this.y, "VITA EXTRA!", '#ff66bb', 30, true);
-            }
-        }
     }
 
     flamethrower(dt) {
@@ -1964,7 +1966,8 @@ class Player extends Entity {
 
         let flameRange = 280;
         let nearby = Game.enemyGrid.findNearby(this, flameRange);
-        nearby.forEach(e => {
+        for(let i=0, len=nearby.length; i<len; i++) {
+            let e = nearby[i];
             let ang = Math.atan2(e.y - this.y, e.x - this.x);
             let diff = Math.atan2(Math.sin(ang - this.angle), Math.cos(ang - this.angle));
             let dist = MathUtils.distance(this, e);
@@ -1972,16 +1975,15 @@ class Player extends Entity {
                 if (!e.flameHitTimer) e.flameHitTimer = 0;
                 e.flameHitTimer -= dt;
                 if (e.flameHitTimer <= 0) { 
-                    // Applico modificatore danno alle fiamme
                     let d = this.stats.maxDmg * 1.5 * this.modifiers.dmgMult;
-                    e.takeDamage(d, this, false); 
+                    e.takeDamage(d, this, false, true); 
                     e.flameHitTimer = 0.15; 
                     
                     e.x += Math.cos(this.angle) * 8;
                     e.y += Math.sin(this.angle) * 8;
                 }
             }
-        });
+        }
 
         if (!this.flamePoolTimer) this.flamePoolTimer = 0;
         this.flamePoolTimer -= dt;
@@ -2017,10 +2019,18 @@ class Player extends Entity {
 
         AudioEngine.playShoot(projType);
 
-        Game.getProjectile().spawn(this.x, this.y, this.angle, 1000, baseDmg, 'player', projType, piercing);
+        let p1 = Game.getProjectile();
+        p1.spawn(this.x, this.y, this.angle, 1000, baseDmg, 'player', projType, piercing);
+        p1.canInfect = true;
+
         if (this.overdrive && this.essence === 'green') {
-            Game.getProjectile().spawn(this.x, this.y, this.angle - 0.4, 800, baseDmg, 'player', 'homing_arrow');
-            Game.getProjectile().spawn(this.x, this.y, this.angle + 0.4, 800, baseDmg, 'player', 'homing_arrow');
+            let p2 = Game.getProjectile();
+            p2.spawn(this.x, this.y, this.angle - 0.4, 800, baseDmg, 'player', 'homing_arrow');
+            p2.canInfect = true;
+            
+            let p3 = Game.getProjectile();
+            p3.spawn(this.x, this.y, this.angle + 0.4, 800, baseDmg, 'player', 'homing_arrow');
+            p3.canInfect = true;
         }
     }
 
@@ -2036,19 +2046,20 @@ class Player extends Entity {
         if (this.essence === 'blue') {
             let dist = 250;
             let endX = this.x + Math.cos(this.dashAngle) * dist; let endY = this.y + Math.sin(this.dashAngle) * dist;
-            Game.enemies.forEach(e => {
+            for(let i=0, len=Game.enemies.length; i<len; i++) {
+                let e = Game.enemies[i];
                 let A = this.x - endX; let B = endY - this.y; let C = (endX*this.y) - (this.x*endY);
                 let d = Math.abs(A*e.y + B*e.x + C) / Math.sqrt(A*A + B*B);
                 if (d < e.radius + 20 && MathUtils.distance(this, e) < dist) {
                     let dmg = this.stats.maxDmg * 2.0 * this.modifiers.dmgMult;
-                    e.takeDamage(dmg, this, true); Game.hitStop = 0.1; 
+                    e.takeDamage(dmg, this, true, true); Game.hitStop = 0.1; 
                 }
-            });
+            }
             this.x = endX; this.y = endY; this.dashTimer = 0; this.isDashing = false;
         }
         
         if (this.essence === 'green') {
-            Game.decoys.push(new Decoy(this.x, this.y));
+            Game.getDecoy().spawn(this.x, this.y);
             Game.getHazard().spawn(this.x, this.y, 40, 3.0, this.stats.maxDmg * 0.5 * this.modifiers.dmgMult, 0x00ff00, 'poison');
         }
 
@@ -2060,7 +2071,6 @@ class Player extends Entity {
     takeDamage(amount, source) {
         if (this.invincibilityTimer > 0) return; 
         
-        // Meccanica Scudo Reliquia (Scudo Scheggiato)
         if (this.modifiers.shieldActive && !this.modifiers.shieldConsumed) {
             this.modifiers.shieldConsumed = true;
             Game.getFloatingText().spawn(this.x, this.y, "SCUDO!", '#3b82f6', 30, true);
@@ -2071,7 +2081,6 @@ class Player extends Entity {
 
         let wasDead = this.dead;
         
-        // Modificatori ai danni subiti
         amount *= this.modifiers.dmgTakenMult;
         if (Game.ultimateActive) amount *= 0.5;
         
@@ -2156,6 +2165,8 @@ class Enemy extends Entity {
         this.mesh.scale.set(size, size*2, size); this.mesh.position.set(x, size, y); 
         if(!isTouchDevice && !AppSettings.lowGraphics) this.mesh.castShadow = true;
         Game.scene.add(this.mesh);
+
+        this.mesh.traverse(c => { if(c.material && c.material.emissive) this.flashMats.push(c.material); });
     }
 
     update(dt) {
@@ -2164,17 +2175,20 @@ class Enemy extends Entity {
         
         if (this.slowedTimer > 0) {
             this.slowedTimer -= dt; this.speed = this.baseSpeed * 0.5; 
-            this.mesh.children.forEach(c => { if(c.material && c.material.emissive) c.material.emissive.setHex(0x004400); });
+            for (let i=0; i<this.flashMats.length; i++) this.flashMats[i].emissive.setHex(0x004400);
         } else { this.speed = this.baseSpeed; }
 
         if (this.infected && Game.frameCount % 10 === 0 && !isTouchDevice) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteGreen, 'trail');
 
         let target = Game.player;
-        if (Game.decoys.length > 0) {
-            let closestDecoy = null; let minDist = Infinity;
-            Game.decoys.forEach(d => { let dist = MathUtils.distanceSq(this, d); if(dist < minDist) { minDist = dist; closestDecoy = d; } });
-            if (Math.sqrt(minDist) < this.aggroRange) target = closestDecoy;
+        let closestDecoy = null; let minDist = Infinity;
+        for(let i=0, len=Game.decoys.length; i<len; i++) {
+            let d = Game.decoys[i];
+            if(!d.active) continue;
+            let dist = MathUtils.distanceSq(this, d); 
+            if(dist < minDist) { minDist = dist; closestDecoy = d; }
         }
+        if (closestDecoy && Math.sqrt(minDist) < this.aggroRange) target = closestDecoy;
 
         let distToTarget = MathUtils.distance(this, target);
         this.angle = Math.atan2(target.y - this.y, target.x - this.x);
@@ -2230,14 +2244,16 @@ class Enemy extends Entity {
         }
     }
 
-    takeDamage(amount, source, isCrit = false) {
-        // Reliquia Esecutore Spietato
+    takeDamage(amount, source, isCrit = false, canInfect = true) {
         if (source === Game.player && Game.player.modifiers.executioner && (this.stats.hp / this.stats.maxHp) < 0.3) {
             amount *= 1.5;
         }
 
         super.takeDamage(amount, source, isCrit);
-        if (Game.player.overdrive && Game.player.essence === 'green') this.infected = true;
+        
+        if (Game.player.overdrive && Game.player.essence === 'green' && canInfect) {
+            this.infected = true;
+        }
     }
     
     onDeath() {
@@ -2245,7 +2261,6 @@ class Enemy extends Entity {
         let pCount = AppSettings.lowGraphics ? 2 : (isTouchDevice ? 3 : 15);
         for(let i=0; i< pCount; i++) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteBlood, 'blood');
 
-        // Reliquia Vampirismo
         if (Game.player.modifiers.vampirism > 0 && Math.random() < Game.player.modifiers.vampirism) {
             Game.player.stats.hp = Math.min(Game.player.stats.maxHp, Game.player.stats.hp + 1);
             Game.getFloatingText().spawn(this.x, this.y, "+1 HP", '#ff0000', 16);
@@ -2266,16 +2281,20 @@ class Enemy extends Entity {
 
         if (this.infected) {
             Game.addTrauma(0.3);
-            for(let i=0; i<5; i++) Game.getProjectile().spawn(this.x, this.y, (Math.PI*2/5)*i, 600, Game.player.stats.maxDmg * 1.5 * Game.player.modifiers.dmgMult, 'player', 'homing_arrow');
+            for(let i=0; i<3; i++) { 
+                let p = Game.getProjectile();
+                p.spawn(this.x, this.y, (Math.PI*2/3)*i, 600, Game.player.stats.maxDmg * 2.5 * Game.player.modifiers.dmgMult, 'player', 'homing_arrow');
+                p.canInfect = false; 
+            }
             Game.getHazard().spawn(this.x, this.y, 40, 3.0, Game.player.stats.maxDmg * Game.player.modifiers.dmgMult, 0x00ff00, 'poison');
         }
 
         let lifeChance = 0.02 * Game.player.modifiers.healDropMult;
         if (Math.random() < lifeChance) { 
-            Game.extraLivesDrops.push(new ExtraLife(this.x, this.y));
+            Game.getExtraLife().spawn(this.x, this.y);
         } else if (Math.random() < 0.25 + (Game.combo * 0.005)) { 
             let types = ['red', 'blue', 'green'];
-            Game.essences.push(new Essence(this.x, this.y, types[Math.floor(Math.random() * types.length)]));
+            Game.getEssence().spawn(this.x, this.y, types[Math.floor(Math.random() * types.length)]);
         }
     }
 }
@@ -2301,16 +2320,6 @@ class BossEnemy extends Enemy {
         this.mesh.scale.set(this.radius, this.radius * 2, this.radius);
         this.mesh.position.y = this.radius;
         this.mat.color.setHex(0x550000); 
-        
-        this.light = new THREE.PointLight(0xff0000, 2.0, 400);
-        if (!AppSettings.lowGraphics) {
-            this.light.castShadow = true;
-            this.light.shadow.mapSize.width = 512;
-            this.light.shadow.mapSize.height = 512;
-            this.light.shadow.bias = -0.001;
-            this.mesh.castShadow = true;
-        }
-        this.mesh.add(this.light);
     }
 
     update(dt) {
@@ -2385,40 +2394,46 @@ class BossEnemy extends Enemy {
             let ex = this.x + MathUtils.randomRange(-60, 60);
             let ey = this.y + MathUtils.randomRange(-60, 60);
             if(!Game.map.isSolid(ex, ey)) {
-                Game.essences.push(new Essence(ex, ey, types[Math.floor(Math.random() * types.length)]));
+                Game.getEssence().spawn(ex, ey, types[Math.floor(Math.random() * types.length)]);
             }
         }
-        Game.extraLivesDrops.push(new ExtraLife(this.x, this.y));
+        Game.getExtraLife().spawn(this.x, this.y);
         
         Game.getFloatingText().spawn(this.x, this.y, "VITTORIA!", '#ffaa00', 80, true);
         Game.bossDefeatedTimer = 5.0;
 
-        Game.enemies.forEach(e => {
+        for(let i=0, len=Game.enemies.length; i<len; i++) {
+            let e = Game.enemies[i];
             if (!e.isBoss && !e.dead) {
-                e.takeDamage(99999, Game.player, false);
+                e.takeDamage(99999, Game.player, false, false);
             }
-        });
+        }
     }
 }
 
 class Projectile {
     constructor() {
         this.active = false;
+        this.group = new THREE.Group();
         this.mesh = new THREE.Mesh(SharedGeo.sphere, SharedMat.arrow);
-        this.light = new THREE.PointLight(0xffffff, 1, 100);
-        this.mesh.add(this.light);
-        this.mesh.visible = false;
+        
+        this.group.add(this.mesh);
+        this.group.visible = false;
         this.hitEnemies = new Set();
-        Game.scene.add(this.mesh);
+        this.updateOffset = Math.floor(Math.random() * 15);
+        Game.scene.add(this.group);
     }
 
     spawn(x, y, angle, speed, damage, owner, type, piercing=false) {
-        this.active = true; this.mesh.visible = true;
+        this.active = true; this.group.visible = true;
         this.x = x; this.y = y; this.angle = angle;
         this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
         this.damage = damage; this.owner = owner; this.type = type; this.piercing = piercing;
         this.bounceCount = (type === 'chain_lightning') ? 2 : 0;
         this.hitEnemies.clear(); this.life = 2;
+        
+        this.target = null;
+        this.canInfect = true;
         
         this.radius = 6; let mat = SharedMat.arrow; let geo = SharedGeo.sphere;
 
@@ -2430,36 +2445,34 @@ class Projectile {
         if (type === 'enemy_bolt') { mat = SharedMat.enemyBolt; this.radius = 16; }
         if (type === 'fire_shape') { mat = SharedMat.fireShape; this.radius = 20; geo = SharedGeo.icosahedron; }
         
-        this.mesh.geometry = geo; this.mesh.material = mat; this.mesh.position.set(x, 15, y);
+        this.mesh.geometry = geo; this.mesh.material = mat; this.group.position.set(x, 15, y);
         
         if (type === 'arrow' || type === 'homing_arrow') { 
             this.mesh.scale.set(2, 20, 2); this.mesh.rotation.z = Math.PI/2; this.mesh.rotation.y = -angle; this.mesh.rotation.x = 0;
-        } else { this.mesh.scale.setScalar(this.radius); this.mesh.rotation.set(0,0,0); }
-        
-        let hasLight = (type === 'enemy_fireball' || type === 'fire_shape' || type === 'explosive_arrow');
-        if (hasLight && !AppSettings.lowGraphics) {
-            let activeLights = 0;
-            for(let i=0; i<Game.projectiles.length; i++) {
-                if(Game.projectiles[i].active && Game.projectiles[i].light.visible) activeLights++;
-            }
-            if (activeLights < 8) { 
-                this.light.visible = true; this.light.color = mat.color;
-                this.light.intensity = (type === 'enemy_fireball' || type === 'fire_shape') ? 4 : 2;
-                this.light.distance = (type === 'enemy_fireball' || type === 'fire_shape') ? 500 : 300;
-            } else { this.light.visible = false; }
-        } else { this.light.visible = false; }
+        } else { 
+            this.mesh.scale.setScalar(this.radius); this.mesh.rotation.set(0,0,0); 
+        }
     }
 
     update(dt) {
+        if (!this.active) return;
+        
         if (this.type === 'homing_arrow') {
-            let nearby = Game.enemyGrid.findNearby(this, 400);
-            let closest = null; let minDist = 400*400;
-            for(let i=0; i<nearby.length; i++) {
-                let e = nearby[i];
-                if(!this.hitEnemies.has(e.id) && !e.dead) { let d = MathUtils.distanceSq(this, e); if(d < minDist) { minDist = d; closest = e; } }
+            if (!this.target || this.target.dead || (Game.frameCount + this.updateOffset) % 15 === 0) {
+                let closest = null; let minDist = 400*400;
+                for(let i=0, len=Game.enemies.length; i<len; i++) {
+                    let e = Game.enemies[i];
+                    if(!this.hitEnemies.has(e.id) && !e.dead) { 
+                        let dx = e.x - this.x; let dy = e.y - this.y;
+                        let dSq = dx*dx + dy*dy;
+                        if(dSq < minDist) { minDist = dSq; closest = e; } 
+                    }
+                }
+                this.target = closest;
             }
-            if (closest) {
-                let targetAngle = Math.atan2(closest.y - this.y, closest.x - this.x);
+            
+            if (this.target && !this.target.dead) {
+                let targetAngle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
                 let diff = targetAngle - this.angle;
                 while (diff < -Math.PI) diff += Math.PI * 2;
                 while (diff > Math.PI) diff -= Math.PI * 2;
@@ -2471,7 +2484,7 @@ class Projectile {
         }
 
         this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt;
-        this.mesh.position.set(this.x, 15, this.y);
+        this.group.position.set(this.x, 15, this.y);
 
         if (this.type === 'fire_shape') { this.mesh.rotation.x += dt * 5; this.mesh.rotation.y += dt * 5; }
 
@@ -2479,12 +2492,12 @@ class Projectile {
         
         if (this.owner === 'player') {
             let nearby = Game.enemyGrid.findNearby(this, this.radius + 30);
-            for(let i=0; i<nearby.length; i++) {
+            for(let i=0, len=nearby.length; i<len; i++) {
                 let e = nearby[i];
                 if (!this.active) return;
                 if (!this.hitEnemies.has(e.id) && MathUtils.distanceSq(this, e) < (this.radius + e.radius)**2) {
                     let critMod = Game.player.modifiers.critChance + Math.min(Game.combo*0.005, 0.5);
-                    e.takeDamage(this.damage, Game.player, Math.random() < critMod); 
+                    e.takeDamage(this.damage, Game.player, Math.random() < critMod, this.canInfect); 
                     if(this.type === 'homing_arrow') e.slowedTimer = 2.0;
                     this.handleHit(e);
                 }
@@ -2497,7 +2510,13 @@ class Projectile {
         }
         if (this.life <= 0) this.destroy();
         
-        if(this.active && this.type !== 'arrow' && Game.frameCount % (isTouchDevice?6:3) === 0) Game.getParticle().spawn(this.x, 15, this.y, this.mesh.material, 'trail');
+        if(this.active && this.type !== 'arrow' && (Game.frameCount + this.updateOffset) % (isTouchDevice?6:3) === 0) {
+            let pMat = SharedMat.spriteWhite;
+            if (this.type === 'explosive_arrow' || this.type === 'enemy_fireball' || this.type === 'fire_shape') pMat = SharedMat.spriteRed;
+            if (this.type === 'chain_lightning' || this.type === 'enemy_bolt') pMat = SharedMat.spriteBlue;
+            if (this.type === 'homing_arrow') pMat = SharedMat.spriteGreen;
+            Game.getParticle().spawn(this.x, 15, this.y, pMat, 'trail');
+        }
     }
 
     handleHit(target) {
@@ -2506,7 +2525,7 @@ class Projectile {
             this.bounceCount--;
             let nearby = Game.enemyGrid.findNearby(this, 300);
             let closest = null; let minDist = 300*300;
-            for(let i=0; i<nearby.length; i++) {
+            for(let i=0, len=nearby.length; i<len; i++) {
                 let e = nearby[i];
                 if(!this.hitEnemies.has(e.id) && !e.dead) { let d = MathUtils.distanceSq(this, e); if(d < minDist) { minDist = d; closest = e; } }
             }
@@ -2522,7 +2541,7 @@ class Projectile {
     }
 
     destroy() {
-        this.active = false; this.mesh.visible = false;
+        this.active = false; this.group.visible = false;
         
         let pMat = SharedMat.spriteWhite;
         if (this.type === 'explosive_arrow' || this.type === 'enemy_fireball' || this.type === 'fire_shape') pMat = SharedMat.spriteRed;
@@ -2537,10 +2556,9 @@ class Projectile {
         if (this.type === 'explosive_arrow') {
             Game.addTrauma(0.3);
             let nearby = Game.enemyGrid.findNearby(this, 120);
-            for(let i=0; i<nearby.length; i++) {
+            for(let i=0, len=nearby.length; i<len; i++) {
                 let e = nearby[i];
-                // Danni inflitti dall'esplosione contano come Player
-                if (!e.dead && MathUtils.distanceSq(this, e) < 120*120) e.takeDamage(this.damage * 1.5, Game.player, false); 
+                if (!e.dead && MathUtils.distanceSq(this, e) < 120*120) e.takeDamage(this.damage * 1.5, Game.player, false, false); 
             }
         }
     }
@@ -2599,19 +2617,22 @@ class FloatingText {
 }
 
 function clearScene() {
-    Game.scene.remove(Game.map.mapGroup);
-    Game.enemies.forEach(e => { e.mat.dispose(); Game.scene.remove(e.mesh); });
+    if (Game.map) Game.scene.remove(Game.map.mapGroup);
     
-    // Disattiva gli elementi dal pool invece di rimuoverli
-    Game.projectiles.forEach(p => { p.active = false; p.mesh.visible = false; });
-    Game.hazards.forEach(h => { h.active = false; h.mesh.visible = false; });
-    Game.particles.forEach(p => { p.active = false; p.mesh.visible = false; });
-    Game.floatingTexts.forEach(f => { f.active = false; });
-    Game.bloodDecals.forEach(b => { b.visible = false; b.userData.active = false; });
+    for(let i=0, len=Game.enemies.length; i<len; i++) {
+        Game.enemies[i].mat.dispose(); Game.scene.remove(Game.enemies[i].mesh);
+    }
+    
+    for(let i=0, len=Game.projectiles.length; i<len; i++) { Game.projectiles[i].active = false; Game.projectiles[i].group.visible = false; }
+    for(let i=0, len=Game.hazards.length; i<len; i++) { Game.hazards[i].active = false; Game.hazards[i].group.visible = false; }
+    for(let i=0, len=Game.particles.length; i<len; i++) { Game.particles[i].active = false; Game.particles[i].mesh.visible = false; }
+    for(let i=0, len=Game.floatingTexts.length; i<len; i++) { Game.floatingTexts[i].active = false; }
+    for(let i=0, len=Game.bloodDecals.length; i<len; i++) { Game.bloodDecals[i].visible = false; Game.bloodDecals[i].userData.active = false; }
 
-    Game.decoys.forEach(d => { d.mat.dispose(); Game.scene.remove(d.mesh); });
-    Game.essences.forEach(e => { e.dispose(); });
-    Game.extraLivesDrops.forEach(el => { el.dispose(); });
+    for(let i=0, len=Game.decoys.length; i<len; i++) { Game.decoys[i].destroy(); }
+    for(let i=0, len=Game.essences.length; i<len; i++) { Game.essences[i].destroy(); }
+    for(let i=0, len=Game.extraLivesDrops.length; i<len; i++) { Game.extraLivesDrops[i].destroy(); }
+    
     if(Game.player) Game.scene.remove(Game.player.mesh);
 }
 
@@ -2622,7 +2643,8 @@ function respawnPlayer() {
     let attempts = 0;
     while(attempts < 100) {
         let isSafe = true;
-        for(let e of Game.enemies) {
+        for(let i=0, len=Game.enemies.length; i<len; i++) {
+            let e = Game.enemies[i];
             if(!e.dead && MathUtils.distanceSq({x: pos.x*TILE_SIZE, y: pos.y*TILE_SIZE}, e) < (TILE_SIZE*10)**2) {
                 isSafe = false; break;
             }
@@ -2665,7 +2687,7 @@ function restartGame() {
     document.getElementById('deathScreen').classList.add('hidden');
     clearScene(); Game.state = 'PLAYING'; 
     Game.floor = 1; Game.totalKills = 0; Game.lives = 3; Game.playTime = 0;
-    Game.enemies = []; Game.decoys = []; Game.essences = []; Game.extraLivesDrops = [];
+    Game.enemies = []; 
     Game.ultimateCharge = 0; Game.ultimateActive = false;
     if(Game.player) { Game.scene.remove(Game.player.mesh); Game.player = null; }
     Game.setupFloor();
@@ -2675,8 +2697,6 @@ function nextFloor() {
     AudioEngine.playDescendSound();
     document.getElementById('floorScreen').classList.add('hidden');
     clearScene(); Game.state = 'PLAYING'; Game.floor++;
-    Game.decoys = []; Game.essences = []; Game.extraLivesDrops = [];
-    // Curiamo il player solo in parte al cambio piano, per rendere le cure delle reliquie importanti
     Game.player.stats.hp = Math.min(Game.player.stats.maxHp, Game.player.stats.hp + 20); 
     Game.setupFloor();
     if (!Game.isBossFloor) {
