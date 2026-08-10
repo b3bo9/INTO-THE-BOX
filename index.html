@@ -2,24 +2,31 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
     <title>Into the Box - Definitive</title>
-    
-    <!-- CSS Locali -->
-    <link rel="stylesheet" href="css/all.min.css">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="css/all.min.css">
     <link rel="stylesheet" href="css/fonts.css">
-    
-    <!-- Script Locali (NO CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="js/tailwindcss.js"></script>
-    <script src="js/three.min.js"></script>
-    <script src="js/EffectComposer.js"></script>
-    <script src="js/Pass.js"></script>
-    <script src="js/RenderPass.js"></script>
-    <script src="js/CopyShader.js"></script>
-    <script src="js/LuminosityHighPassShader.js"></script>
-    <script src="js/ShaderPass.js"></script>
-    <script src="js/UnrealBloomPass.js"></script>
-    <script src="js/BufferGeometryUtils.js"></script>
+<script src="js/three.min.js"></script>
+<script src="js/EffectComposer.js"></script>
+<script src="js/Pass.js"></script>
+<script src="js/RenderPass.js"></script>
+<script src="js/CopyShader.js"></script>
+<script src="js/LuminosityHighPassShader.js"></script>
+<script src="js/ShaderPass.js"></script>
+<script src="js/UnrealBloomPass.js"></script>
+<script src="js/BufferGeometryUtils.js"></script>
+    <!-- RIGA AGGIUNTA: Pass.js è obbligatorio per far funzionare RenderPass e ShaderPass -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/Pass.js"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/16/Stats.min.js"></script>
 
     <style>
     @keyframes gold-pulse {
@@ -68,8 +75,9 @@
 
         /* I Pannelli Menu: Squadrati, ma leggermente più trasparenti di prima */
         .glass-panel {
-            background: rgba(10, 10, 14, 0.95) !important;
-        
+            background: rgba(10, 10, 14, 0.85) !important; 
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
             border: 2px solid #333 !important;
             border-radius: 0 !important; 
             box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.6) !important;
@@ -84,7 +92,8 @@
                 linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px) !important;
             background-size: 6px 6px !important;
-        
+            backdrop-filter: blur(3px) !important;
+            -webkit-backdrop-filter: blur(3px) !important;
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
             border-radius: 0 !important;
             box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.4) !important;
@@ -307,17 +316,22 @@
         }
         .anim-reforge { animation: reforge-magic 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; }
         /* --- OTTIMIZZAZIONE PRESTAZIONI (Modalità Low) --- */
+        body.low-spec .glass-panel,
+        body.low-spec .hud-panel,
         body.low-spec .backdrop-blur-xl,
         body.low-spec .backdrop-blur-md,
-        body.low-spec .backdrop-blur-sm {
+        body.low-spec .backdrop-blur-sm,
+        body.low-spec #btn-dash,
+        body.low-spec #btn-shield,
+        body.low-spec #btn-ult {
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
-            background-color: rgba(10, 10, 15, 0.95) !important; /* Vetro spento, diventa solido e scurissimo */
+            background-color: rgba(8, 8, 12, 0.98) !important; 
         }
-        
+
         body.low-spec [class*="drop-shadow"] {
-            filter: none !important; /* Spegne tutte le ombre complesse SVG e testi */
-            text-shadow: 2px 2px 0px #000 !important; /* Rimpiazza con un'ombra piatta 2D leggerissima */
+            filter: none !important; 
+            text-shadow: 2px 2px 0px #000 !important; 
         }
         /* --- OVERRIDE DALTONISMO UI --- */
 body.colorblind-mode .stack-dot.active.red { 
@@ -368,6 +382,63 @@ body.colorblind-mode #opt-colorblind-text {
             50% { opacity: 0.3; text-shadow: none; }
         }
         .anim-arcade-blink { animation: arcade-blink 1.5s step-end infinite; }
+ @keyframes arcade-blink {
+            0%, 100% { opacity: 1; text-shadow: 0 0 8px rgba(255,255,255,0.6); }
+            50% { opacity: 0.3; text-shadow: none; }
+        }
+        .anim-arcade-blink { animation: arcade-blink 1.5s step-end infinite; }
+
+        /* --- OTTIMIZZAZIONE ESTREMA ANDROID/MOBILE: SPEGNE IL GLASSMORPHISM --- */
+        @media (hover: none) and (pointer: coarse) {
+            /* Spegne il blur sui pannelli CSS custom e sulle classi Tailwind */
+            .glass-panel, 
+            .hud-panel, 
+            .backdrop-blur-sm, 
+            .backdrop-blur-md, 
+            .backdrop-blur-lg, 
+            .backdrop-blur-xl {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                background-color: rgba(10, 10, 15, 0.98) !important; 
+            }
+
+            /* Target specifico per i bottoni rotondi dell'HUD in-game (Dash, Scudo, Ulti) */
+            #btn-dash, #btn-shield, #btn-ult {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                background-color: rgba(15, 15, 20, 0.95) !important;
+            }
+/* --- FIX JOYSTICK: Look 3D Arcade a costo zero per la GPU --- */
+            
+            /* Zona esterna Sinistra (Movimento) */
+            #joy-left-zone {
+                background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.4) 100%) !important;
+                border: 2px solid rgba(255,255,255,0.15) !important;
+            }
+            /* Levetta Sinistra (Palla 3D) */
+            #joy-left-stick {
+                background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.7) 0%, rgba(100,100,100,0.6) 80%, rgba(0,0,0,0.8) 100%) !important;
+                border: 1px solid rgba(255,255,255,0.4) !important;
+                box-shadow: inset -3px -3px 8px rgba(0,0,0,0.6), 0 5px 15px rgba(0,0,0,0.5) !important;
+            }
+
+            /* Zona esterna Destra (Mira/Fuoco) */
+            #joy-right-zone {
+                background: radial-gradient(circle, rgba(255,50,50,0.05) 0%, rgba(50,0,0,0.5) 100%) !important;
+                border: 2px solid rgba(255,50,50,0.2) !important;
+            }
+            /* Levetta Destra (Palla 3D Rossa) */
+            #joy-right-stick {
+                background: radial-gradient(circle at 35% 35%, rgba(255,100,100,0.8) 0%, rgba(180,0,0,0.7) 80%, rgba(50,0,0,0.9) 100%) !important;
+                border: 1px solid rgba(255,100,100,0.5) !important;
+                box-shadow: inset -3px -3px 8px rgba(0,0,0,0.6), 0 5px 15px rgba(200,0,0,0.4) !important;
+            }
+            
+            /* Disabilita i bagliori complessi sotto ai testi che causano overdraw */
+            .drop-shadow-md, .drop-shadow-lg {
+                filter: none !important;
+            }
+        }
     </style>
 </head>
 <body class="text-white selection:bg-red-900">
@@ -4057,12 +4128,7 @@ getEnemy() {
         // FIX LUMINOSITÀ: Rimuoviamo ACESFilmic per un look "arcade" più vibrante e luminoso
         this.renderer.toneMapping = THREE.NoToneMapping;
         this.renderer.shadowMap.enabled = AppSettings.shadowsEnabled; 
-// Usa BasicShadowMap per massimizzare le prestazioni su mobile
-this.renderer.shadowMap.type = isTouchDevice ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
-
-// Nella configurazione di this.dirLight:
-this.dirLight.shadow.mapSize.width = isTouchDevice ? 256 : 1024; 
-this.dirLight.shadow.mapSize.height = isTouchDevice ? 256 : 1024;
+this.renderer.shadowMap.type = isTouchDevice ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
         container.appendChild(this.renderer.domElement);
         
         // Luce globale quasi inesistente (notte fonda), esalta la luce del giocatore
@@ -12275,27 +12341,14 @@ history.pushState(null, null, document.URL);
         if(shieldBtn) shieldBtn.innerText = "Shift";
     }
     
-const handleInit = (e) => {
-        // Blocca ghost-clicks (il telefono che fa scattare sia touch che click insieme)
-        if (e && e.cancelable) e.preventDefault();
-        
-        // Failsafe: Se l'audio di Android fa i capricci, il gioco parte comunque!
-        try {
-            AudioEngine.init(); 
-            if (AudioEngine.ctx && AudioEngine.ctx.state === 'suspended' && (!AudioEngine.musicMuted || !AudioEngine.sfxMuted)) { 
-                AudioEngine.ctx.resume(); 
-            }
-        } catch (err) {
-            console.warn("Audio non supportato o bloccato dal dispositivo", err);
+   const handleInit = () => {
+        AudioEngine.init(); 
+        if (AudioEngine.ctx && AudioEngine.ctx.state === 'suspended' && (!AudioEngine.musicMuted || !AudioEngine.sfxMuted)) { 
+            AudioEngine.ctx.resume(); 
         }
-        
-        initScreen.classList.add('hidden'); 
+        initScreen.classList.add('hidden'); 
         mainMenu.classList.remove('hidden');
-    };
-    
-    // SU MOBILE: Mettiamo in ascolto il "touchstart" per una reattività istantanea
-    initScreen.addEventListener('touchstart', handleInit, {passive: false});
-    // SU PC: Manteniamo il click
+    };
     initScreen.addEventListener('click', handleInit);
 };
 </script>
