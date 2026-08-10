@@ -4064,7 +4064,12 @@ getEnemy() {
         // FIX LUMINOSITÀ: Rimuoviamo ACESFilmic per un look "arcade" più vibrante e luminoso
         this.renderer.toneMapping = THREE.NoToneMapping;
         this.renderer.shadowMap.enabled = AppSettings.shadowsEnabled; 
-this.renderer.shadowMap.type = isTouchDevice ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+// Usa BasicShadowMap per massimizzare le prestazioni su mobile
+this.renderer.shadowMap.type = isTouchDevice ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
+
+// Nella configurazione di this.dirLight:
+this.dirLight.shadow.mapSize.width = isTouchDevice ? 256 : 1024; 
+this.dirLight.shadow.mapSize.height = isTouchDevice ? 256 : 1024;
         container.appendChild(this.renderer.domElement);
         
         // Luce globale quasi inesistente (notte fonda), esalta la luce del giocatore
