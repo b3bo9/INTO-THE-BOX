@@ -2,31 +2,24 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
     <title>Into the Box - Definitive</title>
-   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="css/all.min.css">
+    
+    <!-- CSS Locali -->
+    <link rel="stylesheet" href="css/all.min.css">
     <link rel="stylesheet" href="css/fonts.css">
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Script Locali (NO CDN) -->
     <script src="js/tailwindcss.js"></script>
-<script src="js/three.min.js"></script>
-<script src="js/EffectComposer.js"></script>
-<script src="js/Pass.js"></script>
-<script src="js/RenderPass.js"></script>
-<script src="js/CopyShader.js"></script>
-<script src="js/LuminosityHighPassShader.js"></script>
-<script src="js/ShaderPass.js"></script>
-<script src="js/UnrealBloomPass.js"></script>
-<script src="js/BufferGeometryUtils.js"></script>
-    <!-- RIGA AGGIUNTA: Pass.js è obbligatorio per far funzionare RenderPass e ShaderPass -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/Pass.js"></script> 
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/16/Stats.min.js"></script>
+    <script src="js/three.min.js"></script>
+    <script src="js/EffectComposer.js"></script>
+    <script src="js/Pass.js"></script>
+    <script src="js/RenderPass.js"></script>
+    <script src="js/CopyShader.js"></script>
+    <script src="js/LuminosityHighPassShader.js"></script>
+    <script src="js/ShaderPass.js"></script>
+    <script src="js/UnrealBloomPass.js"></script>
+    <script src="js/BufferGeometryUtils.js"></script>
 
     <style>
     @keyframes gold-pulse {
@@ -12282,14 +12275,27 @@ history.pushState(null, null, document.URL);
         if(shieldBtn) shieldBtn.innerText = "Shift";
     }
     
-   const handleInit = () => {
-        AudioEngine.init(); 
-        if (AudioEngine.ctx && AudioEngine.ctx.state === 'suspended' && (!AudioEngine.musicMuted || !AudioEngine.sfxMuted)) { 
-            AudioEngine.ctx.resume(); 
+const handleInit = (e) => {
+        // Blocca ghost-clicks (il telefono che fa scattare sia touch che click insieme)
+        if (e && e.cancelable) e.preventDefault();
+        
+        // Failsafe: Se l'audio di Android fa i capricci, il gioco parte comunque!
+        try {
+            AudioEngine.init(); 
+            if (AudioEngine.ctx && AudioEngine.ctx.state === 'suspended' && (!AudioEngine.musicMuted || !AudioEngine.sfxMuted)) { 
+                AudioEngine.ctx.resume(); 
+            }
+        } catch (err) {
+            console.warn("Audio non supportato o bloccato dal dispositivo", err);
         }
-        initScreen.classList.add('hidden'); 
+        
+        initScreen.classList.add('hidden'); 
         mainMenu.classList.remove('hidden');
-    };
+    };
+    
+    // SU MOBILE: Mettiamo in ascolto il "touchstart" per una reattività istantanea
+    initScreen.addEventListener('touchstart', handleInit, {passive: false});
+    // SU PC: Manteniamo il click
     initScreen.addEventListener('click', handleInit);
 };
 </script>
