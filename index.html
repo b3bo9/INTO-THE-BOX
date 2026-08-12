@@ -7024,11 +7024,16 @@ class GameMap {
             metalness: 0.05
         });
 
-        const meshPitBorders = new THREE.InstancedMesh(window.GLOBAL_PIT_BORDER_GEO, borderMat, pitFloorCount * 12);
+        // Raddoppiamo lo spazio in memoria (da 12 a 24) per coprire gli spigoli estremi
+        const meshPitBorders = new THREE.InstancedMesh(window.GLOBAL_PIT_BORDER_GEO, borderMat, pitFloorCount * 24);
         meshPitBorders.receiveShadow = true;
         meshPitBorders.castShadow = AppSettings.shadowsEnabled;
+        // Allochiamo la memoria per colorare singolarmente ogni sasso!
+        meshPitBorders.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(pitFloorCount * 24 * 3), 3);
         this.mapGroup.add(meshPitBorders);
         let pBorderIdx = 0;
+        
+        if (!Game._pitColorDummy) Game._pitColorDummy = new THREE.Color();
 
       // --- PREPARAZIONE VERI OBELISCHI ---
         if (!window.GLOBAL_OBELISK_GEO) window.GLOBAL_OBELISK_GEO = createObeliskGeometry();
@@ -7283,48 +7288,47 @@ class GameMap {
                         dummy.updateMatrix();
                         meshPitWalls.setMatrixAt(pWallIdx++, dummy.matrix);
 
-                        // --- EDGE MASKING: SCAGLIE E LASTRE SUI BORDI ---
+                       // --- EDGE MASKING: SCAGLIE E LASTRE SUI BORDI ---
                         let edgeOffsets = [];
                         let half = TILE_SIZE / 2; // 32
+                        let corner = 32; // Estremi assoluti del tile
 
-                        // Aggiungiamo 3 sassi per lato invece di 2, creando un bordo più continuo ma sottile
+                        // Usiamo 4 sassi per lato e li piazziamo fino ai bordi assoluti (-32 e +32) per tappare i buchi negli spigoli!
                         if (x > 0 && this.grid[x-1][y] === 2) {
-                            edgeOffsets.push({x: -half, z: -16}, {x: -half, z: 0}, {x: -half, z: 16});
+                            edgeOffsets.push({x: -half, z: -corner}, {x: -half, z: -11}, {x: -half, z: 11}, {x: -half, z: corner});
                         }
                         if (x < this.width-1 && this.grid[x+1][y] === 2) {
-                            edgeOffsets.push({x: half, z: -16}, {x: half, z: 0}, {x: half, z: 16});
+                            edgeOffsets.push({x: half, z: -corner}, {x: half, z: -11}, {x: half, z: 11}, {x: half, z: corner});
                         }
                         if (y > 0 && this.grid[x][y-1] === 2) {
-                            edgeOffsets.push({x: -16, z: -half}, {x: 0, z: -half}, {x: 16, z: -half});
+                            edgeOffsets.push({x: -corner, z: -half}, {x: -11, z: -half}, {x: 11, z: -half}, {x: corner, z: -half});
                         }
                         if (y < this.height-1 && this.grid[x][y+1] === 2) {
-                            edgeOffsets.push({x: -16, z: half}, {x: 0, z: half}, {x: 16, z: half});
+                            edgeOffsets.push({x: -corner, z: half}, {x: -11, z: half}, {x: 11, z: half}, {x: corner, z: half});
                         }
 
                         for (let k = 0; k < edgeOffsets.length; k++) {
                             let off = edgeOffsets[k];
                             
-                            // Creiamo uno sbalzo (Overhang): le rocce "sporgono" leggermente verso il buco
+                            // Creiamo uno sbalzo (Overhang): le rocce "sporgono" verso il buco centrale
                             let overhangX = (off.x !== 0 ? (off.x > 0 ? 5 : -5) : 0);
                             let overhangZ = (off.z !== 0 ? (off.z > 0 ? 5 : -5) : 0);
                             
                             dummy.position.set(
                                 px + off.x - overhangX + MathUtils.randomRange(-3, 3), 
-                                MathUtils.randomRange(-8, 3), // Variazione di altezza molto più drastica (radici/rocce)
+                                MathUtils.randomRange(-8, 3), // Variazione di altezza caotica
                                 pz + off.z - overhangZ + MathUtils.randomRange(-3, 3)
                             );
                             
-                            // Resi leggermente più grandi
                             let rScale = MathUtils.randomRange(0.6, 1.1);
                             
-                            // Niente più lastroni piatti: ora sono massicci per formare un muro franante
+                            // Forme massicce e organiche
                             dummy.scale.set(
-                                rScale * MathUtils.randomRange(0.8, 1.4), // Larghezza
-                                rScale * MathUtils.randomRange(0.8, 1.8), // ALTEZZA massiccia
-                                rScale * MathUtils.randomRange(0.8, 1.4)  // Profondità
+                                rScale * MathUtils.randomRange(0.8, 1.4), 
+                                rScale * MathUtils.randomRange(0.8, 1.8), 
+                                rScale * MathUtils.randomRange(0.8, 1.4)  
                             );
                             
-                            // Rotazione caotica su tutti gli assi
                             dummy.rotation.set(
                                 Math.random() * Math.PI, 
                                 Math.random() * Math.PI, 
@@ -7332,7 +7336,15 @@ class GameMap {
                             );
                             
                             dummy.updateMatrix();
-                            meshPitBorders.setMatrixAt(pBorderIdx++, dummy.matrix);
+                            meshPitBorders.setMatrixAt(pBorderIdx, dummy.matrix);
+                            
+                            // VARIAZIONE COLORE: Rende le rocce molto più realistiche e individuali
+                            Game._pitColorDummy.copy(borderColor);
+                            let lightOffset = MathUtils.randomRange(-0.12, 0.12); // Variazione casuale +/- 12%
+                            Game._pitColorDummy.offsetHSL(0, 0, lightOffset); 
+                            meshPitBorders.setColorAt(pBorderIdx, Game._pitColorDummy);
+                            
+                            pBorderIdx++;
                         }
                     } else {
                         // Confine Interno Conficcato: DISEGNA I VERI MURI INTERNI
@@ -7439,6 +7451,7 @@ Game.auras.push({
         interactiveGrassMesh.count = idxInteractiveGrass;
         meshDebris.count = idxDebris;
         meshPitBorders.count = pBorderIdx; 
+        if (pBorderIdx > 0) meshPitBorders.instanceColor.needsUpdate = true; // Spinge le variazioni di colore alla GPU
         meshPitWalls.count = pWallIdx; // Assicura che le pareti interne non creino glitch
         meshDebris.instanceMatrix.needsUpdate = true;
        meshTrees.count = idxTree; 
