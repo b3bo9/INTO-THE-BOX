@@ -7001,28 +7001,69 @@ class GameMap {
         meshDepthShadows.renderOrder = 3; // MODIFICA: Si disegna sempre per ultima, sopra a tutti i liquidi
         this.mapGroup.add(meshDepthShadows);
 
-        // --- PREPARAZIONE ROCCE ORGANICHE PER I BORDI DELLA FOSSA ---
-        if (!window.GLOBAL_PIT_BORDER_GEO) window.GLOBAL_PIT_BORDER_GEO = new THREE.DodecahedronGeometry(14, 1);
-        
-        // MODIFICA: Aggiungiamo un colore emissivo di base dipendente dal tema per evitare 
-        // che nella Foresta (dove la luce ambientale è bassissima) i sassi diventino troppo scuri.
-        let borderEmissive = 0x000000;
-        if (Game.currentThemeIndex === 0) borderEmissive = 0x0c1a12; // Foresta: bagliore verde scurissimo
-        else if (Game.currentThemeIndex === 1) borderEmissive = 0x220505; // Lava: bagliore rossastro
-        else if (Game.currentThemeIndex === 2) borderEmissive = 0x050a15; // Ghiaccio: bagliore bluastro
+       } else if (this.grid[x][y] === 5) {
+                        let px = x * TILE_SIZE + TILE_SIZE / 2;
+                        let pz = y * TILE_SIZE + TILE_SIZE / 2;
 
-        // FIX LUCCICHII e COLORI: Creiamo un materiale "Lambert" che prende texture e colore del pavimento.
-        const borderMat = new THREE.MeshLambertMaterial({
-            color: activeMats.dirt.color,
-            map: activeMats.dirt.map,
-            emissive: borderEmissive // Schiarisce le zone in ombra
-        });
+                        // MURO SPROFONDATO (Pareti della voragine scura)
+                        dummy.position.set(px, -66, pz);
+                        dummy.scale.set(1, 1, 1);
+                        dummy.rotation.set(0, 0, 0);
+                        dummy.updateMatrix();
+                        meshPitWalls.setMatrixAt(pWallIdx++, dummy.matrix);
 
-        const meshPitBorders = new THREE.InstancedMesh(window.GLOBAL_PIT_BORDER_GEO, borderMat, pitFloorCount * 12);
-        meshPitBorders.receiveShadow = true;
-        meshPitBorders.castShadow = AppSettings.shadowsEnabled;
-        this.mapGroup.add(meshPitBorders);
-        let pBorderIdx = 0;
+                        // --- EDGE MASKING: SCAGLIE E LASTRE SUI BORDI ---
+                        let edgeOffsets = [];
+                        let half = TILE_SIZE / 2; // 32
+
+                        // Aggiungiamo 3 sassi per lato invece di 2, creando un bordo più continuo ma sottile
+                        if (x > 0 && this.grid[x-1][y] === 2) {
+                            edgeOffsets.push({x: -half, z: -16}, {x: -half, z: 0}, {x: -half, z: 16});
+                        }
+                        if (x < this.width-1 && this.grid[x+1][y] === 2) {
+                            edgeOffsets.push({x: half, z: -16}, {x: half, z: 0}, {x: half, z: 16});
+                        }
+                        if (y > 0 && this.grid[x][y-1] === 2) {
+                            edgeOffsets.push({x: -16, z: -half}, {x: 0, z: -half}, {x: 16, z: -half});
+                        }
+                        if (y < this.height-1 && this.grid[x][y+1] === 2) {
+                            edgeOffsets.push({x: -16, z: half}, {x: 0, z: half}, {x: 16, z: half});
+                        }
+
+                        for (let k = 0; k < edgeOffsets.length; k++) {
+                            let off = edgeOffsets[k];
+                            
+                            // Creiamo uno sbalzo (Overhang): le rocce "sporgono" leggermente verso il buco
+                            let overhangX = (off.x !== 0 ? (off.x > 0 ? 5 : -5) : 0);
+                            let overhangZ = (off.z !== 0 ? (off.z > 0 ? 5 : -5) : 0);
+                            
+                            dummy.position.set(
+                                px + off.x - overhangX + MathUtils.randomRange(-3, 3), 
+                                MathUtils.randomRange(-8, 3), // Variazione di altezza molto più drastica (radici/rocce)
+                                pz + off.z - overhangZ + MathUtils.randomRange(-3, 3)
+                            );
+                            
+                            // Resi leggermente più grandi
+                            let rScale = MathUtils.randomRange(0.6, 1.1);
+                            
+                            // Niente più lastroni piatti: ora sono massicci per formare un muro franante
+                            dummy.scale.set(
+                                rScale * MathUtils.randomRange(0.8, 1.4), // Larghezza
+                                rScale * MathUtils.randomRange(0.8, 1.8), // ALTEZZA massiccia
+                                rScale * MathUtils.randomRange(0.8, 1.4)  // Profondità
+                            );
+                            
+                            // Rotazione caotica su tutti gli assi
+                            dummy.rotation.set(
+                                Math.random() * Math.PI, 
+                                Math.random() * Math.PI, 
+                                Math.random() * Math.PI
+                            );
+                            
+                            dummy.updateMatrix();
+                            meshPitBorders.setMatrixAt(pBorderIdx++, dummy.matrix);
+                        }
+                    } else {
 
       // --- PREPARAZIONE VERI OBELISCHI ---
         if (!window.GLOBAL_OBELISK_GEO) window.GLOBAL_OBELISK_GEO = createObeliskGeometry();
