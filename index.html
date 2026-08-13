@@ -2841,16 +2841,18 @@ const GLOBAL_ALPHA_TEX = createOrganicAlphaMap();
 
     const SharedMat = {
         hazardNovaRing: new THREE.MeshBasicMaterial({color: 0x99ff00, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending}),
-        blood: new THREE.MeshStandardMaterial({map: BLOOD_TEX, transparent: true, opacity: 0.85, depthWrite: false, roughness: 0.8}),
-        spriteLevel: new THREE.SpriteMaterial({color: 0xffffff, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
-        spriteRed: new THREE.SpriteMaterial({color: ESSENCE_COLORS.red, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
-        spriteBlue: new THREE.SpriteMaterial({color: ESSENCE_COLORS.blue, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
-        spriteGreen: new THREE.SpriteMaterial({color: ESSENCE_COLORS.green, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
-        spriteWhite: new THREE.SpriteMaterial({color: 0xffffff, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
-        spritePink: new THREE.SpriteMaterial({color: 0xff66bb, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
-        spriteBlood: new THREE.SpriteMaterial({color: 0xaa0000, map: GLOW_TEX, transparent: true, depthWrite: false}),
-        spriteDust: new THREE.SpriteMaterial({color: 0x2a1e16, map: GLOW_TEX, transparent: true, opacity: 0.6, depthWrite: false}),
-        spriteBlackSmoke: new THREE.SpriteMaterial({color: 0x050505, map: GLOW_TEX, transparent: true, opacity: 0.95, blending: THREE.NormalBlending, depthWrite: false}),
+        blood: new THREE.MeshStandardMaterial({map: BLOOD_TEX, transparent: true, opacity: 0.85, depthWrite: false, roughness: 0.8, alphaTest: 0.05}), // Taglia i bordi vuoti
+        
+        // OTTIMIZZAZIONE TERMICA: alphaTest: 0.02 evita che la GPU calcoli i pixel neri/invisibili ai bordi estremi del glow, risparmiando fill-rate massicciamente
+        spriteLevel: new THREE.SpriteMaterial({color: 0xffffff, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, alphaTest: 0.02}),
+        spriteRed: new THREE.SpriteMaterial({color: ESSENCE_COLORS.red, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, alphaTest: 0.02}),
+        spriteBlue: new THREE.SpriteMaterial({color: ESSENCE_COLORS.blue, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, alphaTest: 0.02}),
+        spriteGreen: new THREE.SpriteMaterial({color: ESSENCE_COLORS.green, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, alphaTest: 0.02}),
+        spriteWhite: new THREE.SpriteMaterial({color: 0xffffff, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, alphaTest: 0.02}),
+        spritePink: new THREE.SpriteMaterial({color: 0xff66bb, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, alphaTest: 0.02}),
+        spriteBlood: new THREE.SpriteMaterial({color: 0xaa0000, map: GLOW_TEX, transparent: true, depthWrite: false, alphaTest: 0.05}),
+        spriteDust: new THREE.SpriteMaterial({color: 0x2a1e16, map: GLOW_TEX, transparent: true, opacity: 0.6, depthWrite: false, alphaTest: 0.02}),
+        spriteBlackSmoke: new THREE.SpriteMaterial({color: 0x050505, map: GLOW_TEX, transparent: true, opacity: 0.95, blending: THREE.NormalBlending, depthWrite: false, alphaTest: 0.05}),
         arrow: new THREE.MeshPhongMaterial({color: 0x888888, emissive: 0x444444}),
         playerArrow: new ProjMatClass(isTouchDevice ? { color: 0xffff00 } : { color: 0x000000, emissive: 0xffff00, emissiveIntensity: 2.0 }),
         spriteYellow: new THREE.SpriteMaterial({color: 0xffff00, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
@@ -4534,7 +4536,7 @@ if (this.isCorrupted && this.corruptedType === 'critical_mass') {
             this.dirLight.target.position.set(this.player.x, 0, this.player.y);
         }
     },
-    resize() {
+   resize() {
         this.width = window.innerWidth; this.height = window.innerHeight; this.renderer.setSize(this.width, this.height);
         this.camera.aspect = this.width / this.height; this.camera.updateProjectionMatrix(); 
         
@@ -4542,7 +4544,12 @@ if (this.isCorrupted && this.corruptedType === 'critical_mass') {
         let dpr = window.devicePixelRatio || 1;
         this.uiCanvas.width = this.width * dpr; 
         this.uiCanvas.height = this.height * dpr;
-        if (this.uiCtx) this.uiCtx.scale(dpr, dpr);
+        if (this.uiCtx) {
+            this.uiCtx.scale(dpr, dpr);
+            // OTTIMIZZAZIONE CPU: Disattiva l'antialiasing nativo dei font. 
+            // Risparmia CPU e mantiene i font aggressivi e definiti.
+            this.uiCtx.imageSmoothingEnabled = false; 
+        }
         
         if(this.composer) this.composer.setSize(this.width, this.height);
     },
@@ -6695,7 +6702,8 @@ class GameMap {
 
         // --- INIZIO GESTIONE MATERIALI OTTIMIZZATI ---
         const isHighQ = !AppSettings.isLow && !isTouchDevice; 
-        const MapMaterialClass = THREE.MeshPhongMaterial;
+        // OTTIMIZZAZIONE TERMICA: Lambert su mobile costa la metà alla GPU ed è visivamente identico per le mappe dall'alto
+        const MapMaterialClass = isTouchDevice ? THREE.MeshLambertMaterial : THREE.MeshPhongMaterial;
         const alphaTex = GLOBAL_ALPHA_TEX; 
         const maxAnisotropy = Game.renderer.capabilities.getMaxAnisotropy();
 
