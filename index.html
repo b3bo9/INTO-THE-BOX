@@ -5044,7 +5044,9 @@ loop(timestamp) {
         }
    // --- ATMOSFERA E VISIBILITÀ DINAMICA ---
         if (this.currentThemeIndex === 2) {
-            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist + 100, camDist + 1000);
+            // FIX VIGNETTATURA GHIACCIO: Avviciniamo la nebbia (-100) per ricreare 
+            // l'oscuramento visivo ai bordi dello schermo, mantenendo il freddo glaciale.
+            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 100, camDist + 400);
             if (this.bloomPass) {
                 // Ghiaccio: Bloom molto leggero e tagliente
                 this.bloomPass.strength = 0.25;
@@ -7019,22 +7021,35 @@ class GameMap {
         meshDepthShadows.renderOrder = 3; 
         this.mapGroup.add(meshDepthShadows);
 
-     // --- PREPARAZIONE BORDI: ALTERNANZA ROCE E ZOLLE DI TERRA ---
+  // --- PREPARAZIONE BORDI: ALTERNANZA ROCE E ZOLLE DI TERRA ---
         if (!window.GLOBAL_PIT_BOULDER_GEO) {
             window.GLOBAL_PIT_BOULDER_GEO = new THREE.DodecahedronGeometry(15, 0); 
-            // Geometria perfettamente sferica e liscia per la terra, così la luce non crea spigoli
-            window.GLOBAL_PIT_DIRT_GEO = new THREE.SphereGeometry(15, 12, 10); 
+            
+            let dirtGeo = new THREE.SphereGeometry(15, 16, 12); 
+            
+            // TRUCCO AAA (TERRAIN BLENDING): 
+            // Forziamo le normali della sfera a puntare tutte verso l'alto (0, 1, 0)
+            // e mappiamo la texture piatta (Planar UV Projection).
+            // Così la sfera si illuminerà e si colorerà ESATTAMENTE come il pavimento!
+            let norm = dirtGeo.attributes.normal;
+            let uv = dirtGeo.attributes.uv;
+            let pos = dirtGeo.attributes.position;
+            for (let i = 0; i < norm.count; i++) {
+                norm.setXYZ(i, 0, 1, 0); // La luce crederà che sia un piano piatto
+                uv.setXY(i, pos.getX(i) / 64 + 0.5, pos.getZ(i) / 64 + 0.5); // Stessa scala del terreno
+            }
+            window.GLOBAL_PIT_DIRT_GEO = dirtGeo;
         }
         
         let borderEmissive = 0x000000;
-        if (Game.currentThemeIndex === 0) borderEmissive = 0x030805; 
+        if (Game.currentThemeIndex === 0) borderEmissive = 0x1a2e22; 
         else if (Game.currentThemeIndex === 1) borderEmissive = 0x4a0a0a; 
-        else if (Game.currentThemeIndex === 2) borderEmissive = 0x0a1525; 
+        else if (Game.currentThemeIndex === 2) borderEmissive = 0x101a2f; 
 
         // Materiale 1: Rocce
         const borderRockMat = activeMats.rock.clone();
         if (Game.currentThemeIndex === 0) {
-            borderRockMat.color.setHex(0x2a2a2c);
+            borderRockMat.color.setHex(0x28302a); 
         }
         borderRockMat.emissive.setHex(borderEmissive);
         borderRockMat.transparent = false;
@@ -7044,23 +7059,24 @@ class GameMap {
         borderRockMat.roughness = 0.9;
         borderRockMat.needsUpdate = true;
 
-        // Materiale 2: Zolle di Terra (stesso colore/texture del terreno circostante)
+        // Materiale 2: Zolle di Terra
         const borderDirtMat = activeMats.dirt.clone();
-        // NESSUN emissive custom: usa esattamente la stessa luce del pavimento
+        // NON modifichiamo l'emissivo o il colore qui! Clona la luce esatta del terreno.
         borderDirtMat.transparent = false;
         borderDirtMat.depthWrite = true;
         borderDirtMat.alphaMap = null;
-        // Disattiviamo il flatShading per un'ombreggiatura morbida e naturale (niente spigoli)
         borderDirtMat.flatShading = false; 
         borderDirtMat.needsUpdate = true;
 
-        // Due mesh instanziate per alternare i materiali
-        const meshPitBoulders = new THREE.InstancedMesh(window.GLOBAL_PIT_BOULDER_GEO, borderRockMat, pitFloorCount * 10);
-        const meshPitDirtMounds = new THREE.InstancedMesh(window.GLOBAL_PIT_DIRT_GEO, borderDirtMat, pitFloorCount * 10);
+        // FIX CAPACITÀ MEMORIA: Allocato * 16 per prevenire glitch sui sassi in eccesso
+        const meshPitBoulders = new THREE.InstancedMesh(window.GLOBAL_PIT_BOULDER_GEO, borderRockMat, pitFloorCount * 16);
+        const meshPitDirtMounds = new THREE.InstancedMesh(window.GLOBAL_PIT_DIRT_GEO, borderDirtMat, pitFloorCount * 16);
         
-        meshPitBoulders.receiveShadow = true; 
+        // FIX OMBRE NERE: Rimuoviamo la ricezione delle ombre. 
+        // Impedisce alle pareti giganti di gettare ombre nere assolute sui sassi della fossa!
+        meshPitBoulders.receiveShadow = false; 
         meshPitBoulders.castShadow = AppSettings.shadowsEnabled;
-        meshPitDirtMounds.receiveShadow = true;
+        meshPitDirtMounds.receiveShadow = false;
         meshPitDirtMounds.castShadow = AppSettings.shadowsEnabled;
 
         this.mapGroup.add(meshPitBoulders);
@@ -7323,9 +7339,11 @@ class GameMap {
                         
                        // (La Nebbia di profondità ora è gestita globalmente in modo organico)
 
-                      // --- EDGE MASKING: ALTERNANZA ROCE E ZOLLE ---
+                   // --- EDGE MASKING: ALTERNANZA ROCE E ZOLLE ---
                         let half = TILE_SIZE / 2; // 32
-                        let baseEdgeY = -6; 
+                        // FIX OMBRA SOTTERRANEA: Alzato a -4. Le zolle scenderanno al massimo a -13.
+                        // Così eviteranno matematicamente di incrociare l'ombra della fossa a -14.0!
+                        let baseEdgeY = -4;
 
                         const placeEdgeElements = (startX, startZ, endX, endZ) => {
                             let steps = 2; // Ridotto a 2 passaggi per diradare la densità visiva
@@ -7339,6 +7357,12 @@ class GameMap {
                                 // 60% Zolle di terra schiacciate (morbide) - 40% Rocce
                                 let isDirtMound = Math.random() < 0.60;
 
+                                // FIX FORMA: Limitiamo la rotazione su X e Z (inclinazione). 
+                                // Ruotano completamente solo su Y (come una trottola sul pavimento).
+                                let rotX = MathUtils.randomRange(-0.3, 0.3); // Inclinazione lieve
+                                let rotY = Math.random() * Math.PI * 2;      // Rotazione totale
+                                let rotZ = MathUtils.randomRange(-0.3, 0.3); // Inclinazione lieve
+
                                 if (isDirtMound) {
                                     // Zolla schiacciata e larga
                                     let sx = MathUtils.randomRange(1.0, 1.5);
@@ -7346,19 +7370,20 @@ class GameMap {
                                     let sz = MathUtils.randomRange(1.0, 1.5);
 
                                     dummy.position.set(bx, by - 1, bz);
-                                    dummy.rotation.set(MathUtils.randomRange(-0.2, 0.2), Math.random()*Math.PI, MathUtils.randomRange(-0.2, 0.2));
+                                    dummy.rotation.set(rotX, rotY, rotZ);
                                     dummy.scale.set(sx, sy, sz);
                                     dummy.updateMatrix();
                                     
                                     meshPitDirtMounds.setMatrixAt(dirtMoundIdx++, dummy.matrix);
                                 } else {
-                                    // Roccia spigolosa
-                                    let sx = MathUtils.randomRange(0.7, 1.1);
-                                    let sy = MathUtils.randomRange(0.4, 0.75); 
-                                    let sz = MathUtils.randomRange(0.7, 1.1);
+                                    // Roccia compatta
+                                    let baseScale = MathUtils.randomRange(0.8, 1.1);
+                                    let sx = baseScale * MathUtils.randomRange(0.9, 1.1);
+                                    let sy = baseScale * MathUtils.randomRange(0.6, 0.8); // Leggermente schiacciata
+                                    let sz = baseScale * MathUtils.randomRange(0.9, 1.1);
 
                                     dummy.position.set(bx, by, bz);
-                                    dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+                                    dummy.rotation.set(rotX, rotY, rotZ);
                                     dummy.scale.set(sx, sy, sz);
                                     dummy.updateMatrix();
                                     
@@ -7386,10 +7411,16 @@ class GameMap {
                         let cornerY = baseEdgeY;
                         const placeCorner = (cx, cz) => {
                             let isDirt = Math.random() < 0.5;
+                            let rotX = MathUtils.randomRange(-0.3, 0.3);
+                            let rotY = Math.random() * Math.PI * 2;
+                            let rotZ = MathUtils.randomRange(-0.3, 0.3);
+
                             dummy.position.set(cx, isDirt ? cornerY - 1 : cornerY, cz);
-                            dummy.rotation.set(Math.random(), Math.random(), Math.random());
-                            dummy.scale.set(1.2, isDirt ? 0.35 : 0.6, 1.2);
+                            dummy.rotation.set(rotX, rotY, rotZ);
+                            // FIX FORMA ANGOLI: Le rocce d'angolo ora sono più "tozze" (0.8 su Y invece di 0.6)
+                            dummy.scale.set(1.2, isDirt ? 0.35 : 0.8, 1.2);
                             dummy.updateMatrix();
+                            
                             if (isDirt) meshPitDirtMounds.setMatrixAt(dirtMoundIdx++, dummy.matrix);
                             else meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
                         };
