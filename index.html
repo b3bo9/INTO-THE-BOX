@@ -7037,9 +7037,10 @@ class GameMap {
         borderRockMat.flatShading = true; // Spigoli netti
         borderRockMat.needsUpdate = true;
 
-        // Materiale 2: Zolle di Terra (Morbide)
+        // Materiale 2: Zolle di Terra (Scure per rimuovere l'effetto scogliera illuminata)
         const borderDirtMat = activeMats.dirt.clone();
-        borderDirtMat.emissive.setHex(0x000000); 
+        borderDirtMat.color.lerp(new THREE.Color(0x000000), 0.45); // Scuriamo la terra del 45%
+        borderDirtMat.emissive.setHex(0x000000);
         borderDirtMat.transparent = false;
         borderDirtMat.depthWrite = true;
         borderDirtMat.alphaMap = null;
@@ -7373,17 +7374,19 @@ class GameMap {
                         const placeCornerCluster = (cx, cz, adjX, adjY) => {
                             let dominantMat = getDominantMat(adjX, adjY);
                             
-                            // TAPPO UNIVERSALE: Tutti i materiali ora usano le zolle lisce! Niente più scogliere.
                             dummy.position.set(cx, -1.5, cz);
                             dummy.rotation.set(0, Math.random() * Math.PI * 2, 0);
-                            dummy.scale.set(1.8, 0.35, 1.8); 
+                            dummy.scale.set(1.8, 0.12, 1.8); // SCHIACCIATO: da 0.35 a 0.12
                             dummy.updateMatrix();
                             
-                            // Convertiamo le rocce giganti spigolose in morbide zolle di terra
-                            if (dominantMat === 1) meshPitGrassMounds.setMatrixAt(grassMoundIdx++, dummy.matrix);
-                            else meshPitDirtMounds.setMatrixAt(dirtMoundIdx++, dummy.matrix);
+                            // FORZIAMO TERRA O ERBA (Niente pietra)
+                            if (dominantMat === 1) {
+                                meshPitGrassMounds.setMatrixAt(grassMoundIdx++, dummy.matrix);
+                            } else {
+                                meshPitDirtMounds.setMatrixAt(dirtMoundIdx++, dummy.matrix);
+                            }
 
-                            // Spargiamo piccoli sassi con maggiore probabilità in tutti gli angoli
+                            // SASSOLINI SPARSITI NEGLI ANGOLI (60% di probabilità)
                             if (Math.random() < 0.60) {
                                 let rx = cx + MathUtils.randomRange(-2, 2);
                                 let rz = cz + MathUtils.randomRange(-2, 2);
@@ -7396,7 +7399,6 @@ class GameMap {
                                 
                                 if (!tooClose) {
                                     globalSpawnedRocks.push({x: rx, z: rz});
-                                    // Sassi scalati per essere minuscoli (0.15 - 0.30)
                                     let sx = MathUtils.randomRange(0.15, 0.30);
                                     let sy = MathUtils.randomRange(0.15, 0.30);
                                     let sz = MathUtils.randomRange(0.15, 0.30);
@@ -7417,7 +7419,6 @@ class GameMap {
                             let dirX = endX - startX; 
                             let dirZ = endZ - startZ;
 
-                            // BASE FRASTAGLIATA UNIVERSALE (4-6 zolle lisce per coprire la linea)
                             let numElements = 4 + Math.floor(Math.random() * 3); 
                             
                             for (let i = 0; i < numElements; i++) {
@@ -7426,7 +7427,7 @@ class GameMap {
                                 let bz = startZ + dirZ * t + MathUtils.randomRange(-6, 6);
 
                                 let sx = MathUtils.randomRange(1.0, 2.0); 
-                                let sy = MathUtils.randomRange(0.15, 0.35); 
+                                let sy = MathUtils.randomRange(0.08, 0.15); // SCHIACCIATO: max altezza 0.15 invece di 0.35
                                 let sz = MathUtils.randomRange(1.0, 2.0); 
 
                                 dummy.position.set(bx, -1.5, bz);
@@ -7434,12 +7435,15 @@ class GameMap {
                                 dummy.scale.set(sx, sy, sz);
                                 dummy.updateMatrix();
                                 
-                                // Convertiamo le rocce giganti spigolose in morbide zolle di terra
-                                if (dominantMat === 1) meshPitGrassMounds.setMatrixAt(grassMoundIdx++, dummy.matrix);
-                                else meshPitDirtMounds.setMatrixAt(dirtMoundIdx++, dummy.matrix);
+                                // FORZIAMO TERRA O ERBA (Niente pietra)
+                                if (dominantMat === 1) {
+                                    meshPitGrassMounds.setMatrixAt(grassMoundIdx++, dummy.matrix);
+                                } else {
+                                    meshPitDirtMounds.setMatrixAt(dirtMoundIdx++, dummy.matrix);
+                                }
                             }
 
-                            // Spargiamo casualmente da 1 a 3 sassi piccoli lungo tutto il perimetro
+                            // SASSOLINI SPARSITI LUNGO I BORDI
                             let numRocks = Math.floor(Math.random() * 3) + 1; 
                             
                             for (let i = 0; i < numRocks; i++) {
@@ -7456,7 +7460,6 @@ class GameMap {
 
                                 globalSpawnedRocks.push({x: bx, z: bz});
 
-                                // Dimensioni minuscole
                                 let baseScale = MathUtils.randomRange(0.15, 0.30); 
                                 let sx = baseScale * MathUtils.randomRange(0.9, 1.1);
                                 let sy = baseScale * MathUtils.randomRange(0.8, 1.1);
