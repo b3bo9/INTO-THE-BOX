@@ -7362,19 +7362,85 @@ class GameMap {
                         // --- EDGE MASKING COERENTE COL PAVIMENTO ---
                         let half = TILE_SIZE / 2; // 32
                         
-                        // Passiamo ad ogni bordo le coordinate del pavimento (adjX, adjY) adiacente
+                        // Array temporaneo per tracciare le posizioni ed evitare sovrapposizioni
+                        let spawnedPositions = [];
+
+                        // 1. DEFINIAMO PRIMA GLI ANGOLI (Hanno priorità assoluta di spawn)
+                        const placeCornerCluster = (cx, cz, adjX, adjY) => {
+                            spawnedPositions.push({x: cx, z: cz});
+
+                            let dominantMat = getDominantMat(adjX, adjY);
+                            
+                            // 1. TAPPO PRINCIPALE (Leggermente rimpicciolito per coerenza col nuovo perimetro)
+                            if (dominantMat === 2) {
+                                dummy.position.set(cx, -2.0, cz);
+                                dummy.rotation.set(0, Math.random() * Math.PI * 2, 0); 
+                                dummy.scale.set(1.4, 0.4, 1.4); // Ridotto da 1.6 a 1.4
+                                dummy.updateMatrix();
+                                meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
+                            } else {
+                                dummy.position.set(cx, -1.5, cz);
+                                dummy.rotation.set(0, Math.random() * Math.PI * 2, 0);
+                                dummy.scale.set(1.6, 0.35, 1.6); // Ridotto da 1.8 a 1.6
+                                dummy.updateMatrix();
+                                
+                                if (dominantMat === 1) meshPitGrassMounds.setMatrixAt(grassMoundIdx++, dummy.matrix);
+                                else meshPitDirtMounds.setMatrixAt(dirtMoundIdx++, dummy.matrix);
+                            }
+
+                            // 2. ROCCIA EXTRA 
+                            // Ridotta frequenza e dimensione massima
+                            if (Math.random() < 0.30) {
+                                let sx = MathUtils.randomRange(0.7, 1.1);
+                                let sy = MathUtils.randomRange(0.7, 1.1);
+                                let sz = MathUtils.randomRange(0.7, 1.1);
+
+                                dummy.position.set(cx + MathUtils.randomRange(-2, 2), -4.5 + MathUtils.randomRange(-1, 1), cz + MathUtils.randomRange(-2, 2));
+                                dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+                                dummy.scale.set(sx, sy, sz); 
+                                dummy.updateMatrix();
+                                meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
+                            }
+                        };
+
+                       // 2. DEFINIAMO I BORDI LATERALI
                         const placeEdgeElements = (startX, startZ, endX, endZ, adjX, adjY) => {
                             let dominantMat = getDominantMat(adjX, adjY);
                             
-                            let numElements = Math.random() < 0.5 ? 1 : 2; 
+                            let numElements = 0;
+                            let minDistance = 0;
+
+                            if (dominantMat === 2) {
+                                // LOGICA ROCCE: Rade, sparse e distanziate (Effetto vuoto/vertigine)
+                                let rand = Math.random();
+                                numElements = rand < 0.25 ? 0 : (rand < 0.85 ? 1 : 2); 
+                                minDistance = 22; // Non possono assolutamente toccarsi
+                            } else {
+                                // LOGICA TERRA/ERBA: Fitte e sovrapposte (Effetto bordo frastagliato organico)
+                                numElements = Math.random() < 0.5 ? 2 : 3; // Sempre presenti!
+                                minDistance = 12; // Collisione ridotta per permettere una lieve fusione tra le zolle
+                            }
+                            
                             for (let i = 0; i < numElements; i++) {
-                                let t = MathUtils.randomRange(0.15, 0.85); 
+                                // Range leggermente ampliato per coprire tutta la lunghezza del bordo
+                                let t = MathUtils.randomRange(0.1, 0.9); 
                                 let bx = startX + (endX - startX) * t + MathUtils.randomRange(-4, 4);
                                 let bz = startZ + (endZ - startZ) * t + MathUtils.randomRange(-4, 4);
 
+                                // CONTROLLO DISTANZA DINAMICO
+                                let tooClose = false;
+                                for(let p = 0; p < spawnedPositions.length; p++) {
+                                    let sp = spawnedPositions[p];
+                                    let dSq = (bx - sp.x)*(bx - sp.x) + (bz - sp.z)*(bz - sp.z);
+                                    if (dSq < minDistance * minDistance) { tooClose = true; break; }
+                                }
+                                if (tooClose) continue;
+
+                                spawnedPositions.push({x: bx, z: bz});
+
                                 if (dominantMat === 2) {
-                                    // ZONA ROCCIOSA: Spawna solo massi spigolosi
-                                    let baseScale = MathUtils.randomRange(0.7, 1.2);
+                                    // Roccia Spigolosa
+                                    let baseScale = MathUtils.randomRange(0.6, 1.0); 
                                     let sx = baseScale * MathUtils.randomRange(0.9, 1.1);
                                     let sy = baseScale * MathUtils.randomRange(0.8, 1.1);
                                     let sz = baseScale * MathUtils.randomRange(0.9, 1.1);
@@ -7386,10 +7452,10 @@ class GameMap {
                                     
                                     meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
                                 } else {
-                                    // ZONA ERBA O TERRA: Spawna zolle piatte del colore esatto
-                                    let sx = MathUtils.randomRange(1.2, 1.8);
-                                    let sy = MathUtils.randomRange(0.15, 0.30); 
-                                    let sz = MathUtils.randomRange(1.2, 1.8);
+                                    // Zolla Piatta (Erba/Terra)
+                                    let sx = MathUtils.randomRange(1.1, 1.5); 
+                                    let sy = MathUtils.randomRange(0.15, 0.25); 
+                                    let sz = MathUtils.randomRange(1.1, 1.5); 
 
                                     dummy.position.set(bx, -1.5, bz);
                                     dummy.rotation.set(0, Math.random() * Math.PI * 2, 0); 
@@ -7402,6 +7468,7 @@ class GameMap {
                             }
                         };
 
+                        // 3. LETTURA MATTONELLE ADIACENTI
                         let hasLeftFloor = x > 0 && this.grid[x-1][y] === 2;
                         let hasRightFloor = x < this.width-1 && this.grid[x+1][y] === 2;
                         let hasTopFloor = y > 0 && this.grid[x][y-1] === 2;
@@ -7412,62 +7479,32 @@ class GameMap {
                         let hasBLFloor = x > 0 && y < this.height-1 && this.grid[x-1][y+1] === 2;
                         let hasBRFloor = x < this.width-1 && y < this.height-1 && this.grid[x+1][y+1] === 2;
 
-                        if (hasLeftFloor) placeEdgeElements(px - half, pz - half, px - half, pz + half, x-1, y);
-                        if (hasRightFloor) placeEdgeElements(px + half, pz - half, px + half, pz + half, x+1, y);
-                        if (hasTopFloor) placeEdgeElements(px - half, pz - half, px + half, pz - half, x, y-1);
-                        if (hasBottomFloor) placeEdgeElements(px - half, pz + half, px + half, pz + half, x, y+1);
-
-                        // --- FIX ANGOLI 90 GRADI CON MATERIALE COERENTE ---
-                        const placeCornerCluster = (cx, cz, adjX, adjY) => {
-                            let dominantMat = getDominantMat(adjX, adjY);
-                            
-                            if (dominantMat === 2) {
-                                dummy.position.set(cx, -2.5, cz);
-                                dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-                                dummy.scale.set(1.5, 0.7, 1.5); 
-                                dummy.updateMatrix();
-                                meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
-                            } else {
-                                dummy.position.set(cx, -1.5, cz);
-                                dummy.rotation.set(0, Math.random() * Math.PI * 2, 0);
-                                dummy.scale.set(1.8, 0.35, 1.8); 
-                                dummy.updateMatrix();
-                                
-                                if (dominantMat === 1) meshPitGrassMounds.setMatrixAt(grassMoundIdx++, dummy.matrix);
-                                else meshPitDirtMounds.setMatrixAt(dirtMoundIdx++, dummy.matrix);
-                            }
-
-                            // Roccia massiccia incastonata sotto per coprire il taglio verticale (sempre presente)
-                            dummy.position.set(cx, -4.5, cz);
-                            dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-                            dummy.scale.set(1.4, 1.2, 1.4); 
-                            dummy.updateMatrix();
-                            meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
-                        };
-
-                        // A. Angoli ESTERNI (il pavimento fa una punta verso la fossa)
                         let cornerTL_ext = !hasLeftFloor && !hasTopFloor && hasTLFloor;
                         let cornerTR_ext = !hasRightFloor && !hasTopFloor && hasTRFloor;
                         let cornerBL_ext = !hasLeftFloor && !hasBottomFloor && hasBLFloor;
                         let cornerBR_ext = !hasRightFloor && !hasBottomFloor && hasBRFloor;
 
-                        // B. Angoli INTERNI (la fossa fa uno spigolo dentro il pavimento)
                         let cornerTL_int = hasLeftFloor && hasTopFloor;
                         let cornerTR_int = hasRightFloor && hasTopFloor;
                         let cornerBL_int = hasLeftFloor && hasBottomFloor;
                         let cornerBR_int = hasRightFloor && hasBottomFloor;
 
-                        // Per le punte calcoliamo il materiale della mattonella in diagonale
+                        // 4. ESECUZIONE: PIAZZIAMO PRIMA TUTTI GLI ANGOLI (Per riempire l'array delle hitbox)
                         if (cornerTL_ext) placeCornerCluster(px - half, pz - half, x-1, y-1);
                         if (cornerTR_ext) placeCornerCluster(px + half, pz - half, x+1, y-1);
                         if (cornerBL_ext) placeCornerCluster(px - half, pz + half, x-1, y+1);
                         if (cornerBR_ext) placeCornerCluster(px + half, pz + half, x+1, y+1);
                         
-                        // Per gli angoli a L calcoliamo il materiale della mattonella a sinistra/destra
                         if (cornerTL_int) placeCornerCluster(px - half, pz - half, x-1, y); 
                         if (cornerTR_int) placeCornerCluster(px + half, pz - half, x+1, y);
                         if (cornerBL_int) placeCornerCluster(px - half, pz + half, x-1, y);
                         if (cornerBR_int) placeCornerCluster(px + half, pz + half, x+1, y);
+
+                        // 5. ESECUZIONE: PIAZZIAMO I LATI (Che scarteranno le rocce se troppo vicine ai tappi angolari)
+                        if (hasLeftFloor) placeEdgeElements(px - half, pz - half, px - half, pz + half, x-1, y);
+                        if (hasRightFloor) placeEdgeElements(px + half, pz - half, px + half, pz + half, x+1, y);
+                        if (hasTopFloor) placeEdgeElements(px - half, pz - half, px + half, pz - half, x, y-1);
+                        if (hasBottomFloor) placeEdgeElements(px - half, pz + half, px + half, pz + half, x, y+1);
                     } else {
                         // Confine Interno Conficcato: DISEGNA I VERI MURI INTERNI
                         dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE*0.75, y * TILE_SIZE + TILE_SIZE / 2);
