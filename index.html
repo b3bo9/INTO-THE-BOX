@@ -1664,11 +1664,11 @@ const MathUtils = {
 const TILE_SIZE = 64; const CHUNK_SIZE = 30; const FIXED_TIME_STEP = 1 / 60; const MAX_TIME_STEP = 0.1;
  
    const MAP_THEMES = [
-   // TEMA 1: FORESTA SMERALDO (Atmosfera magica, nebbia profonda Teal vs Luce Ciano)
+   // TEMA 1: FORESTA SMERALDO (Migliorato: più vibrante, contrasto fiabesco e luce più chiara)
     { 
-        dirt: 0x152119, grass: 0x113320, rock: 0x192e27, wall: 0x11211a, 
-        grassShader: 0x0a1c14, tree: 0x081510,
-        ambient: 0x0c1c16, dirLight: 0x66ffd4, fog: 0x081812
+        dirt: 0x1c2b20, grass: 0x184a2a, rock: 0x1b362c, wall: 0x152b21, 
+        grassShader: 0x0c2619, tree: 0x0a1c14,
+        ambient: 0x10252b, dirLight: 0x88ffcc, fog: 0x081c18
     },
     // TEMA 2: ABISSO INFERNALE (Complementare: Ombre Ottanio scuro vs Luce Cremisi)
     { 
@@ -5051,12 +5051,12 @@ loop(timestamp) {
                 this.bloomPass.threshold = 0.60;
             }
        } else {
-            // FORESTA: Nebbia più densa e avvolgente per nascondere l'orizzonte e creare mistero
-            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 250, camDist + 350);
+            // FORESTA: Nebbia magica e avvolgente, migliorata per dare più profondità e colore
+            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 150, camDist + 450);
             if (this.bloomPass) {
-                // Foresta: Bloom quasi spento per mantenere il buio e il contrasto intatti
-                this.bloomPass.strength = 0.20;
-                this.bloomPass.threshold = 0.65;
+                // Foresta: Bloom aumentato per far brillare l'acqua azzurra e le lucciole
+                this.bloomPass.strength = 0.35;
+                this.bloomPass.threshold = 0.55;
             }
         }
         Game.arenaEvolution = false; // DEVE ESSERE FALSE ALL'INIZIO!
@@ -6865,8 +6865,9 @@ class GameMap {
         // --- PREPARAZIONE PAVIMENTI LIQUIDI (PIANO GIGANTE SOTTERRANEO) ---
         let pitColor, pitEmissive, pitOpacity, pitRoughness, pitMetalness, baseTexImage;
         
-        if (Game.currentThemeIndex === 0) { // Foresta -> Acqua Jpeg
-            pitColor = 0x55aaff; pitEmissive = 0xffffff; pitOpacity = 0.85; pitRoughness = 0.05; pitMetalness = 0.95;
+        if (Game.currentThemeIndex === 0) { // Foresta -> Acqua Azzurra
+            // Acqua notevolmente più azzurra, magica e luminosa
+            pitColor = 0x00d4ff; pitEmissive = 0x55bbee; pitOpacity = 0.90; pitRoughness = 0.15; pitMetalness = 0.80;
             baseTexImage = Preloader.textures.water;
         } else if (Game.currentThemeIndex === 1) { // Lava -> Lava Jpeg
             pitColor = 0xffffff; pitEmissive = 0xffffff; 
@@ -6893,7 +6894,8 @@ class GameMap {
         
         this.pitMat = new THREE.MeshStandardMaterial({
             color: pitColor, emissive: pitEmissive,
-            emissiveIntensity: Game.currentThemeIndex === 1 ? 1.5 : 1.0,
+            // Aumentiamo la luminosità anche per la Foresta (Index 0) per far brillare l'acqua
+            emissiveIntensity: Game.currentThemeIndex === 1 ? 1.5 : (Game.currentThemeIndex === 0 ? 1.4 : 1.0),
             roughness: pitRoughness, metalness: pitMetalness,
             map: liquidTex, emissiveMap: liquidTex, 
             transparent: true, opacity: pitOpacity,
@@ -6937,13 +6939,19 @@ class GameMap {
             this.mapGroup.add(this.meshIceFloor);
         }
 
-        // --- PREPARAZIONE PARETI INTERNE DELLA FOSSA ---
-        const pitWallMat = new THREE.MeshBasicMaterial({ color: 0x050508 }); 
+       // --- PREPARAZIONE PARETI INTERNE DELLA FOSSA ---
+        // Adattiamo il colore del muro profondo al tema per evitare il brutto "buco nero"
+        let pitWallColor = 0x050508;
+        if (Game.currentThemeIndex === 0) pitWallColor = 0x061812; // Foresta: Smeraldo scurissimo
+        else if (Game.currentThemeIndex === 1) pitWallColor = 0x250505; // Lava: Rosso scurissimo
+        else if (Game.currentThemeIndex === 2) pitWallColor = 0x051220; // Ghiaccio: Blu profondo
+
+        const pitWallMat = new THREE.MeshBasicMaterial({ color: pitWallColor }); 
         const meshPitWalls = new THREE.InstancedMesh(window.GLOBAL_WALL_GEO, pitWallMat, pitFloorCount);
         this.mapGroup.add(meshPitWalls);
         let pWallIdx = 0;
 
-     // --- NUOVA VIGNETTATURA SOTTERRANEA GLOBALE (Effetto Profondità Morbido) ---
+        // --- NUOVA VIGNETTATURA SOTTERRANEA GLOBALE (Effetto Profondità Morbido) ---
         if (!window.GLOBAL_PIT_SHADOW_CANVAS) {
             window.GLOBAL_PIT_SHADOW_CANVAS = document.createElement('canvas');
             window.GLOBAL_PIT_SHADOW_TEX = new THREE.CanvasTexture(window.GLOBAL_PIT_SHADOW_CANVAS);
@@ -6955,8 +6963,13 @@ class GameMap {
             });
         }
         
+        // Ammorbidiamo drasticamente l'ombra 2D per TUTTI i temi, permettendo al colore 
+        // dell'acqua e del ghiaccio di fondersi morbidamente col bordo senza linee nere decise.
+        if (Game.currentThemeIndex === 0) window.GLOBAL_PIT_SHADOW_MAT.opacity = 0.50; // Foresta
+        else if (Game.currentThemeIndex === 1) window.GLOBAL_PIT_SHADOW_MAT.opacity = 0.25; // Lava
+        else if (Game.currentThemeIndex === 2) window.GLOBAL_PIT_SHADOW_MAT.opacity = 0.40; // Ghiaccio
+
         const sCanvas = window.GLOBAL_PIT_SHADOW_CANVAS;
-        // FIX SPIGOLOSITÀ: Risoluzione raddoppiata (32px per tile) per gradienti e curve perfettamente setose
         const res = 32; 
         sCanvas.width = (this.width + 16) * res;
         sCanvas.height = (this.height + 16) * res;
@@ -6964,76 +6977,69 @@ class GameMap {
         
         sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
         sCtx.globalCompositeOperation = 'source-over';
-        sCtx.fillStyle = '#030305'; 
         
-        // PASSAGGIO 1: L'Abisso (Sfumatura larga e morbida)
-        sCtx.shadowColor = 'rgba(0, 0, 0, 0.7)'; 
-        sCtx.shadowBlur = 60; // Proporzionato alla nuova alta risoluzione
+        // Tinta di base coerente con il muro interno invece del nero puro
+        if (Game.currentThemeIndex === 0) sCtx.fillStyle = '#061812';
+        else if (Game.currentThemeIndex === 1) sCtx.fillStyle = '#250505';
+        else if (Game.currentThemeIndex === 2) sCtx.fillStyle = '#051220';
+        else sCtx.fillStyle = '#050508'; 
         
+        // Ombra leggermente più trasparente per facilitare il blending
+        sCtx.shadowColor = 'rgba(0, 0, 0, 0.85)'; 
+        sCtx.shadowBlur = 20;
+        
+        sCtx.beginPath();
         for(let gx = -8; gx < this.width + 8; gx++) {
             for(let gy = -8; gy < this.height + 8; gy++) {
                 let isPit = (gx >= 0 && gx < this.width && gy >= 0 && gy < this.height && this.grid[gx][gy] === 5);
                 if (!isPit) {
-                    sCtx.fillRect((gx + 8) * res - 0.5, (gy + 8) * res - 0.5, res + 1, res + 1);
+                    let px = (gx + 8) * res;
+                    let py = (gy + 8) * res;
+                    sCtx.rect(px - 0.5, py - 0.5, res + 1, res + 1);
+                    sCtx.moveTo(px + res/2, py);
+                    sCtx.arc(px + res/2, py + res/2, res * 0.75, 0, Math.PI * 2);
                 }
             }
         }
-
-        // PASSAGGIO 2: La Parete Sommersa (Bordo densissimo e scuro ma NON spigoloso)
-        // Rimosso lo "spostamento" in avanti dei mattoni che creava gli spigoli a scaletta
-        sCtx.shadowColor = 'rgba(0, 0, 0, 1.0)'; 
-        sCtx.shadowBlur = 15; 
-        
-        for(let gx = -8; gx < this.width + 8; gx++) {
-            for(let gy = -8; gy < this.height + 8; gy++) {
-                let isPit = (gx >= 0 && gx < this.width && gy >= 0 && gy < this.height && this.grid[gx][gy] === 5);
-                if (!isPit) {
-                    sCtx.fillRect((gx + 8) * res - 0.5, (gy + 8) * res - 0.5, res + 1, res + 1);
-                }
-            }
-        }
+        sCtx.fill();
         
         window.GLOBAL_PIT_SHADOW_TEX.needsUpdate = true;
         const meshDepthShadows = new THREE.Mesh(giantGeo, window.GLOBAL_PIT_SHADOW_MAT);
-        // MODIFICA: Alziamo l'ombra a -2.0 (appena sotto i bordi rocciosi). 
-        // In questo modo oscura DALL'ALTO sia l'acqua che il ghiaccio, unificando l'effetto in tutti i temi!
         meshDepthShadows.position.set((this.width * TILE_SIZE) / 2, -2.0, (this.height * TILE_SIZE) / 2);
-        meshDepthShadows.renderOrder = 3; // MODIFICA: Si disegna sempre per ultima, sopra a tutti i liquidi
+        meshDepthShadows.renderOrder = 3; 
         this.mapGroup.add(meshDepthShadows);
 
-        // --- PREPARAZIONE ROCCE ORGANICHE PER I BORDI DELLA FOSSA ---
-        if (!window.GLOBAL_PIT_BORDER_GEO) window.GLOBAL_PIT_BORDER_GEO = new THREE.DodecahedronGeometry(14, 1);
+       // --- PREPARAZIONE ROCCE ORGANICHE PER I BORDI DELLA FOSSA ---
+        if (!window.GLOBAL_PIT_BORDER_GEO) window.GLOBAL_PIT_BORDER_GEO = new THREE.IcosahedronGeometry(14, 2);
         
+       // Illuminazione di base delle rocce sul bordo
         let borderEmissive = 0x000000;
-        let borderColor = new THREE.Color(activeMats.dirt.color); // Creiamo un nuovo colore sicuro basato sulla terra
-        
-        if (Game.currentThemeIndex === 0) {
-            borderEmissive = 0x0a1c14; // Foresta: bagliore verde acqua scuro
-            borderColor.setHex(0x1a3a22); // Verde muschio profondo
-        } else if (Game.currentThemeIndex === 1) {
-            borderEmissive = 0x220505; // Lava
-        } else if (Game.currentThemeIndex === 2) {
-            borderEmissive = 0x050a15; // Ghiaccio
-        }
+        if (Game.currentThemeIndex === 0) borderEmissive = 0x163a23; // Verde Muschio acceso per togliere il grigio spento
+        else if (Game.currentThemeIndex === 1) borderEmissive = 0x4a0a0a; // Rosso caldo per la lava
+        else if (Game.currentThemeIndex === 2) borderEmissive = 0x0a1525; // Bluastro glaciale
 
-        const borderMat = new THREE.MeshStandardMaterial({
-            color: borderColor,
-            map: activeMats.dirt.map,
-            emissive: borderEmissive,
-            roughness: 0.95,
-            metalness: 0.05
-        });
+        // CLONIAMO I MATERIALI ESATTI DELL'AMBIENTE (Zero discrepanze visive!)
+        const borderRockMat = activeMats.rock.clone();
+        borderRockMat.emissive.setHex(borderEmissive);
 
-        // Raddoppiamo lo spazio in memoria (da 12 a 24) per coprire gli spigoli estremi
-        const meshPitBorders = new THREE.InstancedMesh(window.GLOBAL_PIT_BORDER_GEO, borderMat, pitFloorCount * 24);
-        meshPitBorders.receiveShadow = true;
-        meshPitBorders.castShadow = AppSettings.shadowsEnabled;
-        // Allochiamo la memoria per colorare singolarmente ogni sasso!
-        meshPitBorders.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(pitFloorCount * 24 * 3), 3);
-        this.mapGroup.add(meshPitBorders);
-        let pBorderIdx = 0;
+        const borderDirtMat = activeMats.dirt.clone();
+        borderDirtMat.emissive.setHex(borderEmissive);
+
+        // Creiamo DUE istanze: una per i sassi sporgenti, una per la terra schiacciata
+        const meshPitBordersRock = new THREE.InstancedMesh(window.GLOBAL_PIT_BORDER_GEO, borderRockMat, pitFloorCount * 24);
+        const meshPitBordersDirt = new THREE.InstancedMesh(window.GLOBAL_PIT_BORDER_GEO, borderDirtMat, pitFloorCount * 24);
         
-        if (!Game._pitColorDummy) Game._pitColorDummy = new THREE.Color();
+        meshPitBordersRock.receiveShadow = true; 
+        meshPitBordersRock.castShadow = AppSettings.shadowsEnabled;
+        
+        meshPitBordersDirt.receiveShadow = true; 
+        meshPitBordersDirt.castShadow = false; // La terra piatta non fa ombra per non buggare la scena
+
+        this.mapGroup.add(meshPitBordersRock);
+        this.mapGroup.add(meshPitBordersDirt);
+        
+        let pBorderRockIdx = 0;
+        let pBorderDirtIdx = 0;
 
       // --- PREPARAZIONE VERI OBELISCHI ---
         if (!window.GLOBAL_OBELISK_GEO) window.GLOBAL_OBELISK_GEO = createObeliskGeometry();
@@ -7277,7 +7283,7 @@ class GameMap {
                             dummy.updateMatrix();
                             meshRock.setMatrixAt(idxRock++, dummy.matrix);
                         }
-                } else if (this.grid[x][y] === 5) {
+                 } else if (this.grid[x][y] === 5) {
                         let px = x * TILE_SIZE + TILE_SIZE / 2;
                         let pz = y * TILE_SIZE + TILE_SIZE / 2;
 
@@ -7287,64 +7293,95 @@ class GameMap {
                         dummy.rotation.set(0, 0, 0);
                         dummy.updateMatrix();
                         meshPitWalls.setMatrixAt(pWallIdx++, dummy.matrix);
+                        
+                       // (La Nebbia di profondità ora è gestita globalmente in modo organico)
 
-                       // --- EDGE MASKING: SCAGLIE E LASTRE SUI BORDI ---
+                       // --- EDGE MASKING: ROCCE ARROTONDATE SUI BORDI ---
                         let edgeOffsets = [];
                         let half = TILE_SIZE / 2; // 32
-                        let corner = 32; // Estremi assoluti del tile
+                        let q = TILE_SIZE / 4; // 16
 
-                        // Usiamo 4 sassi per lato e li piazziamo fino ai bordi assoluti (-32 e +32) per tappare i buchi negli spigoli!
                         if (x > 0 && this.grid[x-1][y] === 2) {
-                            edgeOffsets.push({x: -half, z: -corner}, {x: -half, z: -11}, {x: -half, z: 11}, {x: -half, z: corner});
+                            edgeOffsets.push({x: -half, z: -q*1.5}, {x: -half+3, z: -q*0.8}, {x: -half+5, z: 0}, {x: -half+3, z: q*0.8}, {x: -half, z: q*1.5});
                         }
                         if (x < this.width-1 && this.grid[x+1][y] === 2) {
-                            edgeOffsets.push({x: half, z: -corner}, {x: half, z: -11}, {x: half, z: 11}, {x: half, z: corner});
+                            edgeOffsets.push({x: half, z: -q*1.5}, {x: half-3, z: -q*0.8}, {x: half-5, z: 0}, {x: half-3, z: q*0.8}, {x: half, z: q*1.5});
                         }
                         if (y > 0 && this.grid[x][y-1] === 2) {
-                            edgeOffsets.push({x: -corner, z: -half}, {x: -11, z: -half}, {x: 11, z: -half}, {x: corner, z: -half});
+                            edgeOffsets.push({x: -q*1.5, z: -half}, {x: -q*0.8, z: -half+3}, {x: 0, z: -half+5}, {x: q*0.8, z: -half+3}, {x: q*1.5, z: -half});
                         }
                         if (y < this.height-1 && this.grid[x][y+1] === 2) {
-                            edgeOffsets.push({x: -corner, z: half}, {x: -11, z: half}, {x: 11, z: half}, {x: corner, z: half});
+                            edgeOffsets.push({x: -q*1.5, z: half}, {x: -q*0.8, z: half-3}, {x: 0, z: half-5}, {x: q*0.8, z: half-3}, {x: q*1.5, z: half});
+                        }
+                        
+                        // ANGOLI GARANTITI: Aggiungiamo il flag "isCorner: true" per forzarli a diventare grossi macigni perfetti
+                        let cornerOffset = 11; // Distanza esatta per centrare l'Icosaedro nell'angolo
+                        if (x > 0 && y > 0 && this.grid[x-1][y] === 2 && this.grid[x][y-1] === 2) {
+                            edgeOffsets.push({x: -half+cornerOffset, z: -half+cornerOffset, isCorner: true});
+                        }
+                        if (x < this.width-1 && y > 0 && this.grid[x+1][y] === 2 && this.grid[x][y-1] === 2) {
+                            edgeOffsets.push({x: half-cornerOffset, z: -half+cornerOffset, isCorner: true});
+                        }
+                        if (x > 0 && y < this.height-1 && this.grid[x-1][y] === 2 && this.grid[x][y+1] === 2) {
+                            edgeOffsets.push({x: -half+cornerOffset, z: half-cornerOffset, isCorner: true});
+                        }
+                        if (x < this.width-1 && y < this.height-1 && this.grid[x+1][y] === 2 && this.grid[x][y+1] === 2) {
+                            edgeOffsets.push({x: half-cornerOffset, z: half-cornerOffset, isCorner: true});
                         }
 
                         for (let k = 0; k < edgeOffsets.length; k++) {
                             let off = edgeOffsets[k];
                             
-                            // Creiamo uno sbalzo (Overhang): le rocce "sporgono" verso il buco centrale
-                            let overhangX = (off.x !== 0 ? (off.x > 0 ? 5 : -5) : 0);
-                            let overhangZ = (off.z !== 0 ? (off.z > 0 ? 5 : -5) : 0);
+                            // Gli angoli DEVONO essere rocce sporgenti per coprire i 90 gradi.
+                            // I bordi dritti hanno il 40% di possibilità di essere zolle piatte.
+                            let isDirt = off.isCorner ? false : (Math.random() < 0.40);
                             
-                            dummy.position.set(
-                                px + off.x - overhangX + MathUtils.randomRange(-3, 3), 
-                                MathUtils.randomRange(-8, 3), // Variazione di altezza caotica
-                                pz + off.z - overhangZ + MathUtils.randomRange(-3, 3)
-                            );
+                            // Niente dispersione negli angoli: devono stare esattamente sul vertice!
+                            let scatterX = off.isCorner ? 0 : MathUtils.randomRange(-6, 6);
+                            let scatterZ = off.isCorner ? 0 : MathUtils.randomRange(-6, 6);
                             
-                            let rScale = MathUtils.randomRange(0.6, 1.1);
-                            
-                            // Forme massicce e organiche
-                            dummy.scale.set(
-                                rScale * MathUtils.randomRange(0.8, 1.4), 
-                                rScale * MathUtils.randomRange(0.8, 1.8), 
-                                rScale * MathUtils.randomRange(0.8, 1.4)  
-                            );
+                            if (isDirt) {
+                                // Zolla di terra schiacciata (immutato)
+                                dummy.position.set(
+                                    px + off.x + scatterX, 
+                                    MathUtils.randomRange(-2, 0.5),
+                                    pz + off.z + scatterZ
+                                );
+                                let rScale = MathUtils.randomRange(0.6, 1.2);
+                                dummy.scale.set(
+                                    rScale * MathUtils.randomRange(1.0, 1.5), 
+                                    rScale * MathUtils.randomRange(0.1, 0.25), 
+                                    rScale * MathUtils.randomRange(1.0, 1.5)  
+                                );
+                            } else {
+                                // ROCCIA VERA E PROPRIA
+                                dummy.position.set(
+                                    px + off.x + scatterX, 
+                                    off.isCorner ? -2 : MathUtils.randomRange(-6, -3), // Angoli più in alto per coprire bene
+                                    pz + off.z + scatterZ
+                                );
+                                
+                                // Scala base fissa (più grande per gli angoli)
+                                let rScale = off.isCorner ? MathUtils.randomRange(1.1, 1.4) : MathUtils.randomRange(0.6, 1.0);
+                                
+                                // FIX "SASSI LUNGHI": Variazione di asse minima (max +/- 15%) per mantenerli compatti
+                                let stretchX = MathUtils.randomRange(0.85, 1.15);
+                                let stretchY = MathUtils.randomRange(0.85, 1.15);
+                                let stretchZ = MathUtils.randomRange(0.85, 1.15);
+                                
+                                dummy.scale.set(rScale * stretchX, rScale * stretchY, rScale * stretchZ);
+                            }
                             
                             dummy.rotation.set(
+                                MathUtils.randomRange(-0.4, 0.4), 
                                 Math.random() * Math.PI, 
-                                Math.random() * Math.PI, 
-                                Math.random() * Math.PI
+                                MathUtils.randomRange(-0.4, 0.4)
                             );
                             
                             dummy.updateMatrix();
-                            meshPitBorders.setMatrixAt(pBorderIdx, dummy.matrix);
                             
-                            // VARIAZIONE COLORE: Rende le rocce molto più realistiche e individuali
-                            Game._pitColorDummy.copy(borderColor);
-                            let lightOffset = MathUtils.randomRange(-0.12, 0.12); // Variazione casuale +/- 12%
-                            Game._pitColorDummy.offsetHSL(0, 0, lightOffset); 
-                            meshPitBorders.setColorAt(pBorderIdx, Game._pitColorDummy);
-                            
-                            pBorderIdx++;
+                            if (isDirt) meshPitBordersDirt.setMatrixAt(pBorderDirtIdx++, dummy.matrix);
+                            else meshPitBordersRock.setMatrixAt(pBorderRockIdx++, dummy.matrix);
                         }
                     } else {
                         // Confine Interno Conficcato: DISEGNA I VERI MURI INTERNI
@@ -7450,8 +7487,12 @@ Game.auras.push({
         meshRock.count = idxRock;
         interactiveGrassMesh.count = idxInteractiveGrass;
         meshDebris.count = idxDebris;
-        meshPitBorders.count = pBorderIdx; 
-        if (pBorderIdx > 0) meshPitBorders.instanceColor.needsUpdate = true; // Spinge le variazioni di colore alla GPU
+        
+        meshPitBordersRock.count = pBorderRockIdx; 
+        meshPitBordersDirt.count = pBorderDirtIdx; 
+        meshPitBordersRock.instanceMatrix.needsUpdate = true;
+        meshPitBordersDirt.instanceMatrix.needsUpdate = true;
+
         meshPitWalls.count = pWallIdx; // Assicura che le pareti interne non creino glitch
         meshDebris.instanceMatrix.needsUpdate = true;
        meshTrees.count = idxTree; 
