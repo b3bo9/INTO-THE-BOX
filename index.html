@@ -7005,45 +7005,60 @@ class GameMap {
         
         window.GLOBAL_PIT_SHADOW_TEX.needsUpdate = true;
         const meshDepthShadows = new THREE.Mesh(giantGeo, window.GLOBAL_PIT_SHADOW_MAT);
-        meshDepthShadows.position.set((this.width * TILE_SIZE) / 2, -2.0, (this.height * TILE_SIZE) / 2);
+        // FIX CRITICO Z-BUFFER: Abbassiamo l'ombra a -14.0 (appena sopra il ghiaccio e l'acqua). 
+        // In questo modo NON taglierà a metà i sassi e le zolle creando false linee nette di luce!
+        meshDepthShadows.position.set((this.width * TILE_SIZE) / 2, -14.0, (this.height * TILE_SIZE) / 2);
         meshDepthShadows.renderOrder = 3; 
         this.mapGroup.add(meshDepthShadows);
 
-     // --- PREPARAZIONE BORDI: ROCK SCATTERING NATURALE ---
+     // --- PREPARAZIONE BORDI: ALTERNANZA ROCE E ZOLLE DI TERRA ---
         if (!window.GLOBAL_PIT_BOULDER_GEO) {
-            // Un dodecaedro a bassa risoluzione è perfetto per sembrare una roccia scheggiata
             window.GLOBAL_PIT_BOULDER_GEO = new THREE.DodecahedronGeometry(15, 0); 
+            // Geometria perfettamente sferica e liscia per la terra, così la luce non crea spigoli
+            window.GLOBAL_PIT_DIRT_GEO = new THREE.SphereGeometry(15, 12, 10); 
         }
         
         let borderEmissive = 0x000000;
-        // Foresta: emissione quasi azzerata (era 0x163a23) per togliere l'effetto "radioattivo"
         if (Game.currentThemeIndex === 0) borderEmissive = 0x030805; 
-        else if (Game.currentThemeIndex === 1) borderEmissive = 0x4a0a0a; // Lava
-        else if (Game.currentThemeIndex === 2) borderEmissive = 0x0a1525; // Ghiaccio
+        else if (Game.currentThemeIndex === 1) borderEmissive = 0x4a0a0a; 
+        else if (Game.currentThemeIndex === 2) borderEmissive = 0x0a1525; 
 
+        // Materiale 1: Rocce
         const borderRockMat = activeMats.rock.clone();
-        
-        // Se siamo nel tema Foresta (0), forziamo la roccia dei bordi a un grigio scuro neutro
         if (Game.currentThemeIndex === 0) {
             borderRockMat.color.setHex(0x2a2a2c);
         }
-        
         borderRockMat.emissive.setHex(borderEmissive);
         borderRockMat.transparent = false;
-        borderRockMat.depthWrite = true; // Permette all'acqua di avvolgere la roccia
+        borderRockMat.depthWrite = true; 
         borderRockMat.alphaMap = null; 
-        borderRockMat.flatShading = true; // Tagli di luce spigolosi
+        borderRockMat.flatShading = true; 
         borderRockMat.roughness = 0.9;
         borderRockMat.needsUpdate = true;
 
-        // Creiamo una singola InstancedMesh molto capiente (mettiamo 16 rocce per ogni fossa)
-        const meshPitBoulders = new THREE.InstancedMesh(window.GLOBAL_PIT_BOULDER_GEO, borderRockMat, pitFloorCount * 16);
+        // Materiale 2: Zolle di Terra (stesso colore/texture del terreno circostante)
+        const borderDirtMat = activeMats.dirt.clone();
+        // NESSUN emissive custom: usa esattamente la stessa luce del pavimento
+        borderDirtMat.transparent = false;
+        borderDirtMat.depthWrite = true;
+        borderDirtMat.alphaMap = null;
+        // Disattiviamo il flatShading per un'ombreggiatura morbida e naturale (niente spigoli)
+        borderDirtMat.flatShading = false; 
+        borderDirtMat.needsUpdate = true;
+
+        // Due mesh instanziate per alternare i materiali
+        const meshPitBoulders = new THREE.InstancedMesh(window.GLOBAL_PIT_BOULDER_GEO, borderRockMat, pitFloorCount * 10);
+        const meshPitDirtMounds = new THREE.InstancedMesh(window.GLOBAL_PIT_DIRT_GEO, borderDirtMat, pitFloorCount * 10);
         
         meshPitBoulders.receiveShadow = true; 
         meshPitBoulders.castShadow = AppSettings.shadowsEnabled;
+        meshPitDirtMounds.receiveShadow = true;
+        meshPitDirtMounds.castShadow = AppSettings.shadowsEnabled;
 
         this.mapGroup.add(meshPitBoulders);
+        this.mapGroup.add(meshPitDirtMounds);
         let boulderIdx = 0;
+        let dirtMoundIdx = 0;
 
       // --- PREPARAZIONE VERI OBELISCHI ---
         if (!window.GLOBAL_OBELISK_GEO) window.GLOBAL_OBELISK_GEO = createObeliskGeometry();
@@ -7300,37 +7315,47 @@ class GameMap {
                         
                        // (La Nebbia di profondità ora è gestita globalmente in modo organico)
 
-                       // --- EDGE MASKING: ROCK SCATTERING ---
+                      // --- EDGE MASKING: ALTERNANZA ROCE E ZOLLE ---
                         let half = TILE_SIZE / 2; // 32
-                        // Le rocce sono piazzate in profondità: affondano nell'acqua e sbucano appena sopra il pavimento (y=0)
                         let baseEdgeY = -6; 
 
-                        // Funzione interna per spawnare una fila caotica di rocce lungo un segmento
-                        const placeBoulders = (startX, startZ, endX, endZ) => {
-                            let steps = 3; // 3 massi sovrapposti per ogni lato (rompe l'effetto pattern)
+                        const placeEdgeElements = (startX, startZ, endX, endZ) => {
+                            let steps = 2; // Ridotto a 2 passaggi per diradare la densità visiva
                             for (let i = 0; i <= steps; i++) {
-                                let t = i / steps; // da 0.0 a 1.0
+                                let t = i / steps; 
                                 
-                                // Posizione base interpolata
-                                let bx = startX + (endX - startX) * t;
-                                let bz = startZ + (endZ - startZ) * t;
-                                
-                                // Caos: micro-spostamenti per renderlo naturale
-                                bx += MathUtils.randomRange(-3, 3);
-                                bz += MathUtils.randomRange(-3, 3);
-                                let by = baseEdgeY + MathUtils.randomRange(-2, 1);
+                                let bx = startX + (endX - startX) * t + MathUtils.randomRange(-3, 3);
+                                let bz = startZ + (endZ - startZ) * t + MathUtils.randomRange(-3, 3);
+                                let by = baseEdgeY + MathUtils.randomRange(-1.5, 1);
 
-                                // Scala asimmetrica: massi allungati e schiacciati (creano un argine solido)
-                                let sx = MathUtils.randomRange(0.8, 1.4);
-                                let sy = MathUtils.randomRange(0.5, 0.8); // Schiacciati sull'asse Y per non fare "muro" al giocatore
-                                let sz = MathUtils.randomRange(0.8, 1.4);
+                                // 60% Zolle di terra schiacciate (morbide) - 40% Rocce
+                                let isDirtMound = Math.random() < 0.60;
 
-                                dummy.position.set(bx, by, bz);
-                                dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-                                dummy.scale.set(sx, sy, sz);
-                                dummy.updateMatrix();
-                                
-                                meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
+                                if (isDirtMound) {
+                                    // Zolla schiacciata e larga
+                                    let sx = MathUtils.randomRange(1.0, 1.5);
+                                    let sy = MathUtils.randomRange(0.25, 0.45); // Molto piatta
+                                    let sz = MathUtils.randomRange(1.0, 1.5);
+
+                                    dummy.position.set(bx, by - 1, bz);
+                                    dummy.rotation.set(MathUtils.randomRange(-0.2, 0.2), Math.random()*Math.PI, MathUtils.randomRange(-0.2, 0.2));
+                                    dummy.scale.set(sx, sy, sz);
+                                    dummy.updateMatrix();
+                                    
+                                    meshPitDirtMounds.setMatrixAt(dirtMoundIdx++, dummy.matrix);
+                                } else {
+                                    // Roccia spigolosa
+                                    let sx = MathUtils.randomRange(0.7, 1.1);
+                                    let sy = MathUtils.randomRange(0.4, 0.75); 
+                                    let sz = MathUtils.randomRange(0.7, 1.1);
+
+                                    dummy.position.set(bx, by, bz);
+                                    dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+                                    dummy.scale.set(sx, sy, sz);
+                                    dummy.updateMatrix();
+                                    
+                                    meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
+                                }
                             }
                         };
 
@@ -7344,38 +7369,27 @@ class GameMap {
                         let hasBLFloor = x > 0 && y < this.height-1 && this.grid[x-1][y+1] === 2;
                         let hasBRFloor = x < this.width-1 && y < this.height-1 && this.grid[x+1][y+1] === 2;
 
-                        // Piazziamo le rocce esattamete sulla linea di taglio (cucitura perfetta)
-                        if (hasLeftFloor) placeBoulders(px - half, pz - half, px - half, pz + half);
-                        if (hasRightFloor) placeBoulders(px + half, pz - half, px + half, pz + half);
-                        if (hasTopFloor) placeBoulders(px - half, pz - half, px + half, pz - half);
-                        if (hasBottomFloor) placeBoulders(px - half, pz + half, px + half, pz + half);
+                        if (hasLeftFloor) placeEdgeElements(px - half, pz - half, px - half, pz + half);
+                        if (hasRightFloor) placeEdgeElements(px + half, pz - half, px + half, pz + half);
+                        if (hasTopFloor) placeEdgeElements(px - half, pz - half, px + half, pz - half);
+                        if (hasBottomFloor) placeEdgeElements(px - half, pz + half, px + half, pz + half);
 
-                        // Sigilliamo gli angoli interni "orfani" (Diagonali)
+                        // Angoli
                         let cornerY = baseEdgeY;
-                        if (!hasLeftFloor && !hasTopFloor && hasTLFloor) {
-                            dummy.position.set(px - half, cornerY, pz - half);
+                        const placeCorner = (cx, cz) => {
+                            let isDirt = Math.random() < 0.5;
+                            dummy.position.set(cx, isDirt ? cornerY - 1 : cornerY, cz);
                             dummy.rotation.set(Math.random(), Math.random(), Math.random());
-                            dummy.scale.set(1.4, 0.7, 1.4); dummy.updateMatrix();
-                            meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
-                        }
-                        if (!hasRightFloor && !hasTopFloor && hasTRFloor) {
-                            dummy.position.set(px + half, cornerY, pz - half);
-                            dummy.rotation.set(Math.random(), Math.random(), Math.random());
-                            dummy.scale.set(1.4, 0.7, 1.4); dummy.updateMatrix();
-                            meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
-                        }
-                        if (!hasLeftFloor && !hasBottomFloor && hasBLFloor) {
-                            dummy.position.set(px - half, cornerY, pz + half);
-                            dummy.rotation.set(Math.random(), Math.random(), Math.random());
-                            dummy.scale.set(1.4, 0.7, 1.4); dummy.updateMatrix();
-                            meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
-                        }
-                        if (!hasRightFloor && !hasBottomFloor && hasBRFloor) {
-                            dummy.position.set(px + half, cornerY, pz + half);
-                            dummy.rotation.set(Math.random(), Math.random(), Math.random());
-                            dummy.scale.set(1.4, 0.7, 1.4); dummy.updateMatrix();
-                            meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
-                        }
+                            dummy.scale.set(1.2, isDirt ? 0.35 : 0.6, 1.2);
+                            dummy.updateMatrix();
+                            if (isDirt) meshPitDirtMounds.setMatrixAt(dirtMoundIdx++, dummy.matrix);
+                            else meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
+                        };
+
+                        if (!hasLeftFloor && !hasTopFloor && hasTLFloor) placeCorner(px - half, pz - half);
+                        if (!hasRightFloor && !hasTopFloor && hasTRFloor) placeCorner(px + half, pz - half);
+                        if (!hasLeftFloor && !hasBottomFloor && hasBLFloor) placeCorner(px - half, pz + half);
+                        if (!hasRightFloor && !hasBottomFloor && hasBRFloor) placeCorner(px + half, pz + half);
                     } else {
                         // Confine Interno Conficcato: DISEGNA I VERI MURI INTERNI
                         dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE*0.75, y * TILE_SIZE + TILE_SIZE / 2);
@@ -7482,7 +7496,9 @@ Game.auras.push({
         meshDebris.count = idxDebris;
         
         meshPitBoulders.count = boulderIdx; 
+        meshPitDirtMounds.count = dirtMoundIdx; 
         meshPitBoulders.instanceMatrix.needsUpdate = true;
+        meshPitDirtMounds.instanceMatrix.needsUpdate = true;
 
         meshPitWalls.count = pWallIdx; // Assicura che le pareti interne non creino glitch
         meshDebris.instanceMatrix.needsUpdate = true;
