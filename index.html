@@ -7009,37 +7009,41 @@ class GameMap {
         meshDepthShadows.renderOrder = 3; 
         this.mapGroup.add(meshDepthShadows);
 
-       // --- PREPARAZIONE ROCCE ORGANICHE PER I BORDI DELLA FOSSA ---
-        if (!window.GLOBAL_PIT_BORDER_GEO) window.GLOBAL_PIT_BORDER_GEO = new THREE.IcosahedronGeometry(14, 2);
+     // --- PREPARAZIONE BORDI: ROCK SCATTERING NATURALE ---
+        if (!window.GLOBAL_PIT_BOULDER_GEO) {
+            // Un dodecaedro a bassa risoluzione è perfetto per sembrare una roccia scheggiata
+            window.GLOBAL_PIT_BOULDER_GEO = new THREE.DodecahedronGeometry(15, 0); 
+        }
         
-       // Illuminazione di base delle rocce sul bordo
         let borderEmissive = 0x000000;
-        if (Game.currentThemeIndex === 0) borderEmissive = 0x163a23; // Verde Muschio acceso per togliere il grigio spento
-        else if (Game.currentThemeIndex === 1) borderEmissive = 0x4a0a0a; // Rosso caldo per la lava
-        else if (Game.currentThemeIndex === 2) borderEmissive = 0x0a1525; // Bluastro glaciale
+        // Foresta: emissione quasi azzerata (era 0x163a23) per togliere l'effetto "radioattivo"
+        if (Game.currentThemeIndex === 0) borderEmissive = 0x030805; 
+        else if (Game.currentThemeIndex === 1) borderEmissive = 0x4a0a0a; // Lava
+        else if (Game.currentThemeIndex === 2) borderEmissive = 0x0a1525; // Ghiaccio
 
-        // CLONIAMO I MATERIALI ESATTI DELL'AMBIENTE (Zero discrepanze visive!)
         const borderRockMat = activeMats.rock.clone();
+        
+        // Se siamo nel tema Foresta (0), forziamo la roccia dei bordi a un grigio scuro neutro
+        if (Game.currentThemeIndex === 0) {
+            borderRockMat.color.setHex(0x2a2a2c);
+        }
+        
         borderRockMat.emissive.setHex(borderEmissive);
+        borderRockMat.transparent = false;
+        borderRockMat.depthWrite = true; // Permette all'acqua di avvolgere la roccia
+        borderRockMat.alphaMap = null; 
+        borderRockMat.flatShading = true; // Tagli di luce spigolosi
+        borderRockMat.roughness = 0.9;
+        borderRockMat.needsUpdate = true;
 
-        const borderDirtMat = activeMats.dirt.clone();
-        borderDirtMat.emissive.setHex(borderEmissive);
+        // Creiamo una singola InstancedMesh molto capiente (mettiamo 16 rocce per ogni fossa)
+        const meshPitBoulders = new THREE.InstancedMesh(window.GLOBAL_PIT_BOULDER_GEO, borderRockMat, pitFloorCount * 16);
+        
+        meshPitBoulders.receiveShadow = true; 
+        meshPitBoulders.castShadow = AppSettings.shadowsEnabled;
 
-       // Creiamo DUE istanze: aumentiamo la memoria a x32 per ospitare tutti i macigni che nasconderanno gli spigoli
-        const meshPitBordersRock = new THREE.InstancedMesh(window.GLOBAL_PIT_BORDER_GEO, borderRockMat, pitFloorCount * 32);
-        const meshPitBordersDirt = new THREE.InstancedMesh(window.GLOBAL_PIT_BORDER_GEO, borderDirtMat, pitFloorCount * 32);
-        
-        meshPitBordersRock.receiveShadow = true; 
-        meshPitBordersRock.castShadow = AppSettings.shadowsEnabled;
-        
-        meshPitBordersDirt.receiveShadow = true; 
-        meshPitBordersDirt.castShadow = false; // La terra piatta non fa ombra per non buggare la scena
-
-        this.mapGroup.add(meshPitBordersRock);
-        this.mapGroup.add(meshPitBordersDirt);
-        
-        let pBorderRockIdx = 0;
-        let pBorderDirtIdx = 0;
+        this.mapGroup.add(meshPitBoulders);
+        let boulderIdx = 0;
 
       // --- PREPARAZIONE VERI OBELISCHI ---
         if (!window.GLOBAL_OBELISK_GEO) window.GLOBAL_OBELISK_GEO = createObeliskGeometry();
@@ -7296,95 +7300,83 @@ class GameMap {
                         
                        // (La Nebbia di profondità ora è gestita globalmente in modo organico)
 
-                       // --- EDGE MASKING: ROCCE ARROTONDATE SUI BORDI ---
-                        let edgeOffsets = [];
+                       // --- EDGE MASKING: ROCK SCATTERING ---
                         let half = TILE_SIZE / 2; // 32
-                        let q = TILE_SIZE / 4; // 16
+                        // Le rocce sono piazzate in profondità: affondano nell'acqua e sbucano appena sopra il pavimento (y=0)
+                        let baseEdgeY = -6; 
 
-                        // Identifichiamo dove si trova il pavimento rispetto a questa fossa
-                        let hasTop = (y > 0 && this.grid[x][y-1] === 2);
-                        let hasBottom = (y < this.height-1 && this.grid[x][y+1] === 2);
-                        let hasLeft = (x > 0 && this.grid[x-1][y] === 2);
-                        let hasRight = (x < this.width-1 && this.grid[x+1][y] === 2);
-
-                        // Diagonali (per gli spigoli esterni/convessi)
-                        let hasTL = (x > 0 && y > 0 && this.grid[x-1][y-1] === 2);
-                        let hasTR = (x < this.width-1 && y > 0 && this.grid[x+1][y-1] === 2);
-                        let hasBL = (x > 0 && y < this.height-1 && this.grid[x-1][y+1] === 2);
-                        let hasBR = (x < this.width-1 && y < this.height-1 && this.grid[x+1][y+1] === 2);
-
-                        // 1. ZOLLE E SASSI SUI LATI DRITTI
-                        if (hasLeft) edgeOffsets.push({x: -half, z: -q*1.5}, {x: -half+3, z: -q*0.8}, {x: -half+5, z: 0}, {x: -half+3, z: q*0.8}, {x: -half, z: q*1.5});
-                        if (hasRight) edgeOffsets.push({x: half, z: -q*1.5}, {x: half-3, z: -q*0.8}, {x: half-5, z: 0}, {x: half-3, z: q*0.8}, {x: half, z: q*1.5});
-                        if (hasTop) edgeOffsets.push({x: -q*1.5, z: -half}, {x: -q*0.8, z: -half+3}, {x: 0, z: -half+5}, {x: q*0.8, z: -half+3}, {x: q*1.5, z: -half});
-                        if (hasBottom) edgeOffsets.push({x: -q*1.5, z: half}, {x: -q*0.8, z: half-3}, {x: 0, z: half-5}, {x: q*0.8, z: half-3}, {x: q*1.5, z: half});
-                        
-                        // 2. SIGILLATURA TOTALE DEGLI SPIGOLI A 90 GRADI
-                        // Se un vertice tocca in qualsiasi modo il pavimento, piantiamo un MACIGNO gigante per coprire lo spigolo.
-                        let cornerOffset = 5; // Lo spingiamo leggermente dentro la fossa per "mangiare" la linea retta
-
-                        if (hasLeft || hasTop || hasTL) edgeOffsets.push({x: -half + cornerOffset, z: -half + cornerOffset, isCorner: true});
-                        if (hasRight || hasTop || hasTR) edgeOffsets.push({x: half - cornerOffset, z: -half + cornerOffset, isCorner: true});
-                        if (hasLeft || hasBottom || hasBL) edgeOffsets.push({x: -half + cornerOffset, z: half - cornerOffset, isCorner: true});
-                        if (hasRight || hasBottom || hasBR) edgeOffsets.push({x: half - cornerOffset, z: half - cornerOffset, isCorner: true});
-
-                        for (let k = 0; k < edgeOffsets.length; k++) {
-                            let off = edgeOffsets[k];
-                            
-                            // Gli angoli DEVONO SEMPRE essere macigni sporgenti per nascondere i 90°.
-                            let isDirt = off.isCorner ? false : (Math.random() < 0.40);
-                            
-                            // Niente dispersione negli angoli: devono centrare perfettamente il vertice!
-                            let scatterX = off.isCorner ? 0 : MathUtils.randomRange(-6, 6);
-                            let scatterZ = off.isCorner ? 0 : MathUtils.randomRange(-6, 6);
-                            
-                            if (isDirt) {
-                                // Zolla di terra (Piatta)
-                                dummy.position.set(
-                                    px + off.x + scatterX, 
-                                    MathUtils.randomRange(-1, 0.5), // Appena sotto il livello del suolo
-                                    pz + off.z + scatterZ
-                                );
-                                let rScale = MathUtils.randomRange(0.6, 1.2);
-                                dummy.scale.set(
-                                    rScale * MathUtils.randomRange(1.0, 1.4), 
-                                    rScale * MathUtils.randomRange(0.1, 0.25), // Molto schiacciata
-                                    rScale * MathUtils.randomRange(1.0, 1.4)  
-                                );
-                            } else {
-                                // ROCCIA VERA E PROPRIA
-                                dummy.position.set(
-                                    px + off.x + scatterX, 
-                                    off.isCorner ? MathUtils.randomRange(-7, -3) : MathUtils.randomRange(-4, -1), // Macigni d'angolo più profondi per coprire il taglio verticale
-                                    pz + off.z + scatterZ
-                                );
+                        // Funzione interna per spawnare una fila caotica di rocce lungo un segmento
+                        const placeBoulders = (startX, startZ, endX, endZ) => {
+                            let steps = 3; // 3 massi sovrapposti per ogni lato (rompe l'effetto pattern)
+                            for (let i = 0; i <= steps; i++) {
+                                let t = i / steps; // da 0.0 a 1.0
                                 
-                                // Se è un angolo, il sasso è dal 30% al 60% PIÙ GRANDE per sigillare visivamente il buco
-                                let rScale = off.isCorner ? MathUtils.randomRange(1.3, 1.6) : MathUtils.randomRange(0.6, 1.0);
+                                // Posizione base interpolata
+                                let bx = startX + (endX - startX) * t;
+                                let bz = startZ + (endZ - startZ) * t;
                                 
-                                // Variazione minimale per mantenere il volume massiccio e non allungarli in modo strano
-                                let stretchX = MathUtils.randomRange(0.9, 1.1);
-                                let stretchY = MathUtils.randomRange(0.85, 1.15); // Asse verticale leggermente più libero
-                                let stretchZ = MathUtils.randomRange(0.9, 1.1);
+                                // Caos: micro-spostamenti per renderlo naturale
+                                bx += MathUtils.randomRange(-3, 3);
+                                bz += MathUtils.randomRange(-3, 3);
+                                let by = baseEdgeY + MathUtils.randomRange(-2, 1);
+
+                                // Scala asimmetrica: massi allungati e schiacciati (creano un argine solido)
+                                let sx = MathUtils.randomRange(0.8, 1.4);
+                                let sy = MathUtils.randomRange(0.5, 0.8); // Schiacciati sull'asse Y per non fare "muro" al giocatore
+                                let sz = MathUtils.randomRange(0.8, 1.4);
+
+                                dummy.position.set(bx, by, bz);
+                                dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+                                dummy.scale.set(sx, sy, sz);
+                                dummy.updateMatrix();
                                 
-                                dummy.scale.set(rScale * stretchX, rScale * stretchY, rScale * stretchZ);
+                                meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
                             }
-                            
-                            // Rotazione casuale su tutti gli assi
-                            dummy.rotation.set(
-                                MathUtils.randomRange(-0.5, 0.5), 
-                                Math.random() * Math.PI, 
-                                MathUtils.randomRange(-0.5, 0.5)
-                            );
-                            
-                            dummy.updateMatrix();
-                            
-                            if (isDirt) {
-                                if (pBorderDirtIdx < pitFloorCount * 32) meshPitBordersDirt.setMatrixAt(pBorderDirtIdx++, dummy.matrix);
-                            } else {
-                                if (pBorderRockIdx < pitFloorCount * 32) meshPitBordersRock.setMatrixAt(pBorderRockIdx++, dummy.matrix);
-                            }
-                        } else {
+                        };
+
+                        let hasLeftFloor = x > 0 && this.grid[x-1][y] === 2;
+                        let hasRightFloor = x < this.width-1 && this.grid[x+1][y] === 2;
+                        let hasTopFloor = y > 0 && this.grid[x][y-1] === 2;
+                        let hasBottomFloor = y < this.height-1 && this.grid[x][y+1] === 2;
+
+                        let hasTLFloor = x > 0 && y > 0 && this.grid[x-1][y-1] === 2;
+                        let hasTRFloor = x < this.width-1 && y > 0 && this.grid[x+1][y-1] === 2;
+                        let hasBLFloor = x > 0 && y < this.height-1 && this.grid[x-1][y+1] === 2;
+                        let hasBRFloor = x < this.width-1 && y < this.height-1 && this.grid[x+1][y+1] === 2;
+
+                        // Piazziamo le rocce esattamete sulla linea di taglio (cucitura perfetta)
+                        if (hasLeftFloor) placeBoulders(px - half, pz - half, px - half, pz + half);
+                        if (hasRightFloor) placeBoulders(px + half, pz - half, px + half, pz + half);
+                        if (hasTopFloor) placeBoulders(px - half, pz - half, px + half, pz - half);
+                        if (hasBottomFloor) placeBoulders(px - half, pz + half, px + half, pz + half);
+
+                        // Sigilliamo gli angoli interni "orfani" (Diagonali)
+                        let cornerY = baseEdgeY;
+                        if (!hasLeftFloor && !hasTopFloor && hasTLFloor) {
+                            dummy.position.set(px - half, cornerY, pz - half);
+                            dummy.rotation.set(Math.random(), Math.random(), Math.random());
+                            dummy.scale.set(1.4, 0.7, 1.4); dummy.updateMatrix();
+                            meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
+                        }
+                        if (!hasRightFloor && !hasTopFloor && hasTRFloor) {
+                            dummy.position.set(px + half, cornerY, pz - half);
+                            dummy.rotation.set(Math.random(), Math.random(), Math.random());
+                            dummy.scale.set(1.4, 0.7, 1.4); dummy.updateMatrix();
+                            meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
+                        }
+                        if (!hasLeftFloor && !hasBottomFloor && hasBLFloor) {
+                            dummy.position.set(px - half, cornerY, pz + half);
+                            dummy.rotation.set(Math.random(), Math.random(), Math.random());
+                            dummy.scale.set(1.4, 0.7, 1.4); dummy.updateMatrix();
+                            meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
+                        }
+                        if (!hasRightFloor && !hasBottomFloor && hasBRFloor) {
+                            dummy.position.set(px + half, cornerY, pz + half);
+                            dummy.rotation.set(Math.random(), Math.random(), Math.random());
+                            dummy.scale.set(1.4, 0.7, 1.4); dummy.updateMatrix();
+                            meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
+                        }
+                    } else {
                         // Confine Interno Conficcato: DISEGNA I VERI MURI INTERNI
                         dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE*0.75, y * TILE_SIZE + TILE_SIZE / 2);
                         dummy.scale.set(1, 1, 1);
@@ -7489,10 +7481,8 @@ Game.auras.push({
         interactiveGrassMesh.count = idxInteractiveGrass;
         meshDebris.count = idxDebris;
         
-        meshPitBordersRock.count = pBorderRockIdx; 
-        meshPitBordersDirt.count = pBorderDirtIdx; 
-        meshPitBordersRock.instanceMatrix.needsUpdate = true;
-        meshPitBordersDirt.instanceMatrix.needsUpdate = true;
+        meshPitBoulders.count = boulderIdx; 
+        meshPitBoulders.instanceMatrix.needsUpdate = true;
 
         meshPitWalls.count = pWallIdx; // Assicura che le pareti interne non creino glitch
         meshDebris.instanceMatrix.needsUpdate = true;
