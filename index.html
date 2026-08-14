@@ -7022,47 +7022,58 @@ class GameMap {
         this.mapGroup.add(meshDepthShadows);
 
 
-        // --- PREPARAZIONE BORDI: ROCK SCATTERING, ZOLLE E ERBA ---
+        // --- PREPARAZIONE BORDI: GEOMETRIA E MATERIALI IDENTICI AL PAVIMENTO ---
         if (!window.GLOBAL_PIT_BOULDER_GEO) {
-            window.GLOBAL_PIT_BOULDER_GEO = new THREE.DodecahedronGeometry(15, 0); 
+            window.GLOBAL_PIT_BOULDER_GEO = new THREE.DodecahedronGeometry(8, 0); 
         }
+// --- MATERIALI BORDI UNIFICATI AL 100% CON IL PAVIMENTO ---
 
-        // Materiale 1: Sassi Decorativi (Minuscoli e spigolosi, per i dettagli extra)
+        // Materiale 1: Sassi Decorativi Piccoli
         const borderRockMat = activeMats.rock.clone();
-        if (Game.currentThemeIndex === 0) borderRockMat.color.setHex(0x28302a); 
+        borderRockMat.color.copy(activeMats.rock.color);
         borderRockMat.emissive.setHex(0x000000);
+        borderRockMat.shininess = activeMats.rock.shininess;
+        borderRockMat.specular.copy(activeMats.rock.specular);
         borderRockMat.transparent = false;
-        borderRockMat.depthWrite = true; 
-        borderRockMat.alphaMap = null; 
-        borderRockMat.flatShading = true; // Spigoli netti
+        borderRockMat.depthWrite = true;
+        borderRockMat.alphaMap = GLOBAL_ALPHA_TEX; 
+        borderRockMat.flatShading = false;
         borderRockMat.needsUpdate = true;
 
-        // Materiale 2: Zolle di Terra (Scure per rimuovere l'effetto scogliera illuminata)
+        // Materiale 2: Zolle di Terra
         const borderDirtMat = activeMats.dirt.clone();
-        borderDirtMat.color.lerp(new THREE.Color(0x000000), 0.45); // Scuriamo la terra del 45%
+        borderDirtMat.color.copy(activeMats.dirt.color);
         borderDirtMat.emissive.setHex(0x000000);
+        borderDirtMat.shininess = activeMats.dirt.shininess || 0;
+        borderDirtMat.specular.copy(activeMats.dirt.specular || new THREE.Color(0x000000));
         borderDirtMat.transparent = false;
         borderDirtMat.depthWrite = true;
-        borderDirtMat.alphaMap = null;
-        borderDirtMat.flatShading = false; // Liscio
+        borderDirtMat.alphaMap = GLOBAL_ALPHA_TEX;
+        borderDirtMat.flatShading = false;
         borderDirtMat.needsUpdate = true;
 
-        // Materiale 3: Zolle di Erba (Morbide)
+        // Materiale 3: Zolle di Erba
         const borderGrassMat = activeMats.grass.clone();
+        borderGrassMat.color.copy(activeMats.grass.color);
         borderGrassMat.emissive.setHex(0x000000); 
+        borderGrassMat.shininess = activeMats.grass.shininess || 0;
+        borderGrassMat.specular.copy(activeMats.grass.specular || new THREE.Color(0x000000));
         borderGrassMat.transparent = false;
         borderGrassMat.depthWrite = true;
-        borderGrassMat.alphaMap = null; 
-        borderGrassMat.flatShading = false; // Liscio
+        borderGrassMat.alphaMap = GLOBAL_ALPHA_TEX; 
+        borderGrassMat.flatShading = false;
         borderGrassMat.needsUpdate = true;
 
-        // FIX SCOGLIERA: Materiale 4, Zolle di Pietra (Morbide come la terra, NON sassi spigolosi!)
+        // Materiale 4: Zolle di Pietra (Copia esatta delle proprietà di activeMats.rock)
         const borderFloorRockMat = activeMats.rock.clone();
+        borderFloorRockMat.color.copy(activeMats.rock.color);
         borderFloorRockMat.emissive.setHex(0x000000); 
+        borderFloorRockMat.shininess = activeMats.rock.shininess;
+        borderFloorRockMat.specular.copy(activeMats.rock.specular);
         borderFloorRockMat.transparent = false;
         borderFloorRockMat.depthWrite = true;
-        borderFloorRockMat.alphaMap = null; 
-        borderFloorRockMat.flatShading = false; // Liscio
+        borderFloorRockMat.alphaMap = GLOBAL_ALPHA_TEX; 
+        borderFloorRockMat.flatShading = false;
         borderFloorRockMat.needsUpdate = true;
 
         // Mesh Instanziate
@@ -7077,16 +7088,16 @@ class GameMap {
         meshPitDirtMounds.receiveShadow = true; 
         meshPitDirtMounds.castShadow = false;   
         
-        meshPitGrassMounds.receiveShadow = true;
+        meshPitGrassMounds.receiveShadow = true; 
         meshPitGrassMounds.castShadow = false;
 
-        meshPitFloorRockMounds.receiveShadow = true;
+        meshPitFloorRockMounds.receiveShadow = true; 
         meshPitFloorRockMounds.castShadow = false;
 
         this.mapGroup.add(meshPitBoulders);
         this.mapGroup.add(meshPitDirtMounds);
         this.mapGroup.add(meshPitGrassMounds);
-        this.mapGroup.add(meshPitFloorRockMounds); // Aggiunto il nuovo bordo liscio
+        this.mapGroup.add(meshPitFloorRockMounds);
         
         let boulderIdx = 0;
         let dirtMoundIdx = 0;
@@ -7148,8 +7159,7 @@ class GameMap {
         let dummy = new THREE.Object3D(); 
         let idxDirt = 0, idxGrass = 0, idxRock = 0, wIdx = 0, pIdx = 0;
         
-        // --- FIX SINCRONIA TERRENO/BORDI ---
-        // Sostituiamo il Math.random() con una funzione che calcola un numero "casuale" ma fisso per ogni coordinata.
+        // --- FIX SINCRONIA TERRENO/BORDI E PRIORITÀ LAYER ---
         const getTileNoiseValue = (tx, ty) => {
             let nRaw = (Math.sin(tx * 0.3) + Math.cos(ty * 0.3)) / 2.0; 
             let prng = Math.abs(Math.sin(tx * 12.9898 + ty * 78.233)) * 43758.5453;
@@ -7157,10 +7167,18 @@ class GameMap {
             return prng * 0.4 + (nRaw * 0.6 + 0.5); 
         };
         const getDominantMat = (tx, ty) => {
+            if (tx < 0 || tx >= this.width || ty < 0 || ty >= this.height) return 0;
+            if (this.grid[tx][ty] !== 2 && this.grid[tx][ty] !== 3) return 0;
             let val = getTileNoiseValue(tx, ty);
             if (val <= 0.35) return 0; // Terra scura
             if (val < 0.70) return 1;  // Erba/Muschio
             return 2;                  // Pietra
+        };
+        // Negli angoli misti dà priorità allo strato visivo superiore per evitare stacchi
+        const getCornerDominantMat = (x1, y1, x2, y2) => {
+            let m1 = getDominantMat(x1, y1);
+            let m2 = getDominantMat(x2, y2);
+            return Math.max(m1, m2);
         };
 
         // FIX SOVRAPPOSIZIONI GLOBALI: Array fuori dal loop per far comunicare le mattonelle adiacenti!
@@ -7374,41 +7392,18 @@ class GameMap {
                         const placeCornerCluster = (cx, cz, adjX, adjY) => {
                             let dominantMat = getDominantMat(adjX, adjY);
                             
-                            dummy.position.set(cx, -1.5, cz);
+                            dummy.position.set(cx, 0.0, cz);
                             dummy.rotation.set(0, Math.random() * Math.PI * 2, 0);
-                            dummy.scale.set(1.8, 0.12, 1.8); // SCHIACCIATO: da 0.35 a 0.12
+                            dummy.scale.set(1.4, 0.35, 1.4); 
                             dummy.updateMatrix();
                             
-                            // FORZIAMO TERRA O ERBA (Niente pietra)
+                            // Assegna la texture coerente col terreno vicino
                             if (dominantMat === 1) {
                                 meshPitGrassMounds.setMatrixAt(grassMoundIdx++, dummy.matrix);
+                            } else if (dominantMat === 2) {
+                                meshPitFloorRockMounds.setMatrixAt(floorRockMoundIdx++, dummy.matrix);
                             } else {
                                 meshPitDirtMounds.setMatrixAt(dirtMoundIdx++, dummy.matrix);
-                            }
-
-                            // SASSOLINI SPARSITI NEGLI ANGOLI (60% di probabilità)
-                            if (Math.random() < 0.60) {
-                                let rx = cx + MathUtils.randomRange(-2, 2);
-                                let rz = cz + MathUtils.randomRange(-2, 2);
-                                
-                                let tooClose = false;
-                                for(let p=0; p<globalSpawnedRocks.length; p++) {
-                                    let sp = globalSpawnedRocks[p];
-                                    if ((rx - sp.x)*(rx - sp.x) + (rz - sp.z)*(rz - sp.z) < 26*26) { tooClose = true; break; }
-                                }
-                                
-                                if (!tooClose) {
-                                    globalSpawnedRocks.push({x: rx, z: rz});
-                                    let sx = MathUtils.randomRange(0.15, 0.30);
-                                    let sy = MathUtils.randomRange(0.15, 0.30);
-                                    let sz = MathUtils.randomRange(0.15, 0.30);
-                                    
-                                    dummy.position.set(rx, -2.5 + MathUtils.randomRange(-1, 0.5), rz);
-                                    dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-                                    dummy.scale.set(sx, sy, sz); 
-                                    dummy.updateMatrix();
-                                    meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
-                                }
                             }
                         };
 
@@ -7419,71 +7414,42 @@ class GameMap {
                             let dirX = endX - startX; 
                             let dirZ = endZ - startZ;
 
-                            let numElements = 4 + Math.floor(Math.random() * 3); 
+                            let numElements = 3 + Math.floor(Math.random() * 2); 
                             
                             for (let i = 0; i < numElements; i++) {
-                                let t = Math.random(); 
-                                let bx = startX + dirX * t + MathUtils.randomRange(-6, 6);
-                                let bz = startZ + dirZ * t + MathUtils.randomRange(-6, 6);
+                                let t = (i + 0.5 + MathUtils.randomRange(-0.2, 0.2)) / numElements; 
+                                let bx = startX + dirX * t + MathUtils.randomRange(-3, 3);
+                                let bz = startZ + dirZ * t + MathUtils.randomRange(-3, 3);
 
-                                let sx = MathUtils.randomRange(1.0, 2.0); 
-                                let sy = MathUtils.randomRange(0.08, 0.15); // SCHIACCIATO: max altezza 0.15 invece di 0.35
-                                let sz = MathUtils.randomRange(1.0, 2.0); 
+                                let s = MathUtils.randomRange(1.1, 1.4); 
+                                let sy = s * MathUtils.randomRange(0.25, 0.35); 
 
-                                dummy.position.set(bx, -1.5, bz);
-                                dummy.rotation.set(0, Math.random() * Math.PI * 2, 0); 
-                                dummy.scale.set(sx, sy, sz);
+                                dummy.position.set(bx, 0.0, bz);
+                                dummy.rotation.set(0, Math.random() * Math.PI * 2, 0);
+                                dummy.scale.set(s, sy, s); 
                                 dummy.updateMatrix();
                                 
-                                // FORZIAMO TERRA O ERBA (Niente pietra)
+                                // Assegna la texture coerente col terreno vicino
                                 if (dominantMat === 1) {
                                     meshPitGrassMounds.setMatrixAt(grassMoundIdx++, dummy.matrix);
+                                } else if (dominantMat === 2) {
+                                    meshPitFloorRockMounds.setMatrixAt(floorRockMoundIdx++, dummy.matrix);
                                 } else {
                                     meshPitDirtMounds.setMatrixAt(dirtMoundIdx++, dummy.matrix);
                                 }
                             }
-
-                            // SASSOLINI SPARSITI LUNGO I BORDI
-                            let numRocks = Math.floor(Math.random() * 3) + 1; 
-                            
-                            for (let i = 0; i < numRocks; i++) {
-                                let t = MathUtils.randomRange(0.2, 0.8); 
-                                let bx = startX + dirX * t + MathUtils.randomRange(-3, 3);
-                                let bz = startZ + dirZ * t + MathUtils.randomRange(-3, 3);
-
-                                let tooClose = false;
-                                for(let p = 0; p < globalSpawnedRocks.length; p++) {
-                                    let sp = globalSpawnedRocks[p];
-                                    if ((bx - sp.x)*(bx - sp.x) + (bz - sp.z)*(bz - sp.z) < 26 * 26) { tooClose = true; break; }
-                                }
-                                if (tooClose) continue;
-
-                                globalSpawnedRocks.push({x: bx, z: bz});
-
-                                let baseScale = MathUtils.randomRange(0.15, 0.30); 
-                                let sx = baseScale * MathUtils.randomRange(0.9, 1.1);
-                                let sy = baseScale * MathUtils.randomRange(0.8, 1.1);
-                                let sz = baseScale * MathUtils.randomRange(0.9, 1.1);
-
-                                dummy.position.set(bx, -3.0 + MathUtils.randomRange(-1.5, 1.0), bz);
-                                dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-                                dummy.scale.set(sx, sy, sz);
-                                dummy.updateMatrix();
-                                
-                                meshPitBoulders.setMatrixAt(boulderIdx++, dummy.matrix);
-                            }
                         };
 
-                        // 3. LETTURA MATTONELLE ADIACENTI
-                        let hasLeftFloor = x > 0 && this.grid[x-1][y] === 2;
-                        let hasRightFloor = x < this.width-1 && this.grid[x+1][y] === 2;
-                        let hasTopFloor = y > 0 && this.grid[x][y-1] === 2;
-                        let hasBottomFloor = y < this.height-1 && this.grid[x][y+1] === 2;
+                        // 3. LETTURA MATTONELLE ADIACENTI (Riconosce anche i tile con obelisco 3)
+                        let hasLeftFloor = x > 0 && (this.grid[x-1][y] === 2 || this.grid[x-1][y] === 3);
+                        let hasRightFloor = x < this.width-1 && (this.grid[x+1][y] === 2 || this.grid[x+1][y] === 3);
+                        let hasTopFloor = y > 0 && (this.grid[x][y-1] === 2 || this.grid[x][y-1] === 3);
+                        let hasBottomFloor = y < this.height-1 && (this.grid[x][y+1] === 2 || this.grid[x][y+1] === 3);
 
-                        let hasTLFloor = x > 0 && y > 0 && this.grid[x-1][y-1] === 2;
-                        let hasTRFloor = x < this.width-1 && y > 0 && this.grid[x+1][y-1] === 2;
-                        let hasBLFloor = x > 0 && y < this.height-1 && this.grid[x-1][y+1] === 2;
-                        let hasBRFloor = x < this.width-1 && y < this.height-1 && this.grid[x+1][y+1] === 2;
+                        let hasTLFloor = x > 0 && y > 0 && (this.grid[x-1][y-1] === 2 || this.grid[x-1][y-1] === 3);
+                        let hasTRFloor = x < this.width-1 && y > 0 && (this.grid[x+1][y-1] === 2 || this.grid[x+1][y-1] === 3);
+                        let hasBLFloor = x > 0 && y < this.height-1 && (this.grid[x-1][y+1] === 2 || this.grid[x-1][y+1] === 3);
+                        let hasBRFloor = x < this.width-1 && y < this.height-1 && (this.grid[x+1][y+1] === 2 || this.grid[x+1][y+1] === 3);
 
                         let cornerTL_ext = !hasLeftFloor && !hasTopFloor && hasTLFloor;
                         let cornerTR_ext = !hasRightFloor && !hasTopFloor && hasTRFloor;
