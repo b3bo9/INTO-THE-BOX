@@ -267,7 +267,13 @@
         z-index: 5; pointer-events: none; 
         transition: opacity 0.5s; 
     }
-    
+    /* NUOVA CLASSE PER IL LIVELLO OSCURITÀ */
+    .vignette-darkness-active {
+        background: radial-gradient(circle at center, transparent 25%, rgba(0, 0, 0, 0.9) 65%, rgba(0, 0, 0, 1) 100%) !important;
+        opacity: 1 !important;
+        display: block !important; /* Forza la visualizzazione anche se le opzioni grafiche sono su "Perf." */
+        z-index: 8 !important; /* Sta sopra l'HUD di base ma sotto i danni */
+    }
     /* FIX SURRISCALDAMENTO: Spegne il DOM Compositing pesante sugli smartphone */
     @media (hover: none) and (pointer: coarse) {
         #vignette { display: none !important; }
@@ -1057,8 +1063,13 @@ const AppSettings = {
         
         // 1. Gestione Vignetta
         if (vignette) {
-            if (this.mode === 0) vignette.style.opacity = '0';
-            else vignette.style.opacity = '1';
+            // Se siamo nel livello oscurità, la vignetta è forzata al 100% per gameplay
+            if (typeof Game !== 'undefined' && Game.isCorrupted && Game.corruptedType === 'darkness') {
+                vignette.style.opacity = '1';
+            } else {
+                if (this.mode === 0) vignette.style.opacity = '0';
+                else vignette.style.opacity = '1';
+            }
         }
 
         // 2. GESTIONE DELLA NUOVA NEBBIA 3D
@@ -3810,14 +3821,15 @@ const UI = {
             }
         }
 
-      let isCombo = Game.combo > 0;
+     let isCombo = Game.combo > 0;
         if (this.cache.comboOpacity !== isCombo) { 
             if (isCombo) { 
-                this.els.comboContainer.classList.remove('opacity-0', 'translate-x-8'); 
+                // Allineato con la classe HTML translate-x-12 per un'entrata fluida a scorrimento
+                this.els.comboContainer.classList.remove('opacity-0', 'translate-x-12'); 
                 this.els.comboContainer.classList.add('opacity-100', 'translate-x-0'); 
             } else { 
                 this.els.comboContainer.classList.remove('opacity-100', 'translate-x-0'); 
-                this.els.comboContainer.classList.add('opacity-0', 'translate-x-8'); 
+                this.els.comboContainer.classList.add('opacity-0', 'translate-x-12'); 
             }
             this.cache.comboOpacity = isCombo; 
         }
@@ -4478,16 +4490,23 @@ pushDebris(px, pz, radius, force) {
     getDecoy() { let d = this.decoys[this._decoyIdx]; this._decoyIdx = (this._decoyIdx + 1) % this.decoys.length; return d; },
     getDashLine() { let d = this.dashLines[this._dashLineIdx]; this._dashLineIdx = (this._dashLineIdx + 1) % this.dashLines.length; return d; },
 
-   addCombo(amount = 1) { 
+  addCombo(amount = 1) { 
         let oldCombo = this.combo;
         this.combo += amount * (this.player ? this.player.modifiers.comboStep : 1); 
         let maxCombo = (this.isCorrupted && this.corruptedType === 'combo') ? 300 : 100;
         this.combo = Math.min(this.combo, maxCombo); 
         this.comboMaxTime = 5.0 + (this.player ? this.player.modifiers.comboDecayAdd : 0);
-       // Sisma Massa Critica: più sei grosso, più ogni colpo fa tremare la telecamera
-if (this.isCorrupted && this.corruptedType === 'critical_mass') {
-    this.addTrauma(0.15 + (this.combo * 0.005));
-}
+        
+        // FIX CRITICO: Ricarica il timer
+        this.comboTimer = this.comboMaxTime; 
+        
+        // Sisma Massa Critica: più sei grosso, più ogni colpo fa tremare la telecamera
+        if (this.isCorrupted && this.corruptedType === 'critical_mass') {
+            this.addTrauma(0.15 + (this.combo * 0.005));
+        }
+
+        // FIX COMBO: Aggiorna e fa pulsare il testo grafico ad ogni nuovo hit!
+        if (UI.triggerComboAnim) UI.triggerComboAnim(this.combo);
         
         // --- TRIGGER ANNUNCIATORE ARCADE ---
         let thresholds = [
@@ -5080,16 +5099,26 @@ loop(timestamp) {
         }
         this.difficultyMult = this.baseDifficultyMult;
         
-       if (this.isCorrupted && !this.isBossFloor) {
+        // Recuperiamo l'elemento vignette
+        let vignetteEl = document.getElementById('vignette');
+        
+        // RESET VIGNETTA OSCURITA' DI BASE (Si assicura che il buio sparisca nei piani normali)
+        if (vignetteEl) vignetteEl.classList.remove('vignette-darkness-active');
+
+        if (this.isCorrupted && !this.isBossFloor) {
             this.difficultyMult *= 1.20; // REWORK: Difficoltà ridotta da 1.25 a 1.20
             if (this.corruptedType === 'darkness') { 
                 mutatorText = "OSCURITÀ OPPRIMENTE"; floorColor = "#aa00ff"; 
                 this.scene.fog.color.setHex(0x000000); 
-                // FIX: Allontaniamo l'inizio della nebbia per compensare l'angolo della telecamera.
-                this.scene.fog.near = camDist - 50; 
-                this.scene.fog.far = camDist + 350; 
+                
+                // NEBBIA AGGRESSIVA: Nasconde completamente la geometria oltre il raggio di luce
+                this.scene.fog.near = camDist - 150; 
+                this.scene.fog.far = camDist + 220; 
                 this.scene.background.setHex(0x000000);
-                if (this.dirLight) this.dirLight.intensity = 0.05;
+                if (this.dirLight) this.dirLight.intensity = 0.00; // Buio totale
+                
+                // Attiviamo la vignettatura estrema
+                if (vignetteEl) vignetteEl.classList.add('vignette-darkness-active');
             }
             else if (this.corruptedType === 'acid_pools') { mutatorText = "POZZE CORROSIVE"; floorColor = "#99ff00"; }
             else if (this.corruptedType === 'unstable') { mutatorText = "PAVIMENTO INSTABILE"; floorColor = "#ff3300"; this.standStillTimer = 0; }
@@ -5155,7 +5184,7 @@ loop(timestamp) {
             let cx = Math.floor(CHUNK_SIZE / 2) * TILE_SIZE + TILE_SIZE/2; let cy = Math.floor(CHUNK_SIZE / 2) * TILE_SIZE + TILE_SIZE/2;
             if(!this.player) { this.player = new Player(cx - TILE_SIZE*6, cy - TILE_SIZE*6); } 
             else { this.player.x = cx - TILE_SIZE*6; this.player.y = cy - TILE_SIZE*6; this.player.mesh.position.set(this.player.x, 0, this.player.y); Game.scene.add(this.player.mesh); }
-            // Sincronizza l'elemento del boss con il tema del piano (0: Foresta/Verde, 1: Lava/Rosso, 2: Ghiaccio/Blu)
+            // Sincronizza l'elemento del boss con il tema del piano
             let themeToElement = { 0: 'green', 1: 'red', 2: 'blue' };
             let chosenElement = themeToElement[this.currentThemeIndex];
             let boss = new BossEnemy(cx, cy, this.floor, chosenElement); 
@@ -6550,6 +6579,16 @@ class GameMap {
     
   generate(isBossFloor = false) {
         InteractiveGrassSystem.init();
+        
+        // FIX CPU Bounding Spheres: Diciamo a Three.js di non perdere tempo a calcolare 
+        // l'ingombro delle geometrie instanziate, assegnando una sfera gigante predefinita.
+        if (!window.GLOBAL_GIANT_SPHERE) window.GLOBAL_GIANT_SPHERE = new THREE.Sphere(new THREE.Vector3(0,0,0), 999999);
+        if (window.GLOBAL_WALL_GEO) window.GLOBAL_WALL_GEO.boundingSphere = window.GLOBAL_GIANT_SPHERE;
+        if (window.GLOBAL_PIT_BOULDER_GEO) window.GLOBAL_PIT_BOULDER_GEO.boundingSphere = window.GLOBAL_GIANT_SPHERE;
+        if (window.GLOBAL_DEBRIS_GEO) window.GLOBAL_DEBRIS_GEO.boundingSphere = window.GLOBAL_GIANT_SPHERE;
+        if (window.GLOBAL_TREE_GEO) window.GLOBAL_TREE_GEO.boundingSphere = window.GLOBAL_GIANT_SPHERE;
+        if (window.GLOBAL_BLOOD_GEO) window.GLOBAL_BLOOD_GEO.boundingSphere = window.GLOBAL_GIANT_SPHERE;
+        
         const rooms = []; const numRooms = 15; 
         
         for(let i=0; i<numRooms; i++) {
@@ -8434,8 +8473,9 @@ class Player extends Entity {
         }
 
         if (Game.isCorrupted && Game.corruptedType === 'darkness') {
-            this.light.intensity = Game.ultimateActive ? 4.0 : 2.5; 
-            this.light.distance = isTouchDevice ? 800 : 1200; 
+            // Intensità massima alzato per fendere il buio, distanza accorciata per creare un cono ristretto
+            this.light.intensity = Game.ultimateActive ? 6.0 : 4.0; 
+            this.light.distance = isTouchDevice ? 500 : 750; 
         }
 
        // --- AGGIORNAMENTO COLORE SCUDO CINETICO ---
@@ -9058,46 +9098,82 @@ if (Game.ultimateActive) currentSpeed *= 1.5; currentSpeed = Math.min(currentSpe
                     Game.addTrauma(0.5); 
                 } 
                 
-                if (this.modifiers.dashLightning) {
-                    Game.addTrauma(0.8);
+               if (this.modifiers.dashLightning) {
+                    Game.addTrauma(1.2); // Tremolio più forte per dare senso d'impatto
                     AudioEngine.playShoot('chain_lightning');
                     
-                    // Creiamo 3 punti d'impatto: il centro esatto + 2 punti sparsi causalmente intorno
-                    let impactPoints = [ {x: this.x, y: this.y} ];
-                    for(let i=0; i<2; i++) {
-                        let a = Math.random() * Math.PI * 2;
-                        let d = MathUtils.randomRange(40, 90); // Raggio di spargimento dei fulmini extra
-                        impactPoints.push({x: this.x + Math.cos(a)*d, y: this.y + Math.sin(a)*d});
+                    // 1. FLASH DI LUCE AMBIENTALE (Illumina i muri e il pavimento di azzurro)
+                    Game.spawnLightFlash(this.x, this.y, 0x00aaff, 5.0, 600, 0.4);
+                    
+                    // 2. ESPLOSIONE RADIALE DI PARTICELLE AZZURRINE DAL GIOCATORE
+                    let pCount = AppSettings.isLow ? 15 : 45;
+                    for(let i = 0; i < pCount; i++) {
+                        let a = (Math.PI * 2 / pCount) * i + MathUtils.randomRange(-0.1, 0.1);
+                        let p = Game.getParticle();
+                        
+                        // Alterniamo scie allungate (trail) a scintille tonde (spark)
+                        let pType = i % 2 === 0 ? 'trail' : 'spark';
+                        p.spawn(this.x, 15, this.y, SharedMat.spriteBlue, pType, a);
+                        
+                        // Fisica: le facciamo schizzare orizzontalmente rasoterra a grandissima velocità
+                        let pSpeed = MathUtils.randomRange(600, 1200);
+                        p.vx = Math.cos(a) * pSpeed;
+                        p.vz = Math.sin(a) * pSpeed;
+                        p.vy = MathUtils.randomRange(10, 50); // Rimangono basse
+                        p.baseSize = MathUtils.randomRange(15, 30);
+                        p.life = MathUtils.randomRange(0.2, 0.45);
+                        p.maxLife = p.life;
                     }
 
-                    // Eseguiamo grafica, danni e stordimento per ognuno dei 3 punti
-                    impactPoints.forEach(pt => {
-                        // Pilastro visivo del fulmine
+                    // FIX GC: Zero-Allocation Arrays. Non istanziamo nuovi oggetti in memoria!
+                    if (!Game._dashImpactPoints) Game._dashImpactPoints = [{x:0, y:0}, {x:0, y:0}, {x:0, y:0}];
+                    
+                    Game._dashImpactPoints[0].x = this.x;
+                    Game._dashImpactPoints[0].y = this.y;
+                    
+                    for(let i=1; i<3; i++) {
+                        let a = Math.random() * Math.PI * 2;
+                        let d = MathUtils.randomRange(40, 90); 
+                        Game._dashImpactPoints[i].x = this.x + Math.cos(a)*d;
+                        Game._dashImpactPoints[i].y = this.y + Math.sin(a)*d;
+                    }
+
+                    // Eseguiamo grafica, danni e stordimento senza .forEach()
+                    for(let k=0; k<3; k++) {
+                        let pt = Game._dashImpactPoints[k];
+                        // Pilastro visivo del fulmine: nucleo bianco, alone azzurro
+                        let baseSpark = Game.getParticle();
+                        baseSpark.spawn(pt.x, 10, pt.y, SharedMat.spriteBlue, 'nova');
+                        baseSpark.baseSize = 160;
+
                         for(let j=0; j<4; j++) {
                             let spark = Game.getParticle();
-                            spark.spawn(pt.x, 20 + (j*45), pt.y, SharedMat.spriteBlue, 'nova');
-                            spark.baseSize = 80 - (j*15); // Si restringe verso l'alto
+                            spark.spawn(pt.x, 20 + (j*45), pt.y, SharedMat.spriteWhite, 'nova');
+                            spark.baseSize = 100 - (j*20); // Più grande alla base, stretto in cima
                         }
                         
-                        // Calcolo danni ad area
-                        let nearby = Game.enemyGrid.findNearby(pt, 90);
-                        nearby.forEach(e => {
-                            if (MathUtils.distanceSq(pt, e) < 90*90) {
-                                e.takeDamage(this.stats.maxDmg * 0.3 * this.modifiers.dmgMult, this, false, false);
-                                e.frozenTimer = 1.5; // Stun glaciale/elettrico
+                        // Calcolo danni ad area e STUN
+                        let nearby = Game.enemyGrid.findNearby(pt, 120); // Raggio d'impatto aumentato da 90 a 120
+                        for (let j = 0; j < nearby.length; j++) {
+                            let e = nearby[j];
+                            if (!e.dead && MathUtils.distanceSq(pt, e) < 120*120) {
+                                e.takeDamage(this.stats.maxDmg * 0.4 * this.modifiers.dmgMult, this, false, false); // Danno alzato al 40%
+                                e.frozenTimer = 2.0; // Stun glaciale/elettrico aumentato a 2 secondi
+                                
+                                // Piccolo feedback elettrico sul nemico
+                                Game.getParticle().spawn(e.x, 30, e.y, SharedMat.spriteBlue, 'nova');
                             }
-                        });
-                    });
+                        }
+                    }
                 }
             }
         }
         
-
         this.attackTimer -= dt;
         if (isShooting && this.attackTimer <= 0 && !this.isDashing && !(this.overdrive && this.essence === 'red')) this.attack();
-       if (this.isAttacking) { 
+        if (this.isAttacking) { 
             this.attackSwing += dt * 14; 
-            this.modelParts.weaponGroup.rotation.x = -Math.PI/2 + this.attackSwing; 
+            this.modelParts.weaponGroup.rotation.x = -Math.PI/2 + this.attackSwing;
             
             // Effetto rinculo dell'arma all'indietro durante il colpo
             this.modelParts.weaponGroup.position.z = 8 + Math.sin(this.attackSwing) * 4.5;
@@ -9667,15 +9743,11 @@ class Enemy extends Entity {
         this.mesh = new THREE.Group();
         this.mesh.visible = false;
         Game.scene.add(this.mesh);
-        this.currentType = null;
+       this.currentType = null;
         this.mat = null;
-        this.telegraphMesh = new THREE.Mesh(window.GLOBAL_TELEGRAPH_GEO, SharedMat.telegraph.clone());
-this.telegraphMesh.matrixAutoUpdate = false;
-this.telegraphMesh.visible = false;
-Game.scene.add(this.telegraphMesh);
     }
 
-   spawn(x, y, type, level) {
+  spawn(x, y, type, level) {
         this.active = true;
         this.dead = false;
         this.thinkOffset = Math.floor(Math.random() * 5);
@@ -9684,10 +9756,10 @@ Game.scene.add(this.telegraphMesh);
         this.type = type; 
         this.level = level; 
         this.attackCooldown = 0;
-       this.telegraphMesh.visible = false;
+        // telegraphMesh.visible eliminato: non usiamo più il cerchio a terra!
         this.telegraphTimer = 0; 
         this.isPursuer = false; 
-        this.isGolden = false;  
+        this.isGolden = false;
 
         // Reset pulito dello stato per prevenire glitch dal Pool
         this.state = 'walk';
@@ -9734,9 +9806,9 @@ Game.scene.add(this.telegraphMesh);
                 this.beams = []; this.beamGlows = []; this.targetShields = [];
                 // Pre-alloca sempre il massimo assoluto (3 slot) per il Zero-Allocation
                 for (let i = 0; i < 3; i++) { 
-                    let bm = new THREE.Mesh(SharedGeo.box, SharedMat.prophetBeam); bm.matrixAutoUpdate = false; Game.scene.add(bm); this.beams.push(bm);
-                    let bgm = new THREE.Mesh(SharedGeo.box, SharedMat.prophetGlow); bgm.matrixAutoUpdate = false; Game.scene.add(bgm); this.beamGlows.push(bgm);
-                    let ts = new THREE.Mesh(SharedGeo.sphere, SharedMat.prophetShield); ts.matrixAutoUpdate = false; Game.scene.add(ts); this.targetShields.push(ts);
+                    let bm = new THREE.Mesh(SharedGeo.box, SharedMat.prophetBeam); bm.matrixAutoUpdate = false; bm.renderOrder = 10; Game.scene.add(bm); this.beams.push(bm);
+                    let bgm = new THREE.Mesh(SharedGeo.box, SharedMat.prophetGlow); bgm.matrixAutoUpdate = false; bgm.renderOrder = 10; Game.scene.add(bgm); this.beamGlows.push(bgm);
+                    let ts = new THREE.Mesh(SharedGeo.sphere, SharedMat.prophetShield); ts.matrixAutoUpdate = false; ts.renderOrder = 10; Game.scene.add(ts); this.targetShields.push(ts);
                 }
             }
         }
@@ -9789,22 +9861,18 @@ Game.scene.add(this.telegraphMesh);
         
       // --- IL VERO OBJECT POOLING: CREAZIONE VS RIUTILIZZO ---
         
-        // Se il tipo di nemico è DIVERSO da quello salvato in questo slot, 
-        // ALLORA E SOLO ALLORA distruggiamo e ricostruiamo la geometria.
+        // FIX MEMORY LEAK: Evitiamo di distruggere ricorsivamente materiali condivisi 
+        // o di instanziare Gruppi inutili. Pulisce la RAM e azzera il GC Stutter.
         if (this.currentType !== type) {
-            this.mesh.traverse((child) => {
-                if (child.isMesh || child.isSprite) {
-                    if (child.material && !SharedMatSet.has(child.material)) {
-                        if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
-                        else child.material.dispose();
-                    }
-                    if (child.geometry && !SharedGeoSet.has(child.geometry)) {
-                        child.geometry.dispose();
-                    }
-                }
-            });
-            while(this.mesh.children.length > 0){ this.mesh.remove(this.mesh.children[0]); }
-            if (this.mat) this.mat.dispose();
+            // 1. Rimuovi i vecchi figli (ma NON distruggere le geometrie globali!)
+            for (let i = this.mesh.children.length - 1; i >= 0; i--) {
+                let child = this.mesh.children[i];
+                // Non rimuovere le ombre o i telegrapher pre-allocati
+                if (child === this.shadowMesh || child === this.telegraphMesh || child === this.auraRingMesh || child === this.auraGlow) continue;
+                this.mesh.remove(child);
+            }
+            
+            if (this.mat) { this.mat.dispose(); this.mat = null; }
 
             const EnemyMatClass = isTouchDevice ? THREE.MeshLambertMaterial : THREE.MeshPhongMaterial;
             this.mat = type === 'crystal' ? 
@@ -9812,20 +9880,29 @@ Game.scene.add(this.telegraphMesh);
                 new EnemyMatClass({ 
                     color: color, 
                     shininess: AppSettings.isUltraPC ? 60 : 30,
-                    map: CHAR_GRUNGE_TEX, // Texture condivisa = Costo Zero
-                    bumpMap: isTouchDevice ? null : CHAR_GRUNGE_TEX, // Bump disattivato su smartphone
+                    map: CHAR_GRUNGE_TEX,
+                    bumpMap: isTouchDevice ? null : CHAR_GRUNGE_TEX,
                     bumpScale: 0.06
                 });
                 
-            // ATTENZIONE: Costruiamo SEMPRE il modello base (non elite)
             let modelData = ModelFactory.buildEnemy(type, size, this.mat);
             this.mesh.add(modelData.group); 
             this.modelParts = modelData.parts;
             this.currentType = type;
 
+            // FIX: Riassegna la matrice per evitare desincronizzazioni fisiche dopo la ricostruzione
+            this.mesh.updateMatrixWorld(true);
+
             this.flashMats = [];
-            if (type !== 'crystal') { this.mesh.traverse(c => { if(c.isMesh && c.material === this.mat) this.flashMats.push(c.material); }); }
-        } 
+            if (type !== 'crystal') { 
+                // Evita le chiusure (closures) nelle traverse frequenti
+                let mats = this.flashMats;
+                let targetMat = this.mat;
+                this.mesh.traverse(function(c) { 
+                    if(c.isMesh && c.material === targetMat) mats.push(c.material); 
+                }); 
+            }
+        }
 
         // --- AGGIORNAMENTO DINAMICO A COSTO ZERO ---
         // Che il modello sia stato appena creato o riutilizzato, aggiorniamo i suoi colori e dimensioni:
@@ -10333,43 +10410,48 @@ Game.scene.add(this.telegraphMesh);
         // Movimento Continuo a 60 FPS basato sui dati calcolati dallo "Staggering"
         if (this.distToTargetSq !== undefined && this.distToTargetSq < this.aggroRangeSq) {
             
-     // --- INIZIO TELEGRAPHING ANIMATO ---
-        if (this.telegraphTimer > 0) {
-            this.telegraphTimer -= dt;
+    // --- INIZIO TELEGRAPHING ANIMATO ---
+        if (this.telegraphTimer > 0) {
+            this.telegraphTimer -= dt;
 
-            this.telegraphMesh.position.set(this.x, 0.3, this.y);
-            
-            // Progresso da 0.0 (inizio) a 1.0 (fuoco!)
-            let prog = 1.0 - (this.telegraphTimer / 0.4); 
-            
-            // Il cerchio si allarga fluidamente fino al limite
-            let ts = this.radius * 6 * prog; 
-            this.telegraphMesh.scale.set(ts, ts, 1);
-            
-            // L'opacità aumenta rendendo il rosso sempre più aggressivo e visibile
-            this.telegraphMesh.material.opacity = 0.2 + (prog * 0.5);
-            this.telegraphMesh.updateMatrix();
-            this.telegraphMesh.visible = true;
+            // Progresso da 0.0 (inizio carica) a 1.0 (sparo)
+            let prog = 1.0 - (this.telegraphTimer / 0.4); 
+            
+            // Colori base del nemico
+            let baseHex = this.isGolden ? 0xffaa00 : (this.isElite ? 0x440000 : 0x000000);
+            let baseInt = this.isGolden ? 2.0 : 1.0;
 
-            // Lampeggio bianco di avvertimento sul modello del nemico
-            if (Math.floor(this.telegraphTimer * 15) % 2 === 0) {
-                for(let i=0; i<this.flashMats.length; i++) { this.flashMats[i].emissive.setHex(0xffffff); this.flashMats[i].emissiveIntensity = 2.0; }
-            } else {
-                let base = this.isGolden ? 0xffaa00 : (this.isElite ? 0x440000 : 0x000000);
-                let baseInt = this.isGolden ? 2.0 : 1.0;
-                for(let i=0; i<this.flashMats.length; i++) { this.flashMats[i].emissive.setHex(base); this.flashMats[i].emissiveIntensity = baseInt; }
-            }
+            // Inizializzazione sicura e Zero-Allocation per non pesare sulla RAM
+            if (!Game._dummyTelegraphColor) Game._dummyTelegraphColor = new THREE.Color();
+            if (!Game._whiteColor) Game._whiteColor = new THREE.Color(0xffffff);
 
-            // Quando il timer scade, spara!
-            if (this.telegraphTimer <= 0) {
-                this.telegraphMesh.visible = false;
-                let base = this.isGolden ? 0xffaa00 : (this.isElite ? 0x440000 : 0x000000);
-                let baseInt = this.isGolden ? 2.0 : 1.0;
-                for(let i=0; i<this.flashMats.length; i++) { this.flashMats[i].emissive.setHex(base); this.flashMats[i].emissiveIntensity = baseInt; }
-                this.executeAttack();
-            }
-            return;
-        }
+            Game._dummyTelegraphColor.setHex(baseHex);
+            
+            // Curva esponenziale: inizia a caricarsi piano e diventa bianco abbagliante solo alla fine
+            let curve = prog * prog * prog; 
+            
+            // Sfuma dinamicamente dal colore base verso il bianco puro
+            Game._dummyTelegraphColor.lerp(Game._whiteColor, curve);
+            
+            // Aumenta l'intensità della luce per farlo "brillare" sempre di più
+            let currentInt = baseInt + (curve * 3.5);
+
+            // Applica l'effetto visivo ai materiali del modello
+            for(let i=0; i<this.flashMats.length; i++) { 
+                this.flashMats[i].emissive.copy(Game._dummyTelegraphColor); 
+                this.flashMats[i].emissiveIntensity = currentInt; 
+            }
+
+            // Quando il timer scade, resetta i colori e spara!
+            if (this.telegraphTimer <= 0) {
+                for(let i=0; i<this.flashMats.length; i++) { 
+                    this.flashMats[i].emissive.setHex(baseHex); 
+                    this.flashMats[i].emissiveIntensity = baseInt; 
+                }
+                this.executeAttack();
+            }
+            return;
+        }
 
            if (this.distToTargetSq > this.attackRangeSq) { 
                 this.move(this.moveX, this.moveY, dt); 
@@ -12015,7 +12097,14 @@ function respawnPlayer() {
         Game.player.glacialShieldMesh.visible = false;
         Game.player.updateAppearance();
 
-        Game.snapCamera(); 
+        // FIX: Nasconde i pezzi del cadavere dalla morte precedente
+        if (Game.player.deadPhysicsParts) {
+            for (let i = 0; i < Game.player.deadPhysicsParts.length; i++) {
+                Game.player.deadPhysicsParts[i].mesh.visible = false;
+            }
+        }
+
+        Game.snapCamera();
         
         Game.state = 'WARPING_IN';
         Game.warpTimer = 1.0;
