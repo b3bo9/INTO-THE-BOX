@@ -1083,8 +1083,8 @@ const AppSettings = {
                 else if (this.mode === 1) pr = Math.min(window.devicePixelRatio, 1.0); 
                 else pr = 0.75; 
             }
-            Game.renderer.setPixelRatio(pr);
-            if (Game.composer) Game.composer.setPixelRatio(pr);
+          Game.renderer.setPixelRatio(pr);
+            if (Game.composer) Game.composer.setSize(window.innerWidth, window.innerHeight);
             
             // Accendi/Spegni le ombre finte a terra in tempo reale
             // Accendi/Spegni le ombre finte a terra in tempo reale
@@ -1102,18 +1102,8 @@ const AppSettings = {
         
        if (Game.bloomPass) { Game.bloomPass.strength = this.isUltraPC ? 0.25 : 0.15; Game.bloomPass.radius = 0.2; }
         
-        if (window.GLOBAL_THEME_MATS) {
-            window.GLOBAL_THEME_MATS.forEach((mats) => {
-                mats.dirt.roughness = this.isUltraPC ? 0.7 : 0.9; mats.dirt.metalness = 0.1;
-                mats.wall.roughness = this.isUltraPC ? 0.6 : 0.8; mats.wall.metalness = 0.2;
-                
-                mats.dirt.bumpMap = null; mats.grass.bumpMap = null;
-                mats.rock.bumpMap = null; mats.wall.bumpMap = null;
-                
-                mats.dirt.needsUpdate = true; mats.wall.needsUpdate = true;
-                mats.grass.needsUpdate = true; mats.rock.needsUpdate = true;
-            });
-        }
+       // Rimosso il ciclo forEach su GLOBAL_THEME_MATS:
+        // i materiali sono Phong/Lambert e forzare needsUpdate causa solo stuttering della GPU.
         if(Game.scene) Game.scene.traverse(child => { if (child.material) child.material.needsUpdate = true; });
     },
     toggleColorblind() {
@@ -4451,8 +4441,9 @@ pushDebris(px, pz, radius, force) {
         this.bloodMesh.setMatrixAt(this.bloodIdx, dummy.matrix);
         
         // Assegna il colore in base al tipo di ferita/esplosione!
-        let col = new THREE.Color(type === 'blood' ? 0x4a0000 : (type === 'scorch' ? 0x111111 : 0x113300));
-        this.bloodMesh.setColorAt(this.bloodIdx, col);
+      if (!Game._reusableDecalColor) Game._reusableDecalColor = new THREE.Color();
+        Game._reusableDecalColor.setHex(type === 'blood' ? 0x4a0000 : (type === 'scorch' ? 0x111111 : 0x113300));
+        this.bloodMesh.setColorAt(this.bloodIdx, Game._reusableDecalColor);
         
         this.bloodMesh.instanceMatrix.needsUpdate = true;
         this.bloodMesh.instanceColor.needsUpdate = true;
@@ -5221,8 +5212,15 @@ loop(timestamp) {
             for(let i=0; i<this.enemies.length; i++) { if(this.enemies[i].type === 'crystal') this.floorMaxKills++; }
             this.floorKills = 0;
             let pos = this.map.getRandomFloorTile();
-            if(!this.player) { this.player = new Player(pos.x * TILE_SIZE + TILE_SIZE/2, pos.y * TILE_SIZE + TILE_SIZE/2); } 
-            else { this.player.x = pos.x * TILE_SIZE + TILE_SIZE/2; this.player.y = pos.y * TILE_SIZE + TILE_SIZE/2; this.player.mesh.position.set(this.player.x, 0, this.player.y); Game.scene.add(this.player.mesh); }
+           if(!this.player) { 
+                this.player = new Player(pos.x * TILE_SIZE + TILE_SIZE/2, pos.y * TILE_SIZE + TILE_SIZE/2); 
+            } else { 
+                this.player.x = pos.x * TILE_SIZE + TILE_SIZE/2; 
+                this.player.y = pos.y * TILE_SIZE + TILE_SIZE/2; 
+                this.player.mesh.position.set(this.player.x, 0, this.player.y); 
+                Game.scene.add(this.player.mesh);
+                if (this.player.shadowMesh) Game.scene.add(this.player.shadowMesh); // Ripristina l'ombra
+            }
             this.spawnEnemies();
             AudioEngine.playGameMusic();
         }
@@ -6362,6 +6360,13 @@ const InteractiveGrassSystem = {
         this.geo = new THREE.ConeGeometry(3.5, 18, 3);
         this.geo.translate(0, 9, 0); 
         this.geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 999999);
+
+        // Uniforma le normali verso l'alto per un'illuminazione morbida e priva di sfaccettature nere
+        const normals = this.geo.attributes.normal;
+        for (let i = 0; i < normals.count; i++) {
+            normals.setXYZ(i, 0, 1, 0);
+        }
+        normals.needsUpdate = true;
 
        // Colore base muschio scuro. Nessuna emissione, deve reagire solo alla luce della lanterna!
         this.mat = new THREE.MeshLambertMaterial({
@@ -11218,7 +11223,7 @@ class BossEnemy extends Enemy {
         for(let i=0; i<pCount; i++) Game.getParticle().spawn(this.x, 30, this.y, bloodMat, 'blood');
         
         
-       this.mesh.traverse(child => {
+      this.mesh.traverse(child => {
             // FIX VRAM: Assicuriamoci che anche i Boss distruggano eventuali Sprite assegnati
             if (child.isMesh || child.isSprite) {
                 if (child.geometry && !SharedGeoSet.has(child.geometry)) child.geometry.dispose();
@@ -11228,9 +11233,6 @@ class BossEnemy extends Enemy {
                 }
             }
         });
-        
-        this.mat.dispose(); 
-        Game.scene.remove(this.mesh); 
         
         this.mat.dispose(); 
         Game.scene.remove(this.mesh); 
@@ -11971,7 +11973,12 @@ function clearScene() {
                     child.geometry !== window.GLOBAL_FOG_GEO && 
                     child.geometry !== window.GLOBAL_DEAD_BODY_GEO && 
                     child.geometry !== window.GLOBAL_TELEGRAPH_GEO && 
-               !SharedGeoSet.has(child.geometry)) {
+                    child.geometry !== window.GLOBAL_OBELISK_GEO &&
+                    child.geometry !== window.GLOBAL_RUNE_GEO &&
+                    child.geometry !== window.GLOBAL_GODRAY_GEO &&
+                    child.geometry !== window.GLOBAL_FLOORGLOW_GEO &&
+                    child.geometry !== window.GLOBAL_PIT_BOULDER_GEO &&
+                    !SharedGeoSet.has(child.geometry)) {
                     child.geometry.dispose();
                 }
                 
@@ -11980,7 +11987,8 @@ function clearScene() {
                     child.material !== window.GLOBAL_TREE_MAT && 
                     child.material !== window.GLOBAL_BLOOD_MAT && 
                     child.material !== window.GLOBAL_FOG_MAT && 
-                    child.material !== InteractiveGrassSystem.mat && // <--- FIX: Protegge il materiale dello shader dell'erba!
+                    child.material !== window.GLOBAL_PIT_SHADOW_MAT &&
+                    child.material !== InteractiveGrassSystem.mat &&
                     !(window.GLOBAL_THEME_MATS && window.GLOBAL_THEME_MATS.some(mats => Object.values(mats).includes(child.material))) &&
                     !SharedMatSet.has(child.material)) {
                     if (Array.isArray(child.material)) {
