@@ -5585,14 +5585,14 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
             windCount++;
         }
         
-        for(let i=0; i<this.projectiles.length; i++) {
+       for(let i=0, len=this.projectiles.length; i<len; i++) {
+            if (windCount >= MAX_WIND) break; // Interrompe il ciclo appena gli slot sono pieni
             let p = this.projectiles[i];
-            if ((p.active || p.windIntensity > 0) && windCount < MAX_WIND) {
-                // Filtro distanza: calcolato dal centro dello schermo (focalX/Z)
-                let dx = p.windX - focalX;
-                let dz = p.windZ - focalZ;
+            if (p.active) { // Considera esclusivamente i proiettili in volo
+                let dx = p.x - focalX;
+                let dz = p.y - focalZ;
                 if ((dx * dx + dz * dz) < maxWindDistSq) {
-                    windSources[windCount].set(p.windX, p.windIntensity * 2.0, p.windZ);
+                    windSources[windCount].set(p.x, 2.0, p.y);
                     windCount++;
                 }
             }
@@ -6345,8 +6345,8 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
        
 };
 // --- SISTEMA ERBA INTERATTIVA (GPU SHADER) ---
-// Su mobile limitiamo a 2 sorgenti (giocatore + proiettile attivo)
-const MAX_WIND = isTouchDevice ? 2 : 10;
+// Su mobile consentiamo 6 sorgenti (1 giocatore + fino a 5 proiettili in volo)
+const MAX_WIND = isTouchDevice ? 6 : 10;
 
 const InteractiveGrassSystem = {
     uniforms: {
@@ -11579,9 +11579,12 @@ if (type === 'arrow' || type === 'homing_arrow') {
         }
         if (!this.piercing) this.destroy();
     }
-    destroy() {
+   destroy() {
         this.groundGlow.visible = false;
-        this.active = false; this.group.visible = false; let pMat = SharedMat.spriteWhite;
+        this.active = false; 
+        this.windIntensity = 0; // Rilascia immediatamente lo slot del vento
+        this.group.visible = false; 
+        let pMat = SharedMat.spriteWhite;
         if (this.type === 'player_arrow') pMat = SharedMat.spriteYellow;
         if (this.type === 'explosive_arrow' || this.type === 'enemy_fireball' || this.type === 'fire_shape') pMat = SharedMat.spriteRed;
         if (this.type === 'chain_lightning' || this.type === 'enemy_bolt') pMat = SharedMat.spriteBlue;
