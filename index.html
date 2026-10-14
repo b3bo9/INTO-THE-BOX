@@ -150,26 +150,18 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #444; border-radius: 0; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00DDFF; }
         
-       /* Correzioni in-game */
-        .health-bar-container { background: #111; border: 1px solid #444; border-radius: 0; overflow: hidden; position: relative; }
-        /* RIPRISTINATE ESSENZE ROTONDE */
-        .stack-dot { width: 22px; height: 22px; border-radius: 50% !important; background: #1a1a1a; border: 2px solid #555; transition: all 0.3s; transform: none !important; }
-        @media (min-width: 640px) { .stack-dot { width: 30px; height: 30px; border-width: 3px; } }
-        /* ------------------------------------- */
-
-        #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-    @media (hover: hover) and (pointer: fine) {
+      #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        @media (hover: hover) and (pointer: fine) {
             #game-container canvas {
-                /* Saturazione extra per un look arcade molto "pop" su PC */
                 filter: saturate(1.25) brightness(1.05);
             }
         }
         #uiCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
         
-        .health-bar-container { background: #111; border: 1px solid #444; overflow: hidden; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
+        .health-bar-container { background: #111; border: 1px solid #444; border-radius: 0; overflow: hidden; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
         #ui-floor-progress { transform-origin: left; width: 100%; }
         #combo-bar { transform-origin: bottom; width: 100%; height: 100%; }
-        .stack-dot { width: 22px; height: 22px; border-radius: 0; transform: rotate(45deg); background: #1a1a1a; border: 2px solid #555; transition: all 0.3s; box-shadow: inset 0 0 8px #000; }
+        .stack-dot { width: 22px; height: 22px; border-radius: 50% !important; background: #1a1a1a; border: 2px solid #555; transition: all 0.3s; transform: none !important; box-shadow: inset 0 0 8px #000; }
         @media (min-width: 640px) { .stack-dot { width: 30px; height: 30px; border-width: 3px; } }
         
         .stack-dot.active.red { background: #FF1133; border-color: #ffffff; box-shadow: 0 0 25px #FF1133, inset 0 0 8px rgba(255,255,255,0.8); }
@@ -373,11 +365,6 @@ body.colorblind-mode #opt-colorblind-text {
         }
 
         @keyframes arcade-blink {
-            0%, 100% { opacity: 1; text-shadow: 0 0 8px rgba(255,255,255,0.6); }
-            50% { opacity: 0.3; text-shadow: none; }
-        }
-        .anim-arcade-blink { animation: arcade-blink 1.5s step-end infinite; }
- @keyframes arcade-blink {
             0%, 100% { opacity: 1; text-shadow: 0 0 8px rgba(255,255,255,0.6); }
             50% { opacity: 0.3; text-shadow: none; }
         }
@@ -880,8 +867,6 @@ body.colorblind-mode #opt-colorblind-text {
     <!-- CONTAINER 3D -->
     <div id="game-container"></div>
     <canvas id="uiCanvas"></canvas>
-    <div id="mist-layer1" class="mist-overlay"></div>
-<div id="mist-layer2" class="mist-overlay"></div>
     <div id="vignette"></div>
 <div id="blood-vignette" class="absolute inset-0 pointer-events-none opacity-0 z-[6]"></div>
     <!-- CONTROLLI MOBILE -->
@@ -1033,78 +1018,65 @@ const AppSettings = {
     get isUltra() { return this.mode === 2; },
     get isUltraPC() { return this.mode === 2 && !isTouchDevice; },
     
-    // OTTIMIZZAZIONE PC: Ombre attive SOLO su Ultra.
-    // La modalità "Bilanciata" ora spegnerà le ombre dinamiche usando le blob-shadows, raddoppiando gli FPS sui laptop.
-    get shadowsEnabled() { return this.mode === 2; },
-    get isUltraPC() { return this.mode === 2 && !isTouchDevice; },
-    get shadowsEnabled() { return this.mode === 2; },
+   get shadowsEnabled() { return this.mode === 2; },
     
-   init() {
-        if (this.isLow) {
-            document.body.classList.add('low-spec');
-            // FIX: La nebbia 3D viene spenta automaticamente in Game.updateCamera
-        }
+    init() {
+        if (this.isLow) document.body.classList.add('low-spec');
     },
     
     toggleGraphics() {
         this.mode = (this.mode + 1) % 3;
+        this.applyGraphics();
+    },
+
+    applyGraphics() {
         const vignette = document.getElementById('vignette');
-        
-        // 1. Gestione Vignetta
         if (vignette) {
-            // Se siamo nel livello oscurità, la vignetta è forzata al 100% per gameplay
             if (typeof Game !== 'undefined' && Game.isCorrupted && Game.corruptedType === 'darkness') {
                 vignette.style.opacity = '1';
             } else {
-                if (this.mode === 0) vignette.style.opacity = '0';
-                else vignette.style.opacity = '1';
+                vignette.style.opacity = this.mode === 0 ? '0' : '1';
             }
         }
 
-        // 2. GESTIONE DELLA NUOVA NEBBIA 3D
         if (typeof Game !== 'undefined' && Game.mistSystem) {
             Game.mistSystem.visible = !this.isLow;
         }
 
-        // 3. OTTIMIZZAZIONE UI: Spegne il Glassmorphism e le ombre CSS pesanti su dispositivi lenti
         if (this.isLow) document.body.classList.add('low-spec');
         else document.body.classList.remove('low-spec');
 
-        if(Game.renderer) {
+        if (Game.renderer) {
             Game.renderer.shadowMap.enabled = this.shadowsEnabled;
-            // OTTIMIZZAZIONE SCALABILITÀ (Impedisce il rendering 4K sui telefoni)
             let pr = 1.0;
             if (isTouchDevice) {
-                if (this.mode === 2) pr = Math.min(window.devicePixelRatio, 1.25);
-                else if (this.mode === 1) pr = Math.min(window.devicePixelRatio, 0.9);
-                else pr = 0.6; 
+                if (this.mode === 2) pr = Math.min(window.devicePixelRatio, 1.0);
+                else if (this.mode === 1) pr = Math.min(window.devicePixelRatio, 0.75);
+                else pr = 0.5;
             } else {
                 if (this.mode === 2) pr = Math.min(window.devicePixelRatio, 1.5);
-                else if (this.mode === 1) pr = Math.min(window.devicePixelRatio, 1.0); 
-                else pr = 0.75; 
+                else if (this.mode === 1) pr = Math.min(window.devicePixelRatio, 1.0);
+                else pr = 0.75;
             }
-          Game.renderer.setPixelRatio(pr);
+            Game.renderer.setPixelRatio(pr);
             if (Game.composer) Game.composer.setSize(window.innerWidth, window.innerHeight);
             
-            // Accendi/Spegni le ombre finte a terra in tempo reale
-            // Accendi/Spegni le ombre finte a terra in tempo reale
             let showFakeShadows = !this.shadowsEnabled;
             if (Game.player && Game.player.shadowMesh) Game.player.shadowMesh.visible = showFakeShadows;
-            for(let i=0; i<Game.enemies.length; i++) if (Game.enemies[i].shadowMesh) Game.enemies[i].shadowMesh.visible = showFakeShadows;
+            for (let i = 0; i < Game.enemies.length; i++) {
+                if (Game.enemies[i].shadowMesh) Game.enemies[i].shadowMesh.visible = showFakeShadows;
+            }
             if (Game.map && Game.map.mapGroup) {
                 Game.map.mapGroup.children.forEach(c => {
-                    if (c.material === SharedMat.blobShadow) {
-                        c.visible = showFakeShadows;
-                    }
+                    if (c.material === SharedMat.blobShadow) c.visible = showFakeShadows;
                 });
             }
         }
         
-       if (Game.bloomPass) { Game.bloomPass.strength = this.isUltraPC ? 0.25 : 0.15; Game.bloomPass.radius = 0.2; }
-        
-       // Rimosso il ciclo forEach su GLOBAL_THEME_MATS:
-        // i materiali sono Phong/Lambert e forzare needsUpdate causa solo stuttering della GPU.
-        if(Game.scene) Game.scene.traverse(child => { if (child.material) child.material.needsUpdate = true; });
+        if (Game.bloomPass) {
+            Game.bloomPass.strength = this.isUltraPC ? 0.25 : 0.15;
+            Game.bloomPass.radius = 0.2;
+        }
     },
     toggleColorblind() {
         this.colorblind = !this.colorblind;
@@ -2924,6 +2896,12 @@ const GLOBAL_ALPHA_TEX = createOrganicAlphaMap();
     auraGreenRing: new THREE.MeshBasicMaterial({color: 0x66ff33, transparent: true, opacity: 0.8, depthWrite: false}),
     auraRedDome: new THREE.MeshBasicMaterial({color: 0xff0000, transparent: true, opacity: 0.04, depthWrite: false, side: THREE.BackSide, blending: THREE.AdditiveBlending}),
     auraRedRing: new THREE.MeshBasicMaterial({color: 0xff3333, transparent: true, opacity: 0.8, depthWrite: false}),
+    auraCorruptedDome: new THREE.MeshBasicMaterial({color: 0xaa00ff, transparent: true, opacity: 0.04, depthWrite: false, side: THREE.BackSide, blending: THREE.AdditiveBlending}),
+    auraCorruptedRing: new THREE.MeshBasicMaterial({color: 0xcc33ff, transparent: true, opacity: 0.8, depthWrite: false}),
+    prophetGem: new THREE.MeshBasicMaterial({color: 0xff5500}),
+    golemHead: new THREE.MeshPhongMaterial({color: 0x002244, emissive: 0x00ffff, emissiveIntensity: 1.5}),
+    golemShield: new THREE.MeshPhongMaterial({color: 0x00ffff, transparent: true, opacity: 0.4, emissive: 0x0088ff}),
+    golemShieldGlow: new THREE.SpriteMaterial({color: 0x00ffff, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
     iconTime: new THREE.SpriteMaterial({map: createAuraIcon('blue'), color: 0xa8a8a8, transparent: true, depthWrite: false}),
     iconMountain: new THREE.SpriteMaterial({map: createAuraIcon('green'), color: 0xa8a8a8, transparent: true, depthWrite: false}),
     iconHysteria: new THREE.SpriteMaterial({map: createAuraIcon('red'), color: 0xa8a8a8, transparent: true, depthWrite: false}),
@@ -3055,9 +3033,8 @@ const ModelFactory = {
                 let staff = new THREE.Mesh(SharedGeo.cylinder, darkMat); 
                 staff.scale.set(size*0.2, size*3, size*0.2); 
                 
-                // NUOVA ESTETICA: Palla arancione incandescente (Rimpicciolita)
-                let gemMat = new THREE.MeshBasicMaterial({color: 0xff5500}); // Materiale non affetto dalle ombre
-                let staffGem = new THREE.Mesh(SharedGeo.sphere, gemMat);
+               // NUOVA ESTETICA: Palla arancione incandescente (Rimpicciolita, Zero-Allocation)
+                let staffGem = new THREE.Mesh(SharedGeo.sphere, SharedMat.prophetGem);
                 staffGem.scale.set(size*0.35, size*0.35, size*0.35); // Dimensione sfera ridotta
                 staffGem.position.set(0, size*1.5, 0); // Sulla punta
                 
@@ -3102,24 +3079,16 @@ let hornR = new THREE.Mesh(SharedGeo.cone, mat); hornR.scale.set(size*0.3, size*
             group.add(base); group.add(gem); group.add(ring); parts.ring = ring; parts.gem = gem;
           } else if (type === 'golem') {
             let torso = new THREE.Mesh(SharedGeo.box, mat); torso.scale.set(size*1.8, size*2.0, size*1.5); torso.position.y = size*1.5;
-            
-            // Impostiamo un colore Ciano uniforme per Glow, Scudo e Testa
-            let shieldColor = 0x00ffff;
-            
-            let headMat = new THREE.MeshPhongMaterial({color: 0x002244, emissive: shieldColor, emissiveIntensity: 1.5});
-            let head = new THREE.Mesh(SharedGeo.box, headMat); head.scale.set(size*0.9, size*0.9, size*0.9); head.position.set(0, size*2.8, size*0.2);
+            let head = new THREE.Mesh(SharedGeo.box, SharedMat.golemHead); head.scale.set(size*0.9, size*0.9, size*0.9); head.position.set(0, size*2.8, size*0.2);
             
             let armL = new THREE.Mesh(SharedGeo.box, darkMat); armL.scale.set(size*0.7, size*1.8, size*0.7); armL.position.set(-size*1.4, size*1.6, 0);
             let armR = new THREE.Mesh(SharedGeo.box, darkMat); armR.scale.set(size*0.7, size*1.8, size*0.7); armR.position.set(size*1.4, size*1.6, 0);
             
-            let shieldMat = new THREE.MeshPhongMaterial({color: shieldColor, transparent: true, opacity: 0.4, emissive: 0x0088ff});
-            let shield = new THREE.Mesh(SharedGeo.box, shieldMat);
+            let shield = new THREE.Mesh(SharedGeo.box, SharedMat.golemShield);
             shield.scale.set(size*3.2, size*2.5, size*0.2);
             shield.position.set(0, size*1.5, size*1.0); 
             
-            // AGGIUNTO AL GRUPPO ESTERNO (NON ALLO SCUDO) per evitare il bug del moltiplicatore scala!
-            let glowMat = new THREE.SpriteMaterial({color: shieldColor, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false});
-            let shieldGlow = new THREE.Sprite(glowMat);
+            let shieldGlow = new THREE.Sprite(SharedMat.golemShieldGlow);
             shieldGlow.scale.set(size*5, size*4, 1);
             shieldGlow.position.set(0, size*1.5, size*1.2);
             
@@ -3323,24 +3292,24 @@ class Hazard {
                 }
             }
 
-            if (this.type === 'crystal_nova_ring') {
-                let pCd = this.hitCooldown['player'] || 0;
-                if (Game.playTime >= pCd) {
-                    let dx = this.x - Game.player.x; let dy = this.y - Game.player.y;
-                    let distSq = dx*dx + dy*dy;
-                    let outerRad = this.radius + Game.player.radius + 15;
-                    let innerRad = Math.max(0, this.radius - Game.player.radius - 15);
-                    if (distSq <= outerRad * outerRad && distSq >= innerRad * innerRad) {
-                       if (Game.player.activeShieldTimer > 0) {
-                            Game.player.shieldAbsorbed++; // <-- POTENZIAMENTO AEGIS!
-                            Game.getParticle().spawn(Game.player.x, 15, Game.player.y, SharedMat.spriteBlue, 'spark');
-                        } else {
-                            Game.player.takeDamage(this.damage, null);
-                        }
-                        this.hitCooldown['player'] = Game.playTime + 1.0; 
-                    }
-                }
-            }
+           if (this.type === 'crystal_nova_ring') {
+                let pCd = this.hitCooldown.get('player') || 0;
+                if (Game.playTime >= pCd) {
+                    let dx = this.x - Game.player.x; let dy = this.y - Game.player.y;
+                    let distSq = dx*dx + dy*dy;
+                    let outerRad = this.radius + Game.player.radius + 15;
+                    let innerRad = Math.max(0, this.radius - Game.player.radius - 15);
+                    if (distSq <= outerRad * outerRad && distSq >= innerRad * innerRad) {
+                        if (Game.player.activeShieldTimer > 0) {
+                            Game.player.shieldAbsorbed++;
+                            Game.getParticle().spawn(Game.player.x, 15, Game.player.y, SharedMat.spriteBlue, 'spark');
+                        } else {
+                            Game.player.takeDamage(this.damage, null);
+                        }
+                        this.hitCooldown.set('player', Game.playTime + 1.0); 
+                    }
+                }
+            }
         } 
         // --- LOGICA DELLE POZZE STATICHE ---
         else {
@@ -3549,9 +3518,9 @@ const TouchControls = {
         }, {passive: true});
         // ------------------------------------
 
-        document.getElementById('btn-dash').addEventListener('touchstart', (e) => { e.preventDefault(); if(Game.state === 'PLAYING' && !Game.player.dead) Game.player.dash(); });
-        document.getElementById('btn-ult').addEventListener('touchstart', (e) => { e.preventDefault(); Game.activateUltimate(); });
-        document.getElementById('btn-shield').addEventListener('touchstart', (e) => { e.preventDefault(); if(Game.state === 'PLAYING') Game.player.activateShield(); });
+        document.getElementById('btn-dash').addEventListener('touchstart', (e) => { e.preventDefault(); if(Game.state === 'PLAYING' && Game.player && !Game.player.dead) Game.player.dash(); });
+        document.getElementById('btn-ult').addEventListener('touchstart', (e) => { e.preventDefault(); if(Game.state === 'PLAYING' && Game.player && !Game.player.dead) Game.activateUltimate(); });
+        document.getElementById('btn-shield').addEventListener('touchstart', (e) => { e.preventDefault(); if(Game.state === 'PLAYING' && Game.player && !Game.player.dead) Game.player.activateShield(); });
     },
 
     setupJoystick(zone, stick, side) {
@@ -4549,7 +4518,8 @@ pushDebris(px, pz, radius, force) {
     addUltimateCharge(amount) { if (!this.ultimateActive) this.ultimateCharge = Math.min(100, this.ultimateCharge + amount); },
 
    activateUltimate() {
-       if (this.ultimateCharge >= 100 && !this.ultimateActive) {
+       if (this.state !== 'PLAYING' || !this.player || this.player.dead) return;
+       if (this.ultimateCharge >= 100 && !this.ultimateActive) {
             this.ultimateCharge = 0; this.ultimateActive = true; 
             // REWORK PATTO ASCETICO: Riduzione durata totale
             this.ultimateTimer = (10.0 + this.player.modifiers.ascensionDurationAdd) * this.player.modifiers.ultDurationPenalty;
@@ -4590,18 +4560,17 @@ pushDebris(px, pz, radius, force) {
         if(this.composer) this.composer.setSize(this.width, this.height);
     },
     setupInputs() {
-       window.addEventListener('keydown', e => { this.keys[e.key.toLowerCase()] = true; if(e.code === 'Space' && this.state === 'PLAYING' && !this.player.dead) this.player.dash(); });
+        window.addEventListener('keydown', e => { 
+            this.keys[e.key.toLowerCase()] = true; 
+            if (e.code === 'Space' && this.state === 'PLAYING' && this.player && !this.player.dead) this.player.dash(); 
+            if ((e.code === 'ShiftLeft' || e.code === 'ShiftRight') && this.state === 'PLAYING' && this.player && !this.player.dead) this.player.activateShield();
+            if (e.code === 'Escape' && (this.state === 'PLAYING' || this.state === 'PAUSED')) UIManager.togglePause();
+        });
         window.addEventListener('keyup', e => { this.keys[e.key.toLowerCase()] = false; });
         window.addEventListener('mousemove', e => { this.mouse.x = e.clientX; this.mouse.y = e.clientY; });
         window.addEventListener('mousedown', e => { if (e.button === 0) this.mouse.leftDown = true; if (e.button === 2) { this.mouse.rightDown = true; this.activateUltimate(); } });
         window.addEventListener('mouseup', e => { if (e.button === 0) this.mouse.leftDown = false; if (e.button === 2) this.mouse.rightDown = false; });
         window.addEventListener('contextmenu', e => e.preventDefault()); 
-        window.addEventListener('keydown', e => { 
-            this.keys[e.key.toLowerCase()] = true; 
-            if(e.code === 'Space' && this.state === 'PLAYING') this.player.dash(); 
-            if((e.code === 'ShiftLeft' || e.code === 'ShiftRight') && this.state === 'PLAYING') this.player.activateShield();
-            if(e.code === 'Escape' && (this.state === 'PLAYING' || this.state === 'PAUSED')) UIManager.togglePause();
-        });
     },
    spawnSpecificEnemy(x, y, difficulty) {
         const r = Math.random(); let type = 'goblin';
@@ -4779,7 +4748,7 @@ loop(timestamp) {
                 // Se lagga per 4 secondi consecutivi e la grafica non è già al minimo
                 if (this.lowFpsCounter > 4 && AppSettings.mode > 0) {
                     AppSettings.mode = 0; 
-                    AppSettings.toggleGraphics(); 
+                    AppSettings.applyGraphics(); 
                     if(typeof UIManager !== 'undefined') UIManager.updateOptionsUI();
                     Game.getFloatingText().spawn(this.player.x, this.player.y, "RISPARMIO BATTERIA ATTIVATO", '#ffaa00', 40, true);
                     this.lowFpsCounter = -999; // Disattiva il check per non spammare il messaggio
@@ -5163,11 +5132,9 @@ loop(timestamp) {
                         pursuer.speed = pursuer.baseSpeed; 
                         pursuer.aggroRange = 9999; pursuer.aggroRangeSq = 9999 * 9999; 
                 
-                        // Crea ed aggancia gli occhi rossi fisici
-                        let eyeGeo = new THREE.BoxGeometry(4, 4, 4);
-                        let eyeMat = new THREE.MeshBasicMaterial({color: 0xff0000});
-                        let eyeL = new THREE.Mesh(eyeGeo, eyeMat); eyeL.position.set(-6, 56, 10);
-                        let eyeR = new THREE.Mesh(eyeGeo, eyeMat); eyeR.position.set(6, 56, 10);
+                        // Crea ed aggancia gli occhi rossi fisici usando geometrie e materiali condivisi
+                        let eyeL = new THREE.Mesh(SharedGeo.box, SharedMat.enemyEye); eyeL.scale.set(4, 4, 4); eyeL.position.set(-6, 56, 10);
+                        let eyeR = new THREE.Mesh(SharedGeo.box, SharedMat.enemyEye); eyeR.scale.set(4, 4, 4); eyeR.position.set(6, 56, 10);
                         pursuer.mesh.add(eyeL);
                         pursuer.mesh.add(eyeR);
 
@@ -5622,46 +5589,61 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
         
         Game.particlesThisFrame = 0; Game.debrisThisFrame = 0;
 
-        // --- POZZE CORROSIVE (Piano Corrotto) ---
-        if (this.isCorrupted && this.corruptedType === 'acid_pools') {
-            if (!this.acidPoolTimer) this.acidPoolTimer = 0;
-            this.acidPoolTimer -= combatDt;
-            if (this.acidPoolTimer <= 0) {
-                let angle = Math.random() * Math.PI * 2;
-                let dist = MathUtils.randomRange(80, 300);
-                let rx = this.player.x + Math.cos(angle) * dist;
-                let ry = this.player.y + Math.sin(angle) * dist;
-                if (!this.map.isSolid(rx, ry)) {
-                    let dmg = this.player.stats.maxHp * 0.15;
-                    this.getHazard().spawn(rx, ry, 150, 2.5, dmg, 0xaa00ff, 'crystal_nova_ring');
+        // --- POZZE CORROSIVE & PAVIMENTO INSTABILE (Piani Corrotti) ---
+        if (this.isCorrupted && combatDt > 0 && this.player && !this.player.dead) {
+            if (this.corruptedType === 'acid_pools') {
+                if (!this.acidPoolTimer) this.acidPoolTimer = 0;
+                this.acidPoolTimer -= combatDt;
+                if (this.acidPoolTimer <= 0) {
+                    let angle = Math.random() * Math.PI * 2;
+                    let dist = MathUtils.randomRange(80, 300);
+                    let rx = this.player.x + Math.cos(angle) * dist;
+                    let ry = this.player.y + Math.sin(angle) * dist;
+                    if (!this.map.isSolid(rx, ry)) {
+                        let dmg = this.player.stats.maxHp * 0.15;
+                        this.getHazard().spawn(rx, ry, 150, 2.5, dmg, 0xaa00ff, 'crystal_nova_ring');
+                    }
+                    this.acidPoolTimer = MathUtils.randomRange(1.5, 3.0);
                 }
-                this.acidPoolTimer = MathUtils.randomRange(1.5, 3.0);
+            } else if (this.corruptedType === 'unstable') {
+                this.standStillTimer = (this.standStillTimer || 0) + combatDt;
+                if (this.standStillTimer >= 1.8) {
+                    this.standStillTimer = 0;
+                    let dmg = this.player.stats.maxHp * 0.18;
+                    this.getHazard().spawn(this.player.x, this.player.y, 45, 3.5, dmg, 0xff3300, 'enemy_fire');
+                    this.getParticle().spawn(this.player.x, 10, this.player.y, SharedMat.spriteRed, 'nova');
+                }
             }
         }
         
-       this.animBounce = Math.sin(this.frameCount * 0.4) * 4;
+        this.animBounce = Math.sin(this.frameCount * 0.4) * 4;
         this.animFloat = Math.sin(this.frameCount * 0.1) * 5;
         this.animArm = Math.sin(this.frameCount * 0.3) * 0.5;
-       // --- ANIMAZIONE AUREE E ICONE ---
+
+        // --- ANIMAZIONE AUREE E ICONE ---
         let auraPulse = Math.sin(this.playTime * 2.5) * 0.05;
         SharedMat.auraBlueDome.opacity = 0.15 + auraPulse;
         SharedMat.auraGreenDome.opacity = 0.15 + auraPulse;
         SharedMat.auraRedDome.opacity = 0.15 + auraPulse;
+        SharedMat.auraCorruptedDome.opacity = 0.15 + auraPulse;
         
         let iconPulse = Math.sin(this.playTime * 3) * 5;
         if (this.auraIcons) {
-            for(let i=0; i<this.auraIcons.length; i++) this.auraIcons[i].position.y = 90 + iconPulse;
+            for (let i = 0; i < this.auraIcons.length; i++) {
+                if (this.auraIcons[i].visible) this.auraIcons[i].position.y = 90 + iconPulse;
+            }
         }
 
-        // Particelle che salgono dal pavimento all'interno dell'Aura
+        // Particelle che salgono dal pavimento SOLO per gli Obelischi ancora attivi
         if (this.auras && Game.frameCount % (isTouchDevice ? 12 : 5) === 0) {
-            for(let i=0; i<this.auras.length; i++) {
+            for (let i = 0; i < this.auras.length; i++) {
                 let a = this.auras[i];
-                let r = Math.sqrt(a.radiusSq) * Math.random();
+                if (!a.active) continue;
+                let r = a.radius * Math.sqrt(Math.random());
                 let angle = Math.random() * Math.PI * 2;
                 let px = a.x + Math.cos(angle) * r;
                 let pz = a.y + Math.sin(angle) * r;
-                let pMat = (a.type === 'blue') ? SharedMat.spriteBlue : (a.type === 'green' ? SharedMat.spriteGreen : SharedMat.spriteRed);
+                let pMat = (a.type === 'blue') ? SharedMat.spriteBlue : (a.type === 'green' ? SharedMat.spriteGreen : (a.type === 'corrupted' ? SharedMat.spritePink : SharedMat.spriteRed));
                 Game.getParticle().spawn(px, 2, pz, pMat, 'trail');
             }
         }
@@ -6171,12 +6153,12 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
         let refX = this.player ? this.player.x : (this.camera ? this.camera.position.x : 0);
         let refY = this.player ? this.player.y : (this.camera ? this.camera.position.z : 0);
 
-       for(let i=0, len=this.enemies.length; i<len; i++) {
+       for (let i = 0, len = this.enemies.length; i < len; i++) {
             let e = this.enemies[i];
             
-            // Culling preventivo: salta proiezioni se nemico full HP e non sotto aura
+            // Culling preventivo: usa _lastAuraType già calcolato in update()
             let isDamaged = (e.stats.hp < e.stats.maxHp && e.type !== 'crystal');
-            let auraType = this.getAuraAt(e.x, e.y);
+            let auraType = e._lastAuraType;
             if (!isDamaged && !auraType) continue;
 
             let dx = refX - e.x;
@@ -6207,7 +6189,7 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
         
         // 3. Logica Icona Aura sul Giocatore
         if (this.player && !this.player.dead) {
-            let pAura = this.getAuraAt(this.player.x, this.player.y);
+            let pAura = this.player._lastAuraType;
             if (pAura) {
                 let pPos = this.toScreenPosition(this.player.x, 80, this.player.y);
                 if (pPos.z < 1) {
@@ -7202,9 +7184,9 @@ class GameMap {
         const imRedDome = new THREE.InstancedMesh(SharedGeo.auraDome, SharedMat.auraRedDome, pillarCount);
         const imRedRing = new THREE.InstancedMesh(SharedGeo.auraRing, SharedMat.auraRedRing, pillarCount);
         
-        // Materiali per la variante Corrotta creati on-the-fly a zero-cost
-        const imCorruptedDome = new THREE.InstancedMesh(SharedGeo.auraDome, new THREE.MeshBasicMaterial({color: 0xaa00ff, transparent: true, opacity: 0.04, depthWrite: false, side: THREE.BackSide, blending: THREE.AdditiveBlending}), pillarCount);
-        const imCorruptedRing = new THREE.InstancedMesh(SharedGeo.auraRing, new THREE.MeshBasicMaterial({color: 0xcc33ff, transparent: true, opacity: 0.8, depthWrite: false}), pillarCount);
+        // Materiali condivisi per la variante Corrotta (Zero Memory Leak)
+        const imCorruptedDome = new THREE.InstancedMesh(SharedGeo.auraDome, SharedMat.auraCorruptedDome, pillarCount);
+        const imCorruptedRing = new THREE.InstancedMesh(SharedGeo.auraRing, SharedMat.auraCorruptedRing, pillarCount);
         
         let cBlue = 0, cGreen = 0, cRed = 0, cCorrupted = 0;
 
@@ -8858,37 +8840,24 @@ class Player extends Entity {
         // ---------------------------------------------
 
       
-     // --- EFFETTO VISIVO ALONE OBELISCO SUL PLAYER ---
+     // --- EFFETTO VISIVO ALONE OBELISCO SUL PLAYER (Con Cache di Stato) ---
+        if (this._lastAuraType !== aura) {
+            this._lastAuraType = aura;
+            if (aura) {
+                this.auraRingMesh.visible = true;
+                this.auraGlow.visible = true;
+            } else {
+                this.auraRingMesh.visible = false;
+                this.auraGlow.visible = false;
+            }
+            this.updateAppearance();
+        }
         if (aura) {
-            this.auraRingMesh.visible = true;
-            this.auraRingMesh.material.color.setHex(aura === 'blue' ? 0x00aaff : (aura === 'green' ? 0x66ff33 : 0xff3333));
             this.auraRingMesh.position.set(this.x, 0.5, this.y);
             this.auraRingMesh.rotation.z -= dt * 2;
             this.auraRingMesh.updateMatrix();
-            
-            this.auraGlow.visible = true;
-            this.auraGlow.material.color.setHex(aura === 'blue' ? 0x00aaff : (aura === 'green' ? 0x66ff33 : 0xff3333));
             this.auraGlow.position.set(this.x, 0.4, this.y);
             this.auraGlow.updateMatrix();
-            
-     
-          let ringColor = aura === 'blue' ? 0x00aaff : (aura === 'green' ? 0x66ff33 : (aura === 'red' ? 0xff3333 : 0xcc33ff));
-            this.auraRingMesh.material.color.setHex(ringColor);
-            this.auraGlow.material.color.setHex(ringColor);
-            
-            // Applica l'emissive dell'obelisco SOLO se il giocatore NON è in Ultimate o Overdrive
-            if (!Game.ultimateActive && !this.overdrive) {
-                let emitColor = aura === 'blue' ? 0x002255 : (aura === 'green' ? 0x113311 : (aura === 'red' ? 0x440000 : 0x440055));
-                this.modelParts.body.material.emissive.setHex(emitColor);
-                this.modelParts.body.material.emissiveIntensity = 1.0;
-            }
-        } else {
-            this.auraRingMesh.visible = false;
-            this.auraGlow.visible = false;
-            // Ripristina il nero solo se non ci sono altri stati grafici attivi dominanti
-            if (!Game.ultimateActive && !this.overdrive) {
-                this.modelParts.body.material.emissive.setHex(0x000000);
-            }
         }
         // ------------------------------------------------
        let auraSpdMult = (aura === 'blue') ? 0.6 : (aura === 'corrupted' ? 1.2 : 1.0); 
@@ -9690,9 +9659,15 @@ if (this.modifiers.flowMastery && !wasDead) {
                     ds.classList.remove('hidden');
                     
                     if (Game.lives > 0) {
-                        ds.style.backgroundImage = "url('bg_morte.png')";
-                        document.getElementById('deathTitle').innerText = "SEI CADUTO"; document.getElementById('deathSubtitle').innerText = `Vite rimaste: ${Game.lives}`; document.getElementById('deathQuote').classList.add('hidden'); document.getElementById('deathMatchStats').classList.add('hidden'); document.getElementById('btn-respawn').classList.remove('hidden'); document.getElementById('btn-restart').classList.add('hidden');
-                    } else {
+    ds.style.backgroundImage = "url('bg_morte.png')";
+    document.getElementById('deathTitle').innerText = "SEI CADUTO"; 
+    document.getElementById('deathSubtitle').innerText = `Vite rimaste: ${Game.lives}`; 
+    document.getElementById('deathQuote').classList.add('hidden'); 
+    document.getElementById('deathMatchStats').classList.add('hidden'); 
+    document.getElementById('score-save-container').classList.add('hidden'); // <-- NASCONDE IL SALVATAGGIO PUNTEGGIO
+    document.getElementById('btn-respawn').classList.remove('hidden'); 
+    document.getElementById('btn-restart').classList.add('hidden');
+} else {
                         ds.style.backgroundImage = "url('bg_box.png')";
                         document.getElementById('deathTitle').innerText = "R I P"; document.getElementById('deathSubtitle').innerText = `Piano: ${Game.floor} | Demoni: ${Game.totalKills} | Tempo: ${ScoreManager.formatTime(Game.playTime)}`; document.getElementById('deathQuote').innerText = `"${DEATH_QUOTES[Math.floor(Math.random() * DEATH_QUOTES.length)]}"`; document.getElementById('deathQuote').classList.remove('hidden'); 
                         
@@ -10021,10 +9996,10 @@ class Enemy extends Entity {
             this.speed = 0; 
             
             // L'emissivo pulsa velocemente (effetto ghiaccio magico)
-            let intensity = 0.5 + Math.sin(Game.playTime * 15) * 0.5;
-            for (let i=0; i<this.flashMats.length; i++) {
-                this.flashMats[i].emissive.setHex(this.mat.color.getHex()); 
-                this.flashMats[i].emissiveIntensity = 3.0;
+            let intensity = 1.5 + Math.sin(Game.playTime * 15) * 1.0;
+            for (let i = 0; i < this.flashMats.length; i++) {
+                this.flashMats[i].emissive.setHex(0x00ddff); 
+                this.flashMats[i].emissiveIntensity = intensity;
             }
             
             // Aggiungiamo un leggero "fumo" freddo che sale dai piedi
@@ -10312,15 +10287,6 @@ class Enemy extends Entity {
             // ATTENZIONE: abbiamo rimosso this.updateAppearance() perché il nemico non lo possiede
         }
 
-        if (aura) {
-            this.auraRingMesh.position.set(this.x, 0.5, this.y);
-            this.auraRingMesh.rotation.z -= dt * 2;
-            this.auraRingMesh.updateMatrix();
-            this.auraGlow.position.set(this.x, 0.4, this.y);
-            this.auraGlow.updateMatrix();
-        }
-
-        // Continua a muoverli ogni frame, ma senza ricalcolare colori/visibilità
         if (aura) {
             this.auraRingMesh.position.set(this.x, 0.5, this.y);
             this.auraRingMesh.rotation.z -= dt * 2;
@@ -12170,7 +12136,8 @@ function goToMainMenu() {
     TransitionSystem.wipeIn(() => {
         document.getElementById('deathScreen').classList.add('hidden');
         document.getElementById('deathMatchStats').classList.add('hidden');
-        document.getElementById('pauseModal').classList.add('hidden'); // Chiude anche la pausa!
+        document.getElementById('score-save-container').classList.add('hidden'); 
+        document.getElementById('pauseModal').classList.add('hidden');
         
         let bgv = document.getElementById('blood-vignette');
         if (bgv) {
@@ -12231,7 +12198,7 @@ function restartGame() {
     TransitionSystem.wipeIn(() => {
         document.getElementById('deathScreen').classList.add('hidden');
         document.getElementById('deathMatchStats').classList.add('hidden');
-        
+        document.getElementById('score-save-container').classList.add('hidden'); 
         let bgv = document.getElementById('blood-vignette');
         if (bgv) {
             bgv.classList.remove('death-fade-active');
@@ -12240,22 +12207,8 @@ function restartGame() {
             bgv.style.zIndex = '';
         }
         
-        document.body.classList.remove('crt-active'); // Failsafe
-        clearScene(); Game.state = 'PLAYING'; Game.floor = 1; Game.totalKills = 0; Game.lives = 3; Game.playTime = 0;
-        Game.enemies = []; Game.ultimateCharge = 0; Game.ultimateActive = false;
-        if(Game.player) { Game.scene.remove(Game.player.mesh); Game.player = null; }
-        Game.setupFloor();
-        
-        // Animazione Warp-in dall'alto
-        Game.state = 'WARPING_IN';
-        Game.warpTimer = 1.0;
-        Game.camera.fov = 90;
-        Game.camera.updateProjectionMatrix();
-        if(Game.player) {
-            Game.player.mesh.position.y = 800;
-            Game.player.mesh.scale.setScalar(0.01);
-            Game.player.invincibilityTimer = 1.5;
-        }
+        document.body.classList.remove('crt-active');
+        Game.startGame(0.5);
         setTimeout(() => TransitionSystem.wipeOut(), 50);
     });
 }
@@ -12573,7 +12526,7 @@ window.nextFloor = function(corrupted = false) {
     ShopSystem.updateUI();
 };
 
-   // (Logica delle difficoltà multiple rimossa: il gioco ha un'unica difficoltà bilanciata)ment.getElementById('difficultyText').innerText = DifficultySettings.levels[DifficultySettings.index].label;
+   // (Logica delle difficoltà multiple rimossa: il gioco ha un'unica difficoltà bilanciata)
 
     // --- FIX ANDROID: GESTIONE TASTO INDIETRO (Hardware/Gesture) ---
 window.addEventListener('popstate', function (event) {
