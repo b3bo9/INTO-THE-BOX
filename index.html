@@ -3762,20 +3762,31 @@ const UI = {
         }
         
         if (hasEssence) {
-            if (Game.player.overdrive) {
-                for(let i=0; i<3; i++) this.els.stacks[i].className = `stack-dot active ${Game.player.essence}`;
-                this.els.overdriveText.classList.remove('hidden'); this.els.overdriveText.innerText = ESSENCE_NAMES[Game.player.essence]; this.els.overdriveText.style.color = '#' + ESSENCE_COLORS[Game.player.essence].toString(16).padStart(6,'0');
-            } else {
-                for(let i=0; i<3; i++) { if (i < Game.player.essenceList.length) this.els.stacks[i].className = `stack-dot active ${Game.player.essenceList[i]}`; else this.els.stacks[i].className = `stack-dot`; }
-                this.els.overdriveText.classList.add('hidden');
-            }
-           let maxTimer = Game.player.overdrive ? (5.0 * Game.player.modifiers.essenceDurationMult) : (8.0 * Game.player.modifiers.essenceDurationMult);
+            // OTTIMIZZAZIONE DOM: Aggiorna le classi CSS delle essenze SOLO quando cambiano realmente
+            let essenceSig = Game.player.overdrive ? `OD_${Game.player.essence}` : Game.player.essenceList.join('_');
+            if (this.cache.essenceSig !== essenceSig) {
+                this.cache.essenceSig = essenceSig;
+                if (Game.player.overdrive) {
+                    for (let i = 0; i < 3; i++) this.els.stacks[i].className = `stack-dot active ${Game.player.essence}`;
+                    this.els.overdriveText.classList.remove('hidden');
+                    this.els.overdriveText.innerText = ESSENCE_NAMES[Game.player.essence];
+                    this.els.overdriveText.style.color = '#' + ESSENCE_COLORS[Game.player.essence].toString(16).padStart(6, '0');
+                } else {
+                    for (let i = 0; i < 3; i++) {
+                        this.els.stacks[i].className = (i < Game.player.essenceList.length) ? `stack-dot active ${Game.player.essenceList[i]}` : `stack-dot`;
+                    }
+                    this.els.overdriveText.classList.add('hidden');
+                }
+            }
+            let maxTimer = Game.player.overdrive ? (5.0 * Game.player.modifiers.essenceDurationMult) : (8.0 * Game.player.modifiers.essenceDurationMult);
             let ePct = Math.round((Game.player.essenceTimer / maxTimer) * 100);
             if (this.cache.essenceWidth !== ePct) {
-               this.els.essenceTimer.style.height = `${ePct}%`;
+                this.els.essenceTimer.style.height = `${ePct}%`;
                 this.cache.essenceWidth = ePct;
             }
-        } else { this.els.essenceHud.classList.remove('opacity-100'); this.els.essenceHud.classList.add('opacity-0'); }
+        } else if (this.cache.essenceSig !== '') {
+            this.cache.essenceSig = '';
+        }
 
      if (Game.ultimateActive) {
             let maxUltTime = (10.0 + Game.player.modifiers.ascensionDurationAdd) * Game.player.modifiers.ultDurationPenalty;
@@ -4020,9 +4031,10 @@ triggerComboAnim(combo) {
             comboPanel.style.borderColor = `rgba(75, 85, 99, 0.4) ${borderColor} rgba(75, 85, 99, 0.4) rgba(75, 85, 99, 0.4)`;
         }
 
-      setTimeout(() => { 
+      if (this._comboScaleTimeout) clearTimeout(this._comboScaleTimeout);
+        this._comboScaleTimeout = setTimeout(() => { 
             this.els.comboText.style.transform = `scale(${1 + Math.min(combo * 0.01, 0.1)})`; 
-        }, 50);
+        }, 60);
     },
     
     showAnnouncer(text, colorHex) {
@@ -4537,18 +4549,7 @@ pushDebris(px, pz, radius, force) {
     },
 
    addTrauma(amount) { if (!AppSettings.screenShake) return; this.trauma = Math.min(this.trauma + amount, 1.0); },
-    snapCamera() {
-        let camY = isTouchDevice ? 750 : 700;
-        let camZ = this.player.y + 500;
-        this._camFocusX = this.player.x;
-        this._camFocusZ = this.player.y;
-        this.camera.position.set(this.player.x, camY, camZ);
-        this.camera.lookAt(this.player.x, 0, this.player.y);
-        if (this.dirLight) {
-            this.dirLight.position.set(this.player.x - 400, 1000, this.player.y - 400);
-            this.dirLight.target.position.set(this.player.x, 0, this.player.y);
-        }
-    },
+  
    resize() {
         this.width = window.innerWidth; this.height = window.innerHeight; this.renderer.setSize(this.width, this.height);
         this.camera.aspect = this.width / this.height; this.camera.updateProjectionMatrix(); 
@@ -4617,43 +4618,59 @@ pushDebris(px, pz, radius, force) {
             this.spawnEnemy();
         }
     },
-   updateCamera(dt) {
-       let isUlt = Game.ultimateActive;
-        let zoom = isUlt ? 0.85 : 1.0; // Zoom leggero: riduce la distanza del 15%
-        let camX = this.player.x; let camY = isTouchDevice ? 750 : 600; let camZ = this.player.y + (isTouchDevice ? 500 : 400);
-        let shakeX = 0, shakeY = 0, shakeZ = 0;
-        
-        // Distorsione Termica rimossa: muovere fisicamente la telecamera per simulare il calore
-        // creava un tremolio ingiustificato causando motion sickness a giocatore fermo.
-
-      if (this.trauma > 0) {
-            // FIX: Shake più croccante ma meno invasivo (moltiplicato per 8 invece che 15 o 40)
-            let shakeForce = this.trauma * this.trauma * 8; 
-            shakeX += MathUtils.randomRange(-shakeForce, shakeForce); 
-            shakeY += MathUtils.randomRange(-shakeForce, shakeForce); 
-            shakeZ += MathUtils.randomRange(-shakeForce, shakeForce);
-            
-            // Decadimento più veloce (da 2.0 a 3.0) per far finire il tremolio prima
-            this.trauma -= dt * 3.0; 
-            if (this.trauma < 0) this.trauma = 0;
-        }
+   snapCamera() {
+        let camY = isTouchDevice ? 750 : 600;
+        let camZ = this.player.y + (isTouchDevice ? 500 : 400);
+        this._camFocusX = this.player.x;
+        this._camFocusZ = this.player.y;
+        this._camLeadX = 0;
+        this._camLeadZ = 0;
+        this._camZoom = 1.0;
+        this.camera.position.set(this.player.x, camY, camZ);
+        this.camera.lookAt(this.player.x, 0, this.player.y);
         if (this.dirLight) {
             this.dirLight.position.set(this.player.x - 400, 1000, this.player.y - 400);
             this.dirLight.target.position.set(this.player.x, 0, this.player.y);
         }
+    },
 
-       // FOV Dinamico: allarga la visuale per enfatizzare la potenza dell'Ultimate
-        // FIX WARP: Blocchiamo il ricalcolo della camera se l'animazione di fine livello è in corso!
+    updateCamera(dt) {
+        if (!this.player) return;
+
+        // 1. Zoom morbido e progressivo durante l'Ultimate (nessuno scatto visivo)
+        let targetZoom = Game.ultimateActive ? 0.90 : 1.0;
+        if (this._camZoom === undefined) this._camZoom = 1.0;
+        this._camZoom += (targetZoom - this._camZoom) * (1.0 - Math.exp(-dt * 4.0));
+
+        // 2. Gestione Screen Shake (Trauma) smorzata sull'asse di rotazione
+        let shakeX = 0, shakeY = 0, shakeZ = 0;
+        if (this.trauma > 0) {
+            let shakeForce = this.trauma * this.trauma * 6.5; 
+            shakeX = MathUtils.randomRange(-shakeForce, shakeForce); 
+            shakeY = MathUtils.randomRange(-shakeForce * 0.5, shakeForce * 0.5); 
+            shakeZ = MathUtils.randomRange(-shakeForce, shakeForce);
+            this.trauma = Math.max(0, this.trauma - dt * 3.2); 
+        }
+
+        // 3. OTTIMIZZAZIONE LUCE DIREZIONALE: Aggiorna la posizione solo se le ombre dinamiche sono attive
+        // e arrotonda a step di 8 unità per eliminare il tremolio dei bordi delle ombre (Shadow Swimming)
+        if (this.dirLight && AppSettings.shadowsEnabled) {
+            let snapX = Math.round(this.player.x * 0.125) * 8;
+            let snapZ = Math.round(this.player.y * 0.125) * 8;
+            this.dirLight.position.set(snapX - 400, 1000, snapZ - 400);
+            this.dirLight.target.position.set(snapX, 0, snapZ);
+        }
+
+        // 4. FOV Dinamico fluido
         if (this.state !== 'WARPING_OUT') {
-            let targetFov = Game.ultimateActive ? 56 : 50;
-            if (Math.abs(targetFov - this.camera.fov) > 0.1) {
-                this.camera.fov += (targetFov - this.camera.fov) * 8 * dt;
+            let targetFov = Game.ultimateActive ? 54 : 50;
+            if (Math.abs(targetFov - this.camera.fov) > 0.05) {
+                this.camera.fov += (targetFov - this.camera.fov) * (1.0 - Math.exp(-dt * 6.0));
                 this.camera.updateProjectionMatrix();
             }
         }
         
-       // Transizione cromatica della Boss Arena Evolutiva (Fase Enraged)
-        // OTTIMIZZAZIONE: Colori in cache per prevenire un leak di 240+ oggetti al secondo
+        // 5. Transizione cromatica della Boss Arena Evolutiva
         if (Game.arenaEvolution) {
             if (!Game._colorDarkRed) {
                 Game._colorDarkRed = new THREE.Color(0x3a0010);
@@ -4670,34 +4687,38 @@ pushDebris(px, pz, radius, force) {
             if (this.scene.fog) this.scene.fog.color.lerp(Game._colorPitchBlack, dt * 0.4);
         }
         
-       // --- TELECAMERA CINEMATOGRAFICA CON SMOOTH LERP & LOOK-AHEAD ---
-        if (this._camFocusX === undefined) { this._camFocusX = this.player.x; this._camFocusZ = this.player.y; }
-        
-        // Spostamento predittivo (Look-Ahead) morbido verso la direzione di mira/corsa
-        let lookDist = this.player.isDashing ? 55 : 28;
-        let targetFocusX = this.player.x + Math.cos(this.player.angle) * lookDist;
-        let targetFocusZ = this.player.y + Math.sin(this.player.angle) * lookDist;
-        
-        let smoothFactor = Math.min(1.0, dt * 9.5);
-        this._camFocusX += (targetFocusX - this._camFocusX) * smoothFactor;
-        this._camFocusZ += (targetFocusZ - this._camFocusZ) * smoothFactor;
+        // 6. TELECAMERA COMFORT: Segue il giocatore con precisione ma filtra i micro-scatti,
+        // usando un leggerissimo anticipo basato SOLO sul passo di corsa (mai sulla rotazione della mira!)
+        if (this._camFocusX === undefined) {
+            this._camFocusX = this.player.x;
+            this._camFocusZ = this.player.y;
+            this._camLeadX = 0;
+            this._camLeadZ = 0;
+        }
 
-        let finalCamX = this._camFocusX;
-        let finalCamY = (isTouchDevice ? 750 : 600) * zoom;
-        let finalCamZ = this._camFocusZ + (isTouchDevice ? 500 : 400) * zoom;
+        let moveX = this.player.slideDx || 0;
+        let moveZ = this.player.slideDy || 0;
+        let leadSmooth = 1.0 - Math.exp(-dt * 3.5); // Filtro ultra-morbido per l'anticipo di corsa (max 14px)
+        this._camLeadX += (moveX * 14.0 - this._camLeadX) * leadSmooth;
+        this._camLeadZ += (moveZ * 14.0 - this._camLeadZ) * leadSmooth;
 
-        this.camera.position.set(finalCamX + shakeX, finalCamY + shakeY, finalCamZ + shakeZ);
-        this.camera.lookAt(this._camFocusX + shakeX * 0.4, 0, this._camFocusZ + shakeZ * 0.4);
-       // --- ANIMAZIONE PARALLASSE DELLA NEBBIA 3D ---
+        let posSmooth = 1.0 - Math.exp(-dt * 14.0); // Aggancio reattivo ma setoso sul giocatore
+        this._camFocusX += ((this.player.x + this._camLeadX) - this._camFocusX) * posSmooth;
+        this._camFocusZ += ((this.player.y + this._camLeadZ) - this._camFocusZ) * posSmooth;
+
+        let baseHeight = (isTouchDevice ? 750 : 600) * this._camZoom;
+        let baseDist = (isTouchDevice ? 500 : 400) * this._camZoom;
+
+        this.camera.position.set(this._camFocusX + shakeX, baseHeight + shakeY, this._camFocusZ + baseDist + shakeZ);
+        // Il punto osservato subisce solo il 25% dello shake per non far ruotare l'orizzonte in modo fastidioso
+        this.camera.lookAt(this._camFocusX + shakeX * 0.25, 0, this._camFocusZ + shakeZ * 0.25);
+
+        // 7. Parallasse Nebbia 3D
         if (this.mistSystem && this.player) {
-            // Il piano gigante segue il giocatore fisicamente...
             this.mistSystem.position.x = this.player.x;
             this.mistSystem.position.z = this.player.y;
-            
             this.mistWindTime = (this.mistWindTime || 0) + dt;
             
-            // ...ma le texture scorrono all'incontrario per annullare il movimento
-            // e agganciarsi realisticamente al terreno, aggiungendo il vento!
             if (this.mistMat1 && this.mistMat1.map) {
                 this.mistMat1.map.offset.x = (this.player.x / 6000) * 8 + (this.mistWindTime * 0.015);
                 this.mistMat1.map.offset.y = -(this.player.y / 6000) * 8 + (this.mistWindTime * 0.010);
@@ -4706,10 +4727,9 @@ pushDebris(px, pz, radius, force) {
                 this.mistMat2.map.offset.x = (this.player.x / 6000) * 12 - (this.mistWindTime * 0.008);
                 this.mistMat2.map.offset.y = -(this.player.y / 6000) * 12 + (this.mistWindTime * 0.018);
             }
-            
             this.mistSystem.visible = !AppSettings.isLow; 
         }
-    }, 
+    },
     
     updateMouseWorld() {
         if (isTouchDevice) return; // STOP! Niente calcoli a matrice su smartphone, mira col joystick!
@@ -5923,15 +5943,16 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
             for (let i = this.enemies.length - 1; i >= 0; i--) {
                 let e = this.enemies[i]; 
                 
-                // CULLING MANUALE A COSTO ZERO: Nasconde i nemici distanti per salvare Draw Calls
+               // CULLING MANUALE COMPLETO: Nasconde modello, ombra e aure dei nemici fuori schermo
                 let distToCamSq = (camX - e.x) * (camX - e.x) + (camY - e.y) * (camY - e.y);
                 let isVisible = (distToCamSq < 1600000); // circa 1250 unità di distanza visiva
                 e.mesh.visible = isVisible;
+                if (e.shadowMesh) e.shadowMesh.visible = isVisible && !AppSettings.shadowsEnabled;
                 
-                // FIX THERMAL THROTTLING: Se il nemico è lontano e invisibile, bypassa l'aggiornamento
-                // costante della sua MatrixAutoUpdate (calcoli su rotazione braccia, squash&stretch, etc).
                 if (!isVisible) {
                     e.mesh.matrixAutoUpdate = false;
+                    if (e.auraRingMesh) e.auraRingMesh.visible = false;
+                    if (e.auraGlow) e.auraGlow.visible = false;
                 } else {
                     e.mesh.matrixAutoUpdate = true;
                 }
@@ -5957,31 +5978,41 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
         let pickupMult = this.player ? this.player.modifiers.pickupRadiusMult : 1.0;
         let pRadiusSq = (this.player.radius + 20 * pickupMult)**2;
 
-        for(let i = 0, len = this.essences.length; i < len; i++) {
+       for (let i = 0, len = this.essences.length; i < len; i++) {
             let e = this.essences[i];
-            if(e.active) {
+            if (e.active) {
                 e.life -= combatDt;
                 if (e.life <= 0) { e.destroy(); continue; }
-                if (e.life < 3.0) e.group.visible = Math.floor(e.life * 8) % 2 === 0;
-                else e.group.visible = true;
-
-                e.group.rotation.y += combatDt; e.group.position.y = 12 + this.animFloat; 
-                e.group.updateMatrix();
-                if (MathUtils.distanceSq(this.player, e) < pRadiusSq) { this.player.collectEssence(e.type); e.destroy(); }
+                let distSq = MathUtils.distanceSq(this.player, e);
+                if (distSq < pRadiusSq) { this.player.collectEssence(e.type); e.destroy(); continue; }
+                
+                // Culling visivo: anima e aggiorna la matrice solo se vicino allo schermo
+                if (distSq < 1200000) {
+                    e.group.visible = (e.life < 3.0) ? (Math.floor(e.life * 8) % 2 === 0) : true;
+                    e.group.rotation.y += combatDt;
+                    e.group.position.y = 12 + this.animFloat; 
+                    e.group.updateMatrix();
+                } else {
+                    e.group.visible = false;
+                }
             }
         }
 
-        for(let i = 0, len = this.extraLivesDrops.length; i < len; i++) {
+        for (let i = 0, len = this.extraLivesDrops.length; i < len; i++) {
             let el = this.extraLivesDrops[i];
-            if(el.active) {
+            if (el.active) {
                 el.life -= combatDt;
                 if (el.life <= 0) { el.destroy(); continue; }
-                if (el.life < 3.0) el.group.visible = Math.floor(el.life * 8) % 2 === 0;
-                else el.group.visible = true;
-
-                el.group.rotation.y += combatDt * 2; el.group.position.y = 12 + this.animFloat; 
-                el.group.updateMatrix();
-                if (MathUtils.distanceSq(this.player, el) < pRadiusSq) { 
+                let distSq = MathUtils.distanceSq(this.player, el);
+                if (distSq < 1200000) {
+                    el.group.visible = (el.life < 3.0) ? (Math.floor(el.life * 8) % 2 === 0) : true;
+                    el.group.rotation.y += combatDt * 2;
+                    el.group.position.y = 12 + this.animFloat; 
+                    el.group.updateMatrix();
+                } else {
+                    el.group.visible = false;
+                }
+                if (distSq < pRadiusSq) {
                     el.destroy(); 
                     AudioEngine.playCollect(); 
                     if (this.lives < 6) {
@@ -10678,14 +10709,8 @@ class Enemy extends Entity {
                 // Feedback particellare (scintilla azzurra sullo scudo)
                 Game.getParticle().spawn(this.x + Math.cos(angleToSource)*this.radius, 15, this.y + Math.sin(angleToSource)*this.radius, SharedMat.spriteBlue, 'spark');
                 
-                // Fa brillare lo scudo 3D
-                if (this.modelParts && this.modelParts.shield) {
-                    this.modelParts.shield.material.opacity = 0.9;
-                   setTimeout(() => { 
-    if (this.active && !this.dead && this.modelParts && this.modelParts.shield) 
-        this.modelParts.shield.material.opacity = 0.4; 
-}, 150);
-                }
+               // Feedback fisico immediato sullo scudo 3D (Zero-Allocation, nessun setTimeout)
+                this.hitSquashTimer = 0.12;
             }
         }
         // --------------------------
