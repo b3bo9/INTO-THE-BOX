@@ -2959,7 +2959,7 @@ const ModelFactory = {
         weaponGroup.add(staff); weaponGroup.add(staffGem); weaponGroup.add(halo);
         group.add(body); group.add(head); group.add(scarf); group.add(weaponGroup);
         this.setupShadows(group);
-        return { group, staffGem, halo, weaponGroup, body };
+        return { group, staffGem, halo, weaponGroup, body, head, scarf };
     },
     buildEnemy(type, size, mat) {
         let group = new THREE.Group(); let parts = {}; 
@@ -4133,9 +4133,11 @@ this.renderer.shadowMap.type = isTouchDevice ? THREE.PCFShadowMap : THREE.PCFSof
         container.appendChild(this.renderer.domElement);
         
         // Luce globale quasi inesistente (notte fonda), esalta la luce del giocatore
-      // Luce ambientale schiarita: toglie l'effetto dark fantasy e accende i colori
-        const ambientLight = new THREE.AmbientLight(0x1a1c3a, 0.6); this.scene.add(ambientLight);
-this.ambientLight = ambientLight; // <-- SALVA IL RIFERIMENTO GLOBALE
+      // Luce Emisferica Bicolore (Costo GPU identico ad AmbientLight, ma dona vero volume 3D su mobile)
+        const hemiLight = new THREE.HemisphereLight(0x4466aa, 0x0a0a12, 0.85);
+        hemiLight.position.set(0, 500, 0);
+        this.scene.add(hemiLight);
+        this.ambientLight = hemiLight;
         
 // Luce lunare leggermente più ciano e meno intensa per far risaltare la luce del giocatore
 this.dirLight = new THREE.DirectionalLight(0x335577, 1.4);
@@ -4536,9 +4538,12 @@ pushDebris(px, pz, radius, force) {
 
    addTrauma(amount) { if (!AppSettings.screenShake) return; this.trauma = Math.min(this.trauma + amount, 1.0); },
     snapCamera() {
-        // Camera più vicina e angolata su mobile per esaltare i personaggi
-        let camY = isTouchDevice ? 750 : 700; let camZ = this.player.y + (isTouchDevice ? 500 : 500);
-        this.camera.position.set(this.player.x, camY, camZ); this.camera.lookAt(this.player.x, 0, this.player.y);
+        let camY = isTouchDevice ? 750 : 700;
+        let camZ = this.player.y + 500;
+        this._camFocusX = this.player.x;
+        this._camFocusZ = this.player.y;
+        this.camera.position.set(this.player.x, camY, camZ);
+        this.camera.lookAt(this.player.x, 0, this.player.y);
         if (this.dirLight) {
             this.dirLight.position.set(this.player.x - 400, 1000, this.player.y - 400);
             this.dirLight.target.position.set(this.player.x, 0, this.player.y);
@@ -4665,10 +4670,24 @@ pushDebris(px, pz, radius, force) {
             if (this.scene.fog) this.scene.fog.color.lerp(Game._colorPitchBlack, dt * 0.4);
         }
         
-        // --- QUESTE SONO LE DUE RIGHE CHE MANCAVANO ---
-        // Applica le coordinate calcolate e le vibrazioni (shake) alla telecamera
-        this.camera.position.set(camX + shakeX, camY + shakeY, camZ + shakeZ);
-        this.camera.lookAt(this.player.x + shakeX, 0, this.player.y + shakeZ);
+       // --- TELECAMERA CINEMATOGRAFICA CON SMOOTH LERP & LOOK-AHEAD ---
+        if (this._camFocusX === undefined) { this._camFocusX = this.player.x; this._camFocusZ = this.player.y; }
+        
+        // Spostamento predittivo (Look-Ahead) morbido verso la direzione di mira/corsa
+        let lookDist = this.player.isDashing ? 55 : 28;
+        let targetFocusX = this.player.x + Math.cos(this.player.angle) * lookDist;
+        let targetFocusZ = this.player.y + Math.sin(this.player.angle) * lookDist;
+        
+        let smoothFactor = Math.min(1.0, dt * 9.5);
+        this._camFocusX += (targetFocusX - this._camFocusX) * smoothFactor;
+        this._camFocusZ += (targetFocusZ - this._camFocusZ) * smoothFactor;
+
+        let finalCamX = this._camFocusX;
+        let finalCamY = (isTouchDevice ? 750 : 600) * zoom;
+        let finalCamZ = this._camFocusZ + (isTouchDevice ? 500 : 400) * zoom;
+
+        this.camera.position.set(finalCamX + shakeX, finalCamY + shakeY, finalCamZ + shakeZ);
+        this.camera.lookAt(this._camFocusX + shakeX * 0.4, 0, this._camFocusZ + shakeZ * 0.4);
        // --- ANIMAZIONE PARALLASSE DELLA NEBBIA 3D ---
         if (this.mistSystem && this.player) {
             // Il piano gigante segue il giocatore fisicamente...
@@ -5080,8 +5099,15 @@ loop(timestamp) {
             this.dirLight.color.setHex(currentTheme.dirLight); 
         }
         if (this.ambientLight) { 
-            this.ambientLight.intensity = 0.6; 
-            this.ambientLight.color.setHex(currentTheme.ambient); 
+            this.ambientLight.intensity = 0.85; 
+            this.ambientLight.color.setHex(currentTheme.dirLight); // Cielo in tinta con la luce lunare/magmatica
+            if (this.ambientLight.groundColor) {
+                this.ambientLight.groundColor.setHex(currentTheme.dirt); // Rimbalzo luminoso dal suolo sui modelli!
+            }
+        }
+        // Sincronizza il colore dell'erba 3D interattiva con il bioma corrente (Foresta, Lava, Ghiaccio)
+        if (InteractiveGrassSystem.mat) {
+            InteractiveGrassSystem.mat.color.setHex(currentTheme.grassShader);
         }
         this.difficultyMult = this.baseDifficultyMult;
         
@@ -7524,20 +7550,29 @@ class GameMap {
                         if (hasRightFloor) placeEdgeElements(px + half, pz - half, px + half, pz + half, x+1, y);
                         if (hasTopFloor) placeEdgeElements(px - half, pz - half, px + half, pz - half, x, y-1);
                         if (hasBottomFloor) placeEdgeElements(px - half, pz + half, px + half, pz + half, x, y+1);
-                    } else {
-                        // Confine Interno Conficcato: DISEGNA I VERI MURI INTERNI
-                        dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE*0.75, y * TILE_SIZE + TILE_SIZE / 2);
-                        dummy.scale.set(1, 1, 1);
-                        dummy.rotation.set(0, 0, 0);
+                  } else {
+                        // Confine Interno: Muri con altezza leggermente irregolare e variazione cromatica per-istanza
+                        let hVar = 0.92 + ((Math.abs(Math.sin(x * 12.989 + y * 78.233)) % 1) * 0.28);
+                        dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2, (TILE_SIZE * 0.75) * hVar, y * TILE_SIZE + TILE_SIZE / 2);
+                        dummy.scale.set(1, hVar, 1);
+                        dummy.rotation.set(0, (Math.floor(x + y) % 4) * (Math.PI / 2), 0);
                         dummy.updateMatrix();
+                        if (!window._wallTint) window._wallTint = new THREE.Color();
+                        let shade = 0.75 + (hVar - 0.92) * 1.1;
+                        window._wallTint.setRGB(shade, shade, shade);
+                        wallMesh.setColorAt(wIdx, window._wallTint);
                         wallMesh.setMatrixAt(wIdx++, dummy.matrix);
                     }
                 } else {
-                    // Confine Esterno Mappa (PADDING): DISEGNA I MURI PERIMETRALI
-                    dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE*0.75, y * TILE_SIZE + TILE_SIZE / 2);
-                    dummy.scale.set(1, 1, 1);
+                    // Confine Esterno Mappa (PADDING): Roccaforte esterna più alta e scura per incorniciare l'arena
+                    let hVar = 1.15 + ((Math.abs(Math.cos(x * 45.12 + y * 19.31)) % 1) * 0.35);
+                    dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2, (TILE_SIZE * 0.75) * hVar, y * TILE_SIZE + TILE_SIZE / 2);
+                    dummy.scale.set(1, hVar, 1);
                     dummy.rotation.set(0, 0, 0);
                     dummy.updateMatrix();
+                    if (!window._wallTint) window._wallTint = new THREE.Color();
+                    window._wallTint.setRGB(0.6, 0.6, 0.65);
+                    wallMesh.setColorAt(wIdx, window._wallTint);
                     wallMesh.setMatrixAt(wIdx++, dummy.matrix);
                 }
 
@@ -7677,8 +7712,9 @@ Game.auras.push({
         interactiveGrassMesh.instanceMatrix.needsUpdate = true; 
         if (idxInteractiveGrass > 0) this.mapGroup.add(interactiveGrassMesh);
 
+       if (wallMesh.instanceColor) wallMesh.instanceColor.needsUpdate = true;
         this.mapGroup.add(meshDirt, meshGrass, meshRock); 
-        this.mapGroup.add(wallMesh); 
+        this.mapGroup.add(wallMesh);
         
      if(pillarCount > 0) {
             this.mapGroup.add(obeliskMesh);
@@ -8118,18 +8154,24 @@ class Entity {
                 }
             }
         }
-        // Squash & Stretch Fisico sui danni
+        // Squash & Stretch + Rinculo Fisico all'indietro sui danni
         if (this.hitSquashTimer > 0) {
             this.hitSquashTimer -= dt;
             if (this.type !== 'crystal' && this.type !== 'slime' && this.type !== 'slime_mini') {
                 let visualScale = this.isElite ? 1.5 : 1.0;
-                let squash = 1.0 + (this.hitSquashTimer * 1.5); 
-                let stretch = 1.0 - (this.hitSquashTimer * 1.0); 
+                let squash = 1.0 + (this.hitSquashTimer * 1.8); 
+                let stretch = 1.0 - (this.hitSquashTimer * 1.2); 
                 this.mesh.scale.set(visualScale * squash, visualScale * stretch, visualScale * squash);
+                if (this !== Game.player && this.state !== 'leaping') {
+                    this.mesh.rotation.x = -this.hitSquashTimer * 2.5; // Piega il nemico all'indietro per l'impatto
+                }
             }
         } else if (this.type !== 'crystal' && this.type !== 'slime' && this.type !== 'slime_mini') {
             let visualScale = this.isElite ? 1.5 : 1.0;
             this.mesh.scale.setScalar(visualScale);
+            if (this !== Game.player && this.state !== 'leaping' && this.type !== 'goblin') {
+                this.mesh.rotation.x = 0;
+            }
         }
     }
 }
@@ -8247,6 +8289,19 @@ class Player extends Entity {
             { mesh: this.deadHead, original: this.mesh.children[1], vx: 0, vy: 0, vz: 0, rx: 0, rz: 0 },
             { mesh: this.deadWeapon, original: this.mesh.children[3], vx: 0, vy: 0, vz: 0, rx: 0, rz: 0 }
         ];
+
+        // --- PRE-ALLOCAZIONE SCIA OLOGRAFICA DI SCATTO (Zero-Allocation Afterimages) ---
+        this.dashGhosts = [];
+        this._ghostSpawnTimer = 0;
+        this._ghostIdx = 0;
+        for (let i = 0; i < 4; i++) {
+            let gMat = new THREE.MeshBasicMaterial({ color: 0x00ddff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+            let gMesh = new THREE.Mesh(SharedGeo.cone, gMat);
+            gMesh.matrixAutoUpdate = false;
+            gMesh.visible = false;
+            Game.scene.add(gMesh);
+            this.dashGhosts.push({ mesh: gMesh, mat: gMat, life: 0 });
+        }
     }
     collectEssence(type) {
         if (this.overdrive) { 
@@ -8994,10 +9049,20 @@ if (Game.ultimateActive) currentSpeed *= 1.5; currentSpeed = Math.min(currentSpe
                 this.lavaTimer = 0; // Azzera il timer se esce
             }
 
-            // Interpolazione morbida dell'altezza: 
-            // Se in movimento usa il rimbalzo accentuato (corsa), altrimenti usa un respiro leggero (idle)
+           // Interpolazione morbida dell'altezza: 
             let activeBounce = isMoving ? (Game.animBounce * 0.75) : (Math.sin(Game.playTime * 3.0) * 0.4);
             this.mesh.position.y += ((targetDepth + activeBounce) - this.mesh.position.y) * dt * 10;
+
+            // --- ANIMAZIONE SECONDARIA: INCLINAZIONE CORPO, TESTA E SCIARPA ---
+            let targetPitch = isMoving ? 0.18 : 0.0;
+            this.modelParts.body.rotation.x += (targetPitch - this.modelParts.body.rotation.x) * dt * 10;
+            if (this.modelParts.head) {
+                this.modelParts.head.position.y = 28 + Math.sin(Game.playTime * (isMoving ? 14 : 3.5)) * (isMoving ? 1.2 : 0.4);
+            }
+            if (this.modelParts.scarf) {
+                this.modelParts.scarf.rotation.z = Math.sin(Game.playTime * 12) * (isMoving ? 0.25 : 0.05);
+                this.modelParts.scarf.position.y = 24 + Math.cos(Game.playTime * 12) * 0.6;
+            }
             
             // --- PENDOLO FISICO E FLUIDO DELLA LANTERNA ---
             // Inizializziamo le variabili di fase se non esistono
@@ -9198,13 +9263,40 @@ if (Game.ultimateActive) currentSpeed *= 1.5; currentSpeed = Math.min(currentSpe
         this.light.intensity = baseInt + flicker + attackIntensityBurst;
         this.light.distance = baseRadius + attackRadiusBurst;
         
-        // L'alone visivo per mobile si espande impercettibilmente, senza accecare
         let baseOpacity = this.overdrive ? 1.0 : (this.essence ? 0.8 : 0.5);
-        this.fakeBloom.material.opacity = Math.max(0.1, Math.min(1.0, baseOpacity + (flicker * 0.5)));
+        this.fakeBloom.material.opacity = Math.max(0.1, Math.min(1.0, baseOpacity + (flicker * 0.5)));
         this.mesh.updateMatrix();
-        // -----------------------------------------------------------------
-    
-   } 
+
+        // --- GESTIONE SCIA OLOGRAFICA DI SCATTO (AFTERIMAGE) ---
+        if (this.isDashing) {
+            this._ghostSpawnTimer -= dt;
+            if (this._ghostSpawnTimer <= 0) {
+                this._ghostSpawnTimer = 0.045;
+                let g = this.dashGhosts[this._ghostIdx];
+                this._ghostIdx = (this._ghostIdx + 1) % this.dashGhosts.length;
+                g.life = 0.22;
+                let gColor = this.essence ? ESSENCE_COLORS[this.essence] : 0x00ddff;
+                g.mat.color.setHex(gColor);
+                g.mat.opacity = 0.55;
+                g.mesh.position.set(this.x, this.mesh.position.y + 18 * massScale, this.y);
+                g.mesh.rotation.set(0.25, this.mesh.rotation.y, 0);
+                g.mesh.scale.set(12 * massScale, 36 * massScale, 12 * massScale);
+                g.mesh.updateMatrix();
+                g.mesh.visible = true;
+            }
+        }
+        for (let i = 0; i < this.dashGhosts.length; i++) {
+            let g = this.dashGhosts[i];
+            if (g.life > 0) {
+                g.life -= dt;
+                if (g.life <= 0) {
+                    g.mesh.visible = false;
+                } else {
+                    g.mat.opacity = (g.life / 0.22) * 0.55;
+                }
+            }
+        }
+   }
         
   flamethrower(dt) {
         if (Game.frameCount % (isTouchDevice ? 2 : 1) === 0) {
@@ -10402,52 +10494,59 @@ class Enemy extends Entity {
         // Movimento Continuo a 60 FPS basato sui dati calcolati dallo "Staggering"
         if (this.distToTargetSq !== undefined && this.distToTargetSq < this.aggroRangeSq) {
             
-    // --- INIZIO TELEGRAPHING ANIMATO ---
+    // --- TELEGRAPHING ANIMATO CON CARICAMENTO FISICO (WIND-UP) ---
         if (this.telegraphTimer > 0) {
             this.telegraphTimer -= dt;
-
-            // Progresso da 0.0 (inizio carica) a 1.0 (sparo)
-            let prog = 1.0 - (this.telegraphTimer / 0.4); 
+            let prog = Math.min(1.0, 1.0 - (this.telegraphTimer / 0.6)); 
             
-            // Colori base del nemico
             let baseHex = this.isGolden ? 0xffaa00 : (this.isElite ? 0x440000 : 0x000000);
             let baseInt = this.isGolden ? 2.0 : 1.0;
 
-            // Inizializzazione sicura e Zero-Allocation per non pesare sulla RAM
             if (!Game._dummyTelegraphColor) Game._dummyTelegraphColor = new THREE.Color();
             if (!Game._whiteColor) Game._whiteColor = new THREE.Color(0xffffff);
 
             Game._dummyTelegraphColor.setHex(baseHex);
-            
-            // Curva esponenziale: inizia a caricarsi piano e diventa bianco abbagliante solo alla fine
-            let curve = prog * prog * prog; 
-            
-            // Sfuma dinamicamente dal colore base verso il bianco puro
+            let curve = prog * prog; 
             Game._dummyTelegraphColor.lerp(Game._whiteColor, curve);
-            
-            // Aumenta l'intensità della luce per farlo "brillare" sempre di più
             let currentInt = baseInt + (curve * 3.5);
 
-            // Applica l'effetto visivo ai materiali del modello
-            for(let i=0; i<this.flashMats.length; i++) { 
+            for (let i = 0; i < this.flashMats.length; i++) { 
                 this.flashMats[i].emissive.copy(Game._dummyTelegraphColor); 
                 this.flashMats[i].emissiveIntensity = currentInt; 
             }
 
-            // Quando il timer scade, resetta i colori e spara!
+            // Compressione elastica e inclinazione all'indietro prima dello sparo (molto leggibile su mobile!)
+            let vScale = this.isElite ? 1.5 : 1.0;
+            this.mesh.scale.set(vScale * (1.0 - curve * 0.2), vScale * (1.0 + curve * 0.35), vScale * (1.0 - curve * 0.2));
+            this.mesh.rotation.x = -curve * 0.3;
+
             if (this.telegraphTimer <= 0) {
-                for(let i=0; i<this.flashMats.length; i++) { 
+                for (let i = 0; i < this.flashMats.length; i++) { 
                     this.flashMats[i].emissive.setHex(baseHex); 
                     this.flashMats[i].emissiveIntensity = baseInt; 
                 }
+                this.mesh.scale.setScalar(vScale);
+                this.mesh.rotation.x = 0;
+                this.hitSquashTimer = 0.12; // Contraccolpo elastico allo sparo!
                 this.executeAttack();
             }
+            this.mesh.updateMatrix();
             return;
         }
 
-           if (this.distToTargetSq > this.attackRangeSq) { 
+            if (this.distToTargetSq > this.attackRangeSq) { 
                 this.move(this.moveX, this.moveY, dt); 
-                if (this.type !== 'mage' && this.type !== 'pyromancer' && this.type !== 'goblin') { this.mesh.position.y = Game.animBounce; }
+                // Passo asincrono individuale e dondolio laterale (elimina l'effetto "balletto robotico")
+                let walkPhase = (Game.playTime * 10.0) + (this.thinkOffset * 2.1);
+                if (this.type !== 'mage' && this.type !== 'pyromancer' && this.type !== 'dark_prophet' && this.type !== 'goblin') {
+                    this.mesh.position.y = Math.abs(Math.sin(walkPhase)) * 4.5;
+                    this.mesh.rotation.z = Math.cos(walkPhase) * 0.11;
+                }
+                if (this.modelParts.armL) {
+                    let armSwing = Math.sin(walkPhase) * 0.65;
+                    this.modelParts.armL.rotation.x = armSwing;
+                    this.modelParts.armR.rotation.x = -armSwing;
+                }
             } else {
                 // FIX AI: I nemici smettono di attaccare se il giocatore è morto
                 if (!Game.player || Game.player.dead) return; 
