@@ -1446,7 +1446,6 @@ playCoin() {
         if (this.captureTimer === undefined) this.captureTimer = 0;
         this.captureTimer -= dt;
 
-        // Emette un battito magico costante ogni 300ms mentre purifichi l'obelisco
         if (this.captureTimer <= 0) {
             this.captureTimer = 0.3;
 
@@ -1455,11 +1454,9 @@ playCoin() {
             let gain = this.ctx.createGain();
 
             osc.type = 'triangle';
-            // Suono grave e ascendente che indica assorbimento magico
             osc.frequency.setValueAtTime(150, t);
             osc.frequency.exponentialRampToValueAtTime(300, t + 0.25);
 
-            // Volume molto basso di sottofondo
             gain.gain.setValueAtTime(0.0, t);
             gain.gain.linearRampToValueAtTime(0.05, t + 0.1); 
             gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
@@ -1469,6 +1466,99 @@ playCoin() {
 
             osc.start(t);
             osc.stop(t + 0.3);
+        }
+    },
+
+    playEnvironmentSound(envType, isMoving, dt) {
+        if (this.sfxMuted || !this.ctx || this.ctx.state === 'suspended' || !this.noiseBuffer) return;
+        if (this.envSoundTimer === undefined) this.envSoundTimer = 0;
+        this.envSoundTimer -= dt;
+        if (this.envSoundTimer > 0) return;
+
+        let t = this.ctx.currentTime;
+        let dest = this.masterCompressor || this.ctx.destination;
+
+        if (envType === 'water') {
+            if (isMoving) {
+                this.envSoundTimer = MathUtils.randomRange(0.24, 0.34);
+                // Sciabordio d'acqua (Rumore filtrato + goccia risonante)
+                let src = this.ctx.createBufferSource(); src.buffer = this.noiseBuffer;
+                let filter = this.ctx.createBiquadFilter(); filter.type = 'bandpass';
+                filter.Q.value = 2.5;
+                filter.frequency.setValueAtTime(420, t);
+                filter.frequency.exponentialRampToValueAtTime(950, t + 0.14);
+                let gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.06, t);
+                gain.gain.exponentialRampToValueAtTime(0.005, t + 0.14);
+                src.connect(filter); filter.connect(gain); gain.connect(dest);
+                src.start(t); src.stop(t + 0.14);
+
+                let osc = this.ctx.createOscillator(); let oGain = this.ctx.createGain();
+                osc.type = 'sine';
+                let baseFreq = MathUtils.randomRange(300, 440);
+                osc.frequency.setValueAtTime(baseFreq, t);
+                osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.6, t + 0.08);
+                oGain.gain.setValueAtTime(0.035, t);
+                oGain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+                osc.connect(oGain); oGain.connect(dest);
+                osc.start(t); osc.stop(t + 0.08);
+            } else {
+                this.envSoundTimer = MathUtils.randomRange(0.7, 1.2);
+                // Leggero incresparsi dell'acqua da fermo
+                let osc = this.ctx.createOscillator(); let oGain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(280, t);
+                osc.frequency.exponentialRampToValueAtTime(460, t + 0.1);
+                oGain.gain.setValueAtTime(0.015, t);
+                oGain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+                osc.connect(oGain); oGain.connect(dest);
+                osc.start(t); osc.stop(t + 0.1);
+            }
+        } else if (envType === 'lava') {
+            this.envSoundTimer = isMoving ? MathUtils.randomRange(0.18, 0.26) : MathUtils.randomRange(0.38, 0.55);
+            // Sfrigolio termico ad alta frequenza + ribollire grave del magma
+            let src = this.ctx.createBufferSource(); src.buffer = this.noiseBuffer;
+            let filter = this.ctx.createBiquadFilter(); filter.type = 'highpass';
+            filter.frequency.setValueAtTime(2000, t);
+            let gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(isMoving ? 0.055 : 0.025, t);
+            gain.gain.exponentialRampToValueAtTime(0.003, t + 0.16);
+            src.connect(filter); filter.connect(gain); gain.connect(dest);
+            src.start(t); src.stop(t + 0.16);
+
+            let osc = this.ctx.createOscillator(); let oGain = this.ctx.createGain();
+            osc.type = 'triangle';
+            let lowFreq = MathUtils.randomRange(65, 95);
+            osc.frequency.setValueAtTime(lowFreq, t);
+            osc.frequency.exponentialRampToValueAtTime(28, t + 0.15);
+            oGain.gain.setValueAtTime(isMoving ? 0.08 : 0.04, t);
+            oGain.gain.exponentialRampToValueAtTime(0.005, t + 0.15);
+            osc.connect(oGain); oGain.connect(dest);
+            osc.start(t); osc.stop(t + 0.15);
+        } else if (envType === 'ice') {
+            if (!isMoving) { this.envSoundTimer = 0.1; return; }
+            this.envSoundTimer = MathUtils.randomRange(0.20, 0.30);
+            // Attrito cristallino sul ghiaccio
+            let src = this.ctx.createBufferSource(); src.buffer = this.noiseBuffer;
+            let filter = this.ctx.createBiquadFilter(); filter.type = 'bandpass';
+            filter.Q.value = 3.5;
+            filter.frequency.setValueAtTime(2800, t);
+            filter.frequency.linearRampToValueAtTime(3800, t + 0.1);
+            let gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(0.04, t);
+            gain.gain.exponentialRampToValueAtTime(0.002, t + 0.1);
+            src.connect(filter); filter.connect(gain); gain.connect(dest);
+            src.start(t); src.stop(t + 0.1);
+
+            let osc = this.ctx.createOscillator(); let oGain = this.ctx.createGain();
+            osc.type = 'sine';
+            let iceFreq = MathUtils.randomRange(1650, 2100);
+            osc.frequency.setValueAtTime(iceFreq, t);
+            osc.frequency.exponentialRampToValueAtTime(iceFreq * 1.25, t + 0.07);
+            oGain.gain.setValueAtTime(0.018, t);
+            oGain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+            osc.connect(oGain); oGain.connect(dest);
+            osc.start(t); osc.stop(t + 0.07);
         }
     },
   
@@ -4298,7 +4388,7 @@ prewarmShaders() {
                     dirt: new MapMaterialClass({ map: tDirt, shininess: 0, specular: 0x000000 }),
                     grass: new MapMaterialClass({ map: tGrass, shininess: 0, specular: 0x000000, alphaMap: GLOBAL_ALPHA_TEX, transparent: true, depthWrite: false }),
                     rock: new MapMaterialClass({ map: tRock, shininess: 15, specular: 0x222222, alphaMap: GLOBAL_ALPHA_TEX, transparent: true, depthWrite: false }),
-                    wall: new MapMaterialClass({ map: tWall, shininess: 10, specular: 0x111111 })
+                    wall: new MapMaterialClass({ map: tRock, shininess: 6, specular: 0x111111, flatShading: true })
                 };
                 window.GLOBAL_THEME_MATS.push(mats);
                 
@@ -5666,7 +5756,7 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
         this.animFloat = Math.sin(this.frameCount * 0.1) * 5;
         this.animArm = Math.sin(this.frameCount * 0.3) * 0.5;
 
-        // --- ANIMAZIONE AUREE E ICONE ---
+       // --- ANIMAZIONE AUREE E ICONE ---
         let auraPulse = Math.sin(this.playTime * 2.5) * 0.05;
         SharedMat.auraBlueDome.opacity = 0.15 + auraPulse;
         SharedMat.auraGreenDome.opacity = 0.15 + auraPulse;
@@ -5677,6 +5767,85 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
         if (this.auraIcons) {
             for (let i = 0; i < this.auraIcons.length; i++) {
                 if (this.auraIcons[i].visible) this.auraIcons[i].position.y = 90 + iconPulse;
+            }
+        }
+
+        // --- GESTIONE PORTALI ARCANI STILE WOW (Animazione, Particelle e Teletrasporto) ---
+        if (this.portals && this.portals.length === 2 && this.player && !this.player.dead) {
+            if (this.player.portalCooldown === undefined) this.player.portalCooldown = 0;
+            if (this.player.portalCooldown > 0) this.player.portalCooldown -= combatDt;
+
+            let isReady = this.player.portalCooldown <= 0;
+            let targetOpacity = isReady ? (0.8 + Math.sin(this.playTime * 5) * 0.15) : 0.25;
+            this.portals[0].vortexOuterMat.opacity = targetOpacity;
+            this.portals[0].vortexInnerMat.opacity = isReady ? 0.9 : 0.2;
+
+            for (let i = 0; i < 2; i++) {
+                let pt = this.portals[i];
+                let dx = this.player.x - pt.x;
+                let dy = this.player.y - pt.y;
+                let distSq = dx * dx + dy * dy;
+
+                // Culling visivo: la runa a terra ruota piatta sull'asse Y, mentre il nucleo verticale pulsa
+                if (distSq < 1400000) {
+                    let corePulse = 0.68 + Math.sin(this.playTime * 6 + i) * 0.12;
+                    pt.vInner.scale.setScalar(corePulse);
+                    pt.baseRune.rotation.y += safeVisualDt * (isReady ? 1.2 : 0.3);
+
+                    // Scia di particelle magiche stile WoW lungo il bordo ovale del portale
+                    if (isReady && Game.frameCount % (isTouchDevice ? 5 : 2) === 0) {
+                        let a = Math.random() * Math.PI * 2;
+                        let px = pt.x + Math.cos(a) * 20;
+                        let py = 34 + Math.sin(a) * 28;
+                        let pz = pt.y + MathUtils.randomRange(-4, 4);
+                        let p = this.getParticle();
+                        p.spawn(px, py, pz, (Math.random() > 0.3 ? pt.particleMat : SharedMat.spriteWhite), 'trail');
+                        p.vx = -Math.sin(a) * 25;
+                        p.vy = Math.cos(a) * 25 + 15;
+                        p.vz = MathUtils.randomRange(-10, 10);
+                        p.baseSize = MathUtils.randomRange(8, 15);
+                    }
+                }
+
+                // Collisione e Teletrasporto tipo Portal (Raggio 32 unità)
+                if (isReady && combatDt > 0 && distSq < 1024) {
+                    let dest = this.portals[pt.targetIndex];
+                    this.player.portalCooldown = 2.0; // 2 secondi di ricarica per evitare loop
+                    this.player.invincibilityTimer = Math.max(this.player.invincibilityTimer, 0.5);
+
+                    // Particelle al portale di ingresso
+                    let pCount = AppSettings.isLow ? 6 : 16;
+                    for (let k = 0; k < pCount; k++) {
+                        this.getParticle().spawn(pt.x, 30, pt.y, pt.particleMat, 'spark');
+                    }
+
+                    // Spostamento istantaneo del giocatore al portale gemello
+                    this.player.x = dest.x;
+                    this.player.y = dest.y;
+                    this.player.mesh.position.set(dest.x, this.player.mesh.position.y, dest.y);
+                    this.player.mesh.updateMatrix();
+
+                    // Accompagnamento fluido ma rapido della telecamera sul nuovo punto
+                    if (this._camFocusX !== undefined) {
+                        this._camFocusX = MathUtils.lerp(this._camFocusX, dest.x, 0.75);
+                        this._camFocusZ = MathUtils.lerp(this._camFocusZ, dest.y, 0.75);
+                    }
+                    this.camera.fov = 55;
+                    this.camera.updateProjectionMatrix();
+
+                    // Effetti d'uscita (Flash luminoso, onde, audio e testo)
+                    this.spawnLightFlash(dest.x, dest.y, pt.colorHex, 6.0, 500, 0.35);
+                    this.getParticle().spawn(dest.x, 30, dest.y, SharedMat.spriteWhite, 'nova');
+                    for (let k = 0; k < pCount; k++) {
+                        this.getParticle().spawn(dest.x, 30, dest.y, pt.particleMat, 'spark');
+                    }
+                    AudioEngine.playPerfectDodge();
+                    AudioEngine.playCollect();
+                    Haptics.vibrate([20, 30, 40]);
+                    let colStr = '#' + pt.colorHex.toString(16).padStart(6, '0');
+                    this.getFloatingText().spawn(dest.x, dest.y + 25, "VARCO ARCANO!", colStr, 28, true);
+                    break;
+                }
             }
         }
 
@@ -6837,12 +7006,11 @@ class GameMap {
                     tWall.repeat.set(1, 1.5);
                 }
 
-               // MATERIALI OTTIMIZZATI: Usiamo specular e shininess dato che è un PhongMaterial
-                window.GLOBAL_THEME_MATS[i] = {
-                    dirt: new MapMaterialClass({ map: tDirt, shininess: 0, specular: 0x000000 }), // Zero riflessi speculari!
+               window.GLOBAL_THEME_MATS[i] = {
+                    dirt: new MapMaterialClass({ map: tDirt, shininess: 0, specular: 0x000000 }),
                     grass: new MapMaterialClass({ map: tGrass, shininess: 0, specular: 0x000000, alphaMap: alphaTex, transparent: true, depthWrite: false }),
                     rock: new MapMaterialClass({ map: tRock, shininess: 15, specular: 0x222222, alphaMap: alphaTex, transparent: true, depthWrite: false }),
-                    wall: new MapMaterialClass({ map: tWall, shininess: 10, specular: 0x111111 })
+                    wall: new MapMaterialClass({ map: tRock, shininess: 6, specular: 0x111111, flatShading: true })
                 };
             }
         }
@@ -6853,11 +7021,11 @@ class GameMap {
         let currentTheme = MAP_THEMES[Game.currentThemeIndex];
         let activeMats = window.GLOBAL_THEME_MATS[Game.currentThemeIndex];
 
-        // Manteniamo la tinta base per amalgamare l'illuminazione col colore del tema
+        // Manteniamo la tinta base: le rocce di confine usano la palette rocciosa del bioma invece del marrone scuro
         activeMats.dirt.color.setHex(currentTheme.dirt);
         activeMats.grass.color.setHex(currentTheme.grass);
         activeMats.rock.color.setHex(currentTheme.rock);
-        activeMats.wall.color.setHex(currentTheme.wall);
+        activeMats.wall.color.setHex(currentTheme.rock);
    // --- DIFFERENZIAZIONE FISICA DEI MATERIALI (COSTO ZERO) ---
         if (Game.currentThemeIndex === 2) { 
             // TEMA GHIACCIO: Riflessi ammorbiditi e attenuati (evita i cluster di pixel bianchi)
@@ -6966,7 +7134,27 @@ class GameMap {
         }
         
        if (!window.GLOBAL_WALL_GEO) {
-            window.GLOBAL_WALL_GEO = new THREE.BoxGeometry(TILE_SIZE, TILE_SIZE*1.5, TILE_SIZE);
+            // Formazione rocciosa organica Low-Poly (3 massi fusi a basso profilo, zero effetto "cioccolato")
+            const sculptRock = (geo, sx, sy, sz, ox, oy, oz) => {
+                geo.scale(sx, sy, sz);
+                const pos = geo.attributes.position;
+                for (let i = 0; i < pos.count; i++) {
+                    let vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
+                    // Appiattisce morbidamente le cime e allarga la base per fondersi col terreno
+                    if (vy > 4) vy = 4 + (vy - 4) * 0.45;
+                    let n = 1.0 + Math.sin(vx * 0.14 + vz * 0.11) * 0.12 + Math.cos(vy * 0.18 - vx * 0.09) * 0.08;
+                    pos.setXYZ(i, vx * n + ox, vy + oy, vz * n + oz);
+                }
+                geo.clearGroups();
+                return geo;
+            };
+            let rMain = sculptRock(new THREE.DodecahedronGeometry(34, 1), 1.18, 0.58, 1.18, 0, 2, 0);
+            let rSub1 = sculptRock(new THREE.DodecahedronGeometry(24, 1), 1.15, 0.50, 1.10, -14, -2, 12);
+            let rSub2 = sculptRock(new THREE.DodecahedronGeometry(22, 1), 1.10, 0.46, 1.15, 15, -3, -13);
+            window.GLOBAL_WALL_GEO = THREE.BufferGeometryUtils.mergeBufferGeometries([rMain, rSub1, rSub2]);
+            window.GLOBAL_WALL_GEO.computeVertexNormals();
+            window.GLOBAL_WALL_GEO.boundingSphere = window.GLOBAL_GIANT_SPHERE;
+
             window.GLOBAL_BASE_GEO = new THREE.BoxGeometry(35, 15, 35);
             window.GLOBAL_SHAFT_GEO = new THREE.CylinderGeometry(12, 14, TILE_SIZE * 1.5, 8);
             window.GLOBAL_CAP_GEO = new THREE.CylinderGeometry(20, 12, 10, 4);
@@ -7581,28 +7769,51 @@ class GameMap {
                         if (hasRightFloor) placeEdgeElements(px + half, pz - half, px + half, pz + half, x+1, y);
                         if (hasTopFloor) placeEdgeElements(px - half, pz - half, px + half, pz - half, x, y-1);
                         if (hasBottomFloor) placeEdgeElements(px - half, pz + half, px + half, pz + half, x, y+1);
-                  } else {
-                        // Confine Interno: Muri con altezza leggermente irregolare e variazione cromatica per-istanza
-                        let hVar = 0.92 + ((Math.abs(Math.sin(x * 12.989 + y * 78.233)) % 1) * 0.28);
-                        dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2, (TILE_SIZE * 0.75) * hVar, y * TILE_SIZE + TILE_SIZE / 2);
-                        dummy.scale.set(1, hVar, 1);
-                        dummy.rotation.set(0, (Math.floor(x + y) % 4) * (Math.PI / 2), 0);
-                        dummy.updateMatrix();
+                } else {
+                        // Controlla se questo blocco roccioso delimita l'area giocabile
+                        let isBorder = false;
+                        for (let dx = -1; dx <= 1 && !isBorder; dx++) {
+                            for (let dy = -1; dy <= 1; dy++) {
+                                let nx = x + dx, ny = y + dy;
+                                if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height && this.grid[nx][ny] !== 1) {
+                                    isBorder = true; break;
+                                }
+                            }
+                        }
                         if (!window._wallTint) window._wallTint = new THREE.Color();
-                        let shade = 0.75 + (hVar - 0.92) * 1.1;
-                        window._wallTint.setRGB(shade, shade, shade);
+                        let hash = Math.abs(Math.sin(x * 12.989 + y * 78.233)) % 1;
+                        if (isBorder) {
+                            // Rocce di confine: sovrapposte e ruotate organicamente per eliminare la griglia a quadretti
+                            let ox = (hash - 0.5) * 8;
+                            let oz = (((hash * 17.3) % 1) - 0.5) * 8;
+                            dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2 + ox, 12, y * TILE_SIZE + TILE_SIZE / 2 + oz);
+                            let sx = 1.08 + hash * 0.16;
+                            let sy = 0.90 + ((hash * 7.1) % 1) * 0.22;
+                            let sz = 1.08 + ((hash * 3.7) % 1) * 0.16;
+                            dummy.scale.set(sx, sy, sz);
+                            dummy.rotation.set(0, hash * Math.PI * 2, 0);
+                            let shade = 0.78 + hash * 0.18;
+                            window._wallTint.setRGB(shade, shade, shade);
+                        } else {
+                            // Riempimento interno lontano: lastra rocciosa bassa e scura che non disturba mai la vista
+                            dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2, 3, y * TILE_SIZE + TILE_SIZE / 2);
+                            dummy.scale.set(1.28, 0.22, 1.28);
+                            dummy.rotation.set(0, hash * Math.PI * 2, 0);
+                            window._wallTint.setRGB(0.28, 0.28, 0.32);
+                        }
+                        dummy.updateMatrix();
                         wallMesh.setColorAt(wIdx, window._wallTint);
                         wallMesh.setMatrixAt(wIdx++, dummy.matrix);
                     }
                 } else {
-                    // Confine Esterno Mappa (PADDING): Roccaforte esterna più alta e scura per incorniciare l'arena
-                    let hVar = 1.15 + ((Math.abs(Math.cos(x * 45.12 + y * 19.31)) % 1) * 0.35);
-                    dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2, (TILE_SIZE * 0.75) * hVar, y * TILE_SIZE + TILE_SIZE / 2);
-                    dummy.scale.set(1, hVar, 1);
-                    dummy.rotation.set(0, 0, 0);
-                    dummy.updateMatrix();
+                    // Confine Esterno Mappa (PADDING): Fondale roccioso piatto e scuro che sfuma nella nebbia
                     if (!window._wallTint) window._wallTint = new THREE.Color();
-                    window._wallTint.setRGB(0.6, 0.6, 0.65);
+                    let hash = Math.abs(Math.sin(x * 19.13 + y * 41.77)) % 1;
+                    dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2, 2, y * TILE_SIZE + TILE_SIZE / 2);
+                    dummy.scale.set(1.32, 0.18, 1.32);
+                    dummy.rotation.set(0, hash * Math.PI * 2, 0);
+                    dummy.updateMatrix();
+                    window._wallTint.setRGB(0.22, 0.22, 0.26);
                     wallMesh.setColorAt(wIdx, window._wallTint);
                     wallMesh.setMatrixAt(wIdx++, dummy.matrix);
                 }
@@ -7833,10 +8044,111 @@ this.fogMesh.renderOrder = -1; // Assicura che venga disegnato DOPO il terreno (
             }
             this.mapGroup.add(this.fogMesh);
         }
-        // --- FINE SISTEMA NEBBIA ---
+       // --- FINE SISTEMA NEBBIA ---
 
-        Game.scene.add(this.mapGroup);
-    }
+        if (wallMesh.instanceColor) wallMesh.instanceColor.needsUpdate = true;
+
+        // --- GENERAZIONE PORTALI ARCANI STILE WOW (Max 2 Portali = 1 Coppia Collegata per Piano) ---
+        Game.portals = [];
+        if (!isBossFloor && rooms.length >= 2) {
+            let candidateRooms = rooms.filter(r => this.grid[r.center.x][r.center.y] === 2);
+            let bestA = null, bestB = null, maxDistSq = 0;
+            for (let i = 0; i < candidateRooms.length; i++) {
+                for (let j = i + 1; j < candidateRooms.length; j++) {
+                    let dx = candidateRooms[i].center.x - candidateRooms[j].center.x;
+                    let dy = candidateRooms[i].center.y - candidateRooms[j].center.y;
+                    let dSq = dx * dx + dy * dy;
+                    if (dSq > maxDistSq) {
+                        maxDistSq = dSq;
+                        bestA = candidateRooms[i];
+                        bestB = candidateRooms[j];
+                    }
+                }
+            }
+
+            // Crea la coppia di portali solo se le due stanze sono sufficientemente distanti
+            if (bestA && bestB && maxDistSq >= 64) {
+                let pColor = Game.currentThemeIndex === 2 ? 0x00ddff : (Game.currentThemeIndex === 1 ? 0xff3300 : 0x33ff66);
+                let pParticleMat = Game.currentThemeIndex === 2 ? SharedMat.spriteBlue : (Game.currentThemeIndex === 1 ? SharedMat.spriteRed : SharedMat.spriteGreen);
+
+                if (!window.GLOBAL_WOW_PORTAL_GEO) {
+                    window.GLOBAL_WOW_PORTAL_GEO = new THREE.CircleGeometry(22, 24);
+                }
+
+                let frameMat = new THREE.MeshStandardMaterial({
+                    color: 0x222228, emissive: pColor, emissiveIntensity: 0.35, roughness: 0.6, metalness: 0.7
+                });
+                let vortexOuterMat = new THREE.MeshBasicMaterial({
+                    map: GLOW_TEX, color: pColor, transparent: true, opacity: 0.85,
+                    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+                });
+                let vortexInnerMat = new THREE.MeshBasicMaterial({
+                    map: GLOW_TEX, color: 0xffffff, transparent: true, opacity: 0.9,
+                    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+                });
+                let baseRuneMat = new THREE.MeshBasicMaterial({
+                    map: RUNE_TEX, color: pColor, transparent: true, opacity: 0.45,
+                    blending: THREE.AdditiveBlending, depthWrite: false
+                });
+
+                const selectedRooms = [bestA, bestB];
+                for (let i = 0; i < 2; i++) {
+                    let px = selectedRooms[i].center.x * TILE_SIZE + TILE_SIZE / 2;
+                    let pz = selectedRooms[i].center.y * TILE_SIZE + TILE_SIZE / 2;
+
+                    // Rimuove eventuali casse/urne generate troppo vicine al portale
+                    for (let c = 0; c < Game.propsCrates.length; c++) {
+                        if (Game.propsCrates[c].active && MathUtils.distanceSq({x: px, y: pz}, Game.propsCrates[c]) < 2500) {
+                            Game.propsCrates[c].destroy();
+                        }
+                    }
+                    for (let u = 0; u < Game.propsUrns.length; u++) {
+                        if (Game.propsUrns[u].active && MathUtils.distanceSq({x: px, y: pz}, Game.propsUrns[u]) < 2500) {
+                            Game.propsUrns[u].destroy();
+                        }
+                    }
+
+                    let pGroup = new THREE.Group();
+                    pGroup.position.set(px, 0, pz);
+
+                    // 1. Pedana runica sul pavimento
+                    let baseRune = new THREE.Mesh(window.GLOBAL_FLOORGLOW_GEO, baseRuneMat);
+                    baseRune.position.y = 0.5;
+                    baseRune.scale.setScalar(0.95);
+                    pGroup.add(baseRune);
+
+                    // 2. Arco runico verticale ovale (stile WoW)
+                    let archGroup = new THREE.Group();
+                    archGroup.position.y = 34;
+                    archGroup.scale.set(1.0, 1.35, 1.0); // Forma ellittica verticale
+
+                    let ringFrame = new THREE.Mesh(SharedGeo.torus, frameMat);
+                    ringFrame.scale.set(23, 23, 18);
+                    archGroup.add(ringFrame);
+
+                    let vOuter = new THREE.Mesh(window.GLOBAL_WOW_PORTAL_GEO, vortexOuterMat);
+                    archGroup.add(vOuter);
+
+                    let vInner = new THREE.Mesh(window.GLOBAL_WOW_PORTAL_GEO, vortexInnerMat);
+                    vInner.position.z = 0.4;
+                    vInner.scale.setScalar(0.85);
+                    archGroup.add(vInner);
+
+                    pGroup.add(archGroup);
+                    this.mapGroup.add(pGroup);
+
+                    Game.portals.push({
+                        x: px, y: pz, targetIndex: 1 - i,
+                        group: pGroup, vOuter: vOuter, vInner: vInner, baseRune: baseRune,
+                        vortexOuterMat: vortexOuterMat, vortexInnerMat: vortexInnerMat,
+                        colorHex: pColor, particleMat: pParticleMat
+                    });
+                }
+            }
+        }
+
+        Game.scene.add(this.mapGroup);
+    }
     
     isAdjacentToFloor(x,y) {
         if(x>0 && this.grid[x-1][y]===2) return true; if(x<this.width-1 && this.grid[x+1][y]===2) return true;
@@ -8849,8 +9161,58 @@ class Player extends Entity {
         
         if (this.dashCooldown > 0) this.dashCooldown -= dt;
         
-       // Calcolo rotazione base (mirino)
-        if (Game.inputs.right.active) { this.angle = Math.atan2(Game.inputs.right.y, Game.inputs.right.x); } else if (!isTouchDevice || Game.mouse.leftDown) { this.angle = Math.atan2(Game.mouse.worldY - this.y, Game.mouse.worldX - this.x); }
+       // Calcolo rotazione base (mirino) + Mira Assistita Leggera su Smartphone (Soft Magnetism)
+        if (Game.inputs.right.active) {
+            let rawAngle = Math.atan2(Game.inputs.right.y, Game.inputs.right.x);
+            let finalAngle = rawAngle;
+
+            // Cono magnetico stretto (±16°, cioè 0.28 rad): corregge solo i piccoli errori del pollice
+            // senza mai bloccare la mira se vuoi cambiare bersaglio o colpire casse/vasi
+            const maxCone = 0.28;
+            const maxRange = 520;
+            let nearby = Game.enemyGrid.findNearby(this, maxRange);
+            let bestDiff = 0;
+            let bestScore = Infinity;
+
+            for (let i = 0, len = nearby.length; i < len; i++) {
+                let e = nearby[i];
+                // Ignora nemici morti, casse/urne, cristalli esplosivi e l'Inseguitore immortale
+                if (!e.active || e.dead || e.isPursuer || e.type === 'crystal' || e.type === 'crate' || e.type === 'urn') continue;
+
+                let dx = e.x - this.x;
+                let dy = e.y - this.y;
+                let distSq = dx * dx + dy * dy;
+                if (distSq > maxRange * maxRange || distSq < 100) continue;
+
+                let targetAngle = Math.atan2(dy, dx);
+                let diff = targetAngle - rawAngle;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+
+                let absDiff = Math.abs(diff);
+                if (absDiff < maxCone) {
+                    // Controllo rapido linea di vista (2 punti): non aggancia nemici dietro un muro!
+                    if (Game.map.isSolid(this.x + dx * 0.4, this.y + dy * 0.4, true) ||
+                        Game.map.isSolid(this.x + dx * 0.75, this.y + dy * 0.75, true)) continue;
+
+                    // Dà priorità al nemico più allineato col pollice e più vicino
+                    let score = (absDiff * 350) + Math.sqrt(distSq) * 0.35;
+                    if (score < bestScore) {
+                        bestScore = score;
+                        bestDiff = diff;
+                    }
+                }
+            }
+
+            if (bestScore < Infinity) {
+                // Attrazione morbida (55%): aiuta a centrare il bersaglio ma lascia libertà al giocatore
+                let strength = 0.55 * (1.0 - (Math.abs(bestDiff) / maxCone) * 0.3);
+                finalAngle = rawAngle + bestDiff * strength;
+            }
+            this.angle = finalAngle;
+        } else if (!isTouchDevice || Game.mouse.leftDown) {
+            this.angle = Math.atan2(Game.mouse.worldY - this.y, Game.mouse.worldX - this.x);
+        }
         
         // ---> MODIFICA ROTAZIONE: Se scatta, il modello si orienta fisicamente verso la direzione dello scatto
         let displayAngle = this.isDashing ? this.dashAngle : this.angle;
@@ -9018,9 +9380,11 @@ if (Game.ultimateActive) currentSpeed *= 1.5; currentSpeed = Math.min(currentSpe
 
             let isMoving = (Math.abs(dx) > 0.05 || Math.abs(dy) > 0.05);
 
-            // 3. FISICA ACQUA/LAVA: Rallentamento drastico
-            if (inPit && !isIce) {
-                currentSpeed *= 0.35; // Riduce la velocità del 65%
+            // 3. FISICA E AUDIO AMBIENTALE ACQUA / LAVA / GHIACCIO
+            if (inPit) {
+                if (!isIce) currentSpeed *= 0.35; // Riduce la velocità del 65% in acqua e lava
+                let envType = Game.currentThemeIndex === 0 ? 'water' : (Game.currentThemeIndex === 1 ? 'lava' : 'ice');
+                AudioEngine.playEnvironmentSound(envType, isMoving, dt);
             }
 
             if (isMoving) {
@@ -12095,6 +12459,7 @@ function clearScene() {
         Game.map.fogMesh = null;
         Game.map.treePositions = [];
         Game.auras = []; Game.auraIcons = [];
+        Game.portals = [];
         Game.pendingDrops = []; // FIX LAG: Svuota la coda al cambio scena
     }
     
