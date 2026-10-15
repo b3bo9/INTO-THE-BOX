@@ -470,10 +470,15 @@ body.colorblind-mode #opt-colorblind-text {
                 <!-- Decorazione Ambientale dietro i pulsanti -->
                 <div class="absolute -inset-10 bg-gradient-to-t from-red-900/10 via-transparent to-transparent blur-3xl pointer-events-none animate-pulse"></div>
 
-                <!-- BOTTONI: OPZIONI, INFO -->
-               <div class="grid grid-cols-2 gap-3 w-full relative z-10">
+                <!-- BOTTONI: OPZIONI, SKIN, INFO -->
+                <div class="grid grid-cols-3 gap-2.5 sm:gap-3 w-full relative z-10">
                     <button onclick="UIManager.showModal('optionsModal')" onmouseenter="AudioEngine.playHover()" class="btn-cyber glass-panel box-glow-gray w-full h-12 sm:h-14 text-[10px] sm:text-xs font-bold text-gray-300">
                         <i class="fa-solid fa-gear"></i> OPZIONI
+                    </button>
+
+                    <button id="btn-menu-skins" onclick="UIManager.showModal('skinModal')" onmouseenter="AudioEngine.playHover()" class="btn-cyber glass-panel box-glow-purple w-full h-12 sm:h-14 text-[10px] sm:text-xs font-bold text-purple-300 border-purple-900/30 relative">
+                        <i class="fa-solid fa-user-astronaut"></i> SKIN
+                        <span id="skin-new-badge" class="hidden absolute -top-1.5 -right-1.5 w-3 h-3 bg-amber-400 rounded-full animate-ping"></span>
                     </button>
 
                     <button onclick="UIManager.showModal('infoModal')" onmouseenter="AudioEngine.playHover()" class="btn-cyber glass-panel box-glow-blue w-full h-12 sm:h-14 text-[10px] sm:text-xs font-bold text-blue-300 border-blue-900/30">
@@ -597,6 +602,29 @@ body.colorblind-mode #opt-colorblind-text {
             </button>
         </div>
     </div>
+
+    <!-- MODALE PERSONALIZZAZIONE SKIN -->
+    <div id="skinModal" class="absolute inset-0 bg-black/90 z-[280] flex items-center justify-center backdrop-blur-md pointer-events-auto hidden p-3">
+        <div class="glass-panel modal-enter border-purple-500/50 p-4 sm:p-5 w-full max-w-[460px] flex flex-col max-h-[88vh] shadow-[0_0_40px_rgba(168,85,247,0.3)] relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-purple-900/20 to-transparent pointer-events-none"></div>
+
+            <div class="flex items-center justify-between border-b border-gray-700/80 pb-3 mb-3 shrink-0 relative z-10">
+                <h2 class="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-amber-300 uppercase tracking-widest flex items-center gap-2 m-0">
+                    <i class="fa-solid fa-wand-sparkles text-purple-400"></i> Aspetto
+                </h2>
+                <span id="skin-max-floor-badge" class="text-[10px] sm:text-xs font-bold text-gray-400 bg-black/60 px-2.5 py-1 border border-gray-700">RECORD PIANO: 1</span>
+            </div>
+
+            <div id="skinListContainer" class="flex flex-col gap-2.5 overflow-y-auto custom-scrollbar pr-1 flex-1 relative z-10">
+                <!-- Popolato dinamicamente da SkinSystem -->
+            </div>
+
+            <button onclick="UIManager.hideModal('skinModal')" class="mt-4 btn-cyber glass-panel box-glow-gray w-full py-3.5 text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-widest shrink-0 z-10">
+                Torna al menu
+            </button>
+        </div>
+    </div>
+
    <div id="pauseModal" class="absolute inset-0 bg-black/80 z-[270] flex items-center justify-center backdrop-blur-md pointer-events-auto hidden p-3">
         <div class="glass-panel modal-enter border-gray-600/50 p-6 w-full max-w-[350px] flex flex-col items-center shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden">
             <h2 class="text-3xl font-display font-black text-white mb-6 uppercase tracking-[0.3em] drop-shadow-lg">PAUSA</h2>
@@ -1774,6 +1802,411 @@ const ScoreManager = {
     },
     formatTime(seconds) { let m = Math.floor(seconds / 60); let s = Math.floor(seconds % 60); return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`; }
 };
+
+const PlayerGeometryBuilder = {
+    cache: {},
+
+    part(geo, sx, sy, sz, px, py, pz, rx = 0, ry = 0, rz = 0) {
+        let g = geo.clone();
+        g.scale(sx, sy, sz);
+        if (rx) g.rotateX(rx);
+        if (ry) g.rotateY(ry);
+        if (rz) g.rotateZ(rz);
+        g.translate(px, py, pz);
+        return g;
+    },
+
+    merge(list) {
+        if (!list || list.length === 0) return null;
+        const nonIndexed = [];
+        for (let i = 0; i < list.length; i++) {
+            let g = list[i].index ? list[i].toNonIndexed() : list[i].clone();
+            g.clearGroups();
+            nonIndexed.push(g);
+        }
+        let merged = THREE.BufferGeometryUtils.mergeBufferGeometries(nonIndexed, false);
+        merged.computeVertexNormals();
+        return merged;
+    },
+
+    getGeometries(skinId) {
+        if (this.cache[skinId]) return this.cache[skinId];
+
+        // Tronchi di cono chiusi al collo (altezza 24): non bucano mai sciarpa e testa durante l'inclinazione
+        const robeFrustum = new THREE.CylinderGeometry(3.5, 12, 1, 8);
+        const robeHex = new THREE.CylinderGeometry(3.5, 12.2, 1, 6);
+        const robePyramid = new THREE.CylinderGeometry(3.5, 13, 1, 4);
+        const cone = SharedGeo.cone;
+        const cone4 = new THREE.ConeGeometry(1, 1, 4);
+        const cyl = SharedGeo.cylinder;
+        const box = SharedGeo.box;
+        const sphere = SharedGeo.sphere;
+        const icosa = SharedGeo.icosahedron;
+        const dodeca = new THREE.DodecahedronGeometry(1, 0);
+        const torus = SharedGeo.torus;
+
+        let bodyParts = [this.part(robeFrustum, 1, 24, 1, 0, 0, 0)];
+        let headParts = [this.part(sphere, 6, 6, 6, 0, 0, 0)];
+        let scarfParts = [this.part(torus, 6.2, 6.2, 2.2, 0, 0, 0, Math.PI / 2, 0, 0)];
+        let staffParts = [this.part(cyl, 2, 35, 2, 0, 10, 0)];
+        let gemParts = [this.part(icosa, 4, 4, 4, 0, 0, 0)];
+        let haloParts = [this.part(torus, 5, 5, 5, 0, 0, 0, Math.PI / 2, 0, 0)];
+        let accentParts = [];
+        let headAccentParts = [];
+
+        if (skinId === 'dark_mage') {
+            // COMUNE 1 (Default): Mago Oscuro classico senza compenetrazioni
+        }
+        else if (skinId === 'astral_arcanist') {
+            // COMUNE 2 (Default): Tunica esagonale, vero Cappello da Mago a tesa larga + punta alta, doppio anello
+            bodyParts = [this.part(robeHex, 1, 24, 1, 0, 0, 0)];
+            headParts.push(
+                this.part(cyl, 10.5, 1.2, 10.5, 0, 4.0, 0), // Tesa larga del cappello ben visibile dall'alto
+                this.part(cone, 5.8, 14.0, 5.8, 0, 11.0, -1.2, -0.22, 0, 0) // Punta alta sopra la testa
+            );
+            haloParts.push(this.part(torus, 5, 5, 5, 0, 0, 0, 0, 0, 0));
+        }
+        else if (skinId === 'emerald_warden') {
+            // COMUNE 3 (Default): Spallacci silvestri larghi, grandi corna da cervo ramificate e lancia di gemma
+            bodyParts.push(
+                this.part(dodeca, 4.8, 3.5, 4.8, -9.2, 8.5, 0),
+                this.part(dodeca, 4.8, 3.5, 4.8, 9.2, 8.5, 0)
+            );
+            headParts.push(
+                this.part(cone4, 1.5, 11.0, 1.5, -5.5, 7.5, 0, 0, 0, 0.55),
+                this.part(cone4, 1.1, 7.0, 1.1, -8.5, 10.5, 1.0, 0.25, 0, 0.15),
+                this.part(cone4, 1.5, 11.0, 1.5, 5.5, 7.5, 0, 0, 0, -0.55),
+                this.part(cone4, 1.1, 7.0, 1.1, 8.5, 10.5, 1.0, 0.25, 0, -0.15)
+            );
+            gemParts = [this.part(cone4, 3.6, 10.0, 3.6, 0, 2.0, 0)];
+        }
+        else if (skinId === 'crimson_inquisitor') {
+            // RARA (Piano 5): Grandi spallacci chiodati, elmo con lunghe corna demoniache e FALCE DA GUERRA
+            bodyParts = [
+                this.part(robeHex, 1, 24, 1, 0, 0, 0),
+                this.part(cone4, 4.5, 9.0, 4.5, -10.5, 9.0, 0, 0, Math.PI / 4, 0.5),
+                this.part(cone4, 4.5, 9.0, 4.5, 10.5, 9.0, 0, 0, Math.PI / 4, -0.5)
+            ];
+            headParts = [
+                this.part(cyl, 5.8, 7.5, 5.8, 0, 0.5, 0),
+                this.part(cone, 2.2, 14.0, 2.2, -6.8, 8.5, -1.0, 0.25, 0, 0.55),
+                this.part(cone, 2.2, 14.0, 2.2, 6.8, 8.5, -1.0, 0.25, 0, -0.55)
+            ];
+            headAccentParts.push(this.part(box, 7.5, 1.6, 2.5, 0, 0.5, 4.8));
+            // Arma Rara: Falce da guerra
+            staffParts = [
+                this.part(cyl, 1.8, 38, 1.8, 0, 11, 0),
+                this.part(box, 3.5, 3.5, 4.5, 0, 28, 0)
+            ];
+            gemParts = [
+                this.part(icosa, 3.5, 3.5, 3.5, 0, 0, 0),
+                this.part(cone4, 2.5, 16, 1.2, 0, 1.5, 7.5, Math.PI / 2 + 0.2, 0, 0)
+            ];
+            haloParts = [this.part(torus, 4.8, 4.8, 4.8, 0, 0, 0, 0, Math.PI / 2, 0)];
+        }
+        else if (skinId === 'void_walker') {
+            // EPICA (Piano 10): Spallacci fluttuanti, 3 cristalli orbitanti e DOPPIA LAMA DEL VUOTO
+            bodyParts.push(
+                this.part(cone4, 3.2, 8.5, 3.2, -11.5, 9.5, 0, 0, 0, 0.2),
+                this.part(cone4, 3.2, 8.5, 3.2, 11.5, 9.5, 0, 0, 0, -0.2)
+            );
+            headParts = [this.part(icosa, 6.0, 7.0, 6.0, 0, 0.5, 0)];
+            headAccentParts.push(this.part(torus, 4.5, 4.5, 1.5, 0, 7.5, 0, Math.PI / 2, 0, 0));
+            for (let i = 0; i < 3; i++) {
+                let a = (i * Math.PI * 2) / 3;
+                accentParts.push(this.part(icosa, 2.8, 5.0, 2.8, Math.cos(a) * 15.5, 6.0, Math.sin(a) * 15.5));
+            }
+            // Arma Epica: Doppia Lama Psionica
+            staffParts = [
+                this.part(cyl, 1.6, 22, 1.6, 0, 6, 0),
+                this.part(cone4, 2.8, 6, 2.8, 0, 20, 0, Math.PI, 0, 0)
+            ];
+            gemParts = [
+                this.part(cone4, 3.0, 12, 1.6, 0, 5.0, 0),
+                this.part(cone4, 2.6, 8, 1.4, 0, -4.0, 0, Math.PI, 0, 0)
+            ];
+            haloParts = [
+                this.part(torus, 5.5, 5.5, 5.5, 0, 0, 0, Math.PI / 4, 0, 0),
+                this.part(torus, 5.5, 5.5, 5.5, 0, 0, 0, -Math.PI / 4, 0, 0)
+            ];
+        }
+        else if (skinId === 'solar_archon') {
+            // LEGGENDARIA 1 (Piano 15): Corona solare, 4 grandi ali da Serafino e TRIDENTE SOLARE
+            bodyParts.push(
+                this.part(box, 5.2, 2.8, 4.8, -10.0, 9.0, 0, 0, 0, 0.3),
+                this.part(box, 5.2, 2.8, 4.8, 10.0, 9.0, 0, 0, 0, -0.3)
+            );
+            headAccentParts.push(
+                this.part(torus, 4.8, 4.8, 1.6, 0, 7.5, 0, Math.PI / 2, 0, 0),
+                this.part(cone4, 1.2, 6.5, 1.0, 0, 8.5, 3.5, 0.2, 0, 0),
+                this.part(cone4, 1.0, 5.5, 1.0, -4.0, 7.5, 2.5, 0.2, 0, 0.45),
+                this.part(cone4, 1.0, 5.5, 1.0, 4.0, 7.5, 2.5, 0.2, 0, -0.45)
+            );
+            accentParts.push(
+                this.part(cone4, 2.6, 20.0, 1.0, -14.0, 13.0, -5.5, -0.15, 0, 0.75),
+                this.part(cone4, 2.6, 20.0, 1.0, 14.0, 13.0, -5.5, -0.15, 0, -0.75),
+                this.part(cone4, 2.2, 15.0, 1.0, -12.5, 6.0, -5.5, -0.1, 0, 1.25),
+                this.part(cone4, 2.2, 15.0, 1.0, 12.5, 6.0, -5.5, -0.1, 0, -1.25)
+            );
+            // Arma Leggendaria 1: Tridente Solare
+            staffParts = [
+                this.part(cyl, 1.8, 36, 1.8, 0, 10, 0),
+                this.part(box, 10.5, 1.8, 2.2, 0, 25, 0)
+            ];
+            gemParts = [
+                this.part(cone4, 2.5, 13, 1.6, 0, 4.5, 0),
+                this.part(cone4, 1.8, 9.5, 1.4, -4.0, 2.5, 0, 0, 0, 0.12),
+                this.part(cone4, 1.8, 9.5, 1.4, 4.0, 2.5, 0, 0, 0, -0.12)
+            ];
+            haloParts = [
+                this.part(torus, 6.0, 6.0, 6.0, 0, 0, 0, Math.PI / 2, 0, 0),
+                this.part(torus, 4.2, 4.2, 4.2, 0, 0, 0, 0, 0, 0)
+            ];
+        }
+        else if (skinId === 'cyber_phantom') {
+            // LEGGENDARIA 2 (Piano 20 - REWORK): Cyber-Ronin Low-Poly con cappello Kasa, visore neon, propulsori X-Wing e Lama Railgun
+            bodyParts = [
+                this.part(robePyramid, 1, 24, 1, 0, 0, 0, 0, Math.PI / 4, 0),
+                this.part(box, 4.2, 7.5, 6.5, -10.0, 8.5, -2.0, 0.25, 0, 0.2),
+                this.part(box, 4.2, 7.5, 6.5, 10.0, 8.5, -2.0, 0.25, 0, -0.2)
+            ];
+            headParts = [
+                this.part(box, 5.8, 5.8, 5.8, 0, 0, 0),
+                this.part(cone, 11.5, 3.2, 11.5, 0, 4.8, 0) // Cappello conico Cyber-Ronin
+            ];
+            headAccentParts.push(
+                this.part(box, 7.8, 1.8, 2.8, 0, 0.5, 4.2), // Visore neon frontale
+                this.part(torus, 6.5, 6.5, 1.5, 0, 3.8, 0, Math.PI / 2, 0, 0) // Anello luminoso sul Kasa
+            );
+            accentParts.push(
+                this.part(box, 14.0, 1.8, 1.0, -13.0, 12.0, -5.8, 0, 0, -0.45),
+                this.part(box, 14.0, 1.8, 1.0, 13.0, 12.0, -5.8, 0, 0, 0.45),
+                this.part(box, 12.0, 1.6, 1.0, -11.5, 5.0, -5.8, 0, 0, 0.45),
+                this.part(box, 12.0, 1.6, 1.0, 11.5, 5.0, -5.8, 0, 0, -0.45)
+            );
+            // Arma Leggendaria 2: Cannone / Lama Railgun ad alta frequenza
+            staffParts = [
+                this.part(box, 3.2, 24, 3.8, 0, 7, 0),
+                this.part(box, 1.0, 16, 2.2, -2.2, 26, 0),
+                this.part(box, 1.0, 16, 2.2, 2.2, 26, 0)
+            ];
+            gemParts = [
+                this.part(box, 1.8, 15, 3.6, 0, 2.0, 0),
+                this.part(cone4, 2.4, 6.0, 1.6, 0, 11.5, 0, 0, Math.PI / 4, 0)
+            ];
+            haloParts = [
+                this.part(torus, 5.2, 5.2, 5.2, 0, 0, 0, Math.PI / 2, 0, 0),
+                this.part(box, 10, 0.8, 0.8, 0, 0, 0)
+            ];
+        }
+
+        const result = {
+            body: this.merge(bodyParts),
+            head: this.merge(headParts),
+            scarf: this.merge(scarfParts),
+            accent: this.merge(accentParts),
+            headAccent: this.merge(headAccentParts),
+            staff: this.merge(staffParts),
+            gem: this.merge(gemParts),
+            halo: this.merge(haloParts)
+        };
+        this.cache[skinId] = result;
+        return result;
+    }
+};
+
+const SkinSystem = {
+    skins: [
+        // 3 SKIN DI DEFAULT
+        {
+            id: 'dark_mage', name: 'Mago Oscuro', rarity: 'common', unlockFloor: 0,
+            desc: 'Il classico vagabondo dell\'abisso con il suo bastone runico.',
+            colors: { body: 0x222222, head: 0xdddddd, scarf: 0x880000, staff: 0x444444 },
+            svg: '<polygon points="20,10 30,34 10,34" fill="#555"/><circle cx="20" cy="11" r="4.5" fill="#ddd"/><rect x="13" y="14" width="14" height="3" rx="1.5" fill="#880000"/>'
+        },
+        {
+            id: 'astral_arcanist', name: 'Arcanista Astrale', rarity: 'common', unlockFloor: 0,
+            desc: 'Cappello a punta a tesa larga e bacchetta con doppio anello.',
+            colors: { body: 0x1e293b, head: 0xdbeafe, scarf: 0x0284c7, staff: 0x64748b },
+            svg: '<polygon points="20,11 30,34 10,34" fill="#1e293b"/><polygon points="20,2 25,11 15,11" fill="#dbeafe"/><ellipse cx="20" cy="11" rx="9" ry="2" fill="#dbeafe"/><rect x="13" y="14" width="14" height="3" rx="1.5" fill="#0284c7"/>'
+        },
+        {
+            id: 'emerald_warden', name: 'Custode Silvano', rarity: 'common', unlockFloor: 0,
+            desc: 'Palchi da cervo, spallacci silvestri e lancia di cristallo.',
+            colors: { body: 0x1b3626, head: 0xd1fae5, scarf: 0xb45309, staff: 0x5c3a21 },
+            svg: '<path d="M10,4 L15,11 M30,4 L25,11" stroke="#d1fae5" stroke-width="2.5"/><polygon points="20,10 30,34 10,34" fill="#1b3626"/><circle cx="11" cy="19" r="3.2" fill="#1b3626"/><circle cx="29" cy="19" r="3.2" fill="#1b3626"/><circle cx="20" cy="11" r="4.5" fill="#d1fae5"/><rect x="13" y="14" width="14" height="3" rx="1.5" fill="#b45309"/>'
+        },
+        // SKIN SBLOCCABILI CON ARMA E PARTICELLE A TEMA
+        {
+            id: 'crimson_inquisitor', name: 'Inquisitore Cremisi', rarity: 'rare', unlockFloor: 5,
+            desc: 'Grandi corna demoniache, Falce da guerra e scia di braci cremisi.',
+            colors: { body: 0x3b1216, head: 0xa1a1aa, scarf: 0x991b1b, staff: 0x27272a },
+            svg: '<polygon points="8,3 16,12 12,12" fill="#a1a1aa"/><polygon points="32,3 24,12 28,12" fill="#a1a1aa"/><polygon points="20,10 30,34 10,34" fill="#3b1216"/><circle cx="20" cy="11" r="4.5" fill="#a1a1aa"/><rect x="16" y="9.5" width="8" height="2" fill="#ffff00"/><rect x="13" y="14" width="14" height="3" rx="1.5" fill="#991b1b"/>'
+        },
+        {
+            id: 'void_walker', name: 'Viandante del Vuoto', rarity: 'epic', unlockFloor: 10,
+            desc: '3 cristalli in orbita reale, Doppia Lama Psionica e particelle del Vuoto.',
+            colors: { body: 0x27173a, head: 0xc084fc, scarf: 0x6b21a8, staff: 0x3b0764 },
+            svg: '<polygon points="20,10 30,34 10,34" fill="#27173a"/><polygon points="20,5 25,11 20,16 15,11" fill="#c084fc"/><circle cx="7" cy="21" r="2.6" fill="#ffff00"/><circle cx="33" cy="21" r="2.6" fill="#ffff00"/>'
+        },
+        {
+            id: 'solar_archon', name: 'Arconte Solare', rarity: 'legendary', unlockFloor: 15,
+            desc: 'Ali da Serafino, Tridente Solare e scintille di luce divina.',
+            colors: { body: 0x422810, head: 0xfef3c7, scarf: 0xd97706, staff: 0xb45309 },
+            svg: '<polygon points="4,13 15,20 11,26" fill="#ffff00"/><polygon points="36,13 25,20 29,26" fill="#ffff00"/><polygon points="20,10 30,34 10,34" fill="#422810"/><circle cx="20" cy="12" r="4.2" fill="#fef3c7"/><ellipse cx="20" cy="6" rx="5" ry="1.6" fill="none" stroke="#ffff00" stroke-width="2"/>'
+        },
+        {
+            id: 'cyber_phantom', name: 'Spettro Cibernetico', rarity: 'legendary', unlockFloor: 20,
+            desc: 'Cyber-Ronin con Kasa neon, stabilizzatori X-Wing, Lama Railgun e scariche elettriche.',
+            colors: { body: 0x182232, head: 0x475569, scarf: 0x0f172a, staff: 0x334155 },
+            svg: '<polygon points="20,11 31,34 9,34" fill="#182232"/><polygon points="20,4 32,9 8,9" fill="#475569"/><rect x="15" y="9.5" width="10" height="2.5" fill="#ffff00"/>'
+        }
+    ],
+    selectedId: 'dark_mage',
+    unlockedIds: ['dark_mage', 'astral_arcanist', 'emerald_warden'],
+    maxFloorReached: 1,
+    hasNewUnlock: false,
+
+    init() {
+        let saved = localStorage.getItem('intoTheBoxSkins');
+        if (saved) {
+            try {
+                let data = JSON.parse(saved);
+                if (Array.isArray(data.unlockedIds)) this.unlockedIds = data.unlockedIds;
+                if (data.selectedId) this.selectedId = data.selectedId;
+                if (typeof data.maxFloorReached === 'number') this.maxFloorReached = data.maxFloorReached;
+            } catch (e) {}
+        }
+        ['dark_mage', 'astral_arcanist', 'emerald_warden'].forEach(id => {
+            if (!this.unlockedIds.includes(id)) this.unlockedIds.push(id);
+        });
+        if (ScoreManager.scores && ScoreManager.scores.length > 0) {
+            for (let i = 0; i < ScoreManager.scores.length; i++) {
+                if (ScoreManager.scores[i].floor > this.maxFloorReached) {
+                    this.maxFloorReached = ScoreManager.scores[i].floor;
+                }
+            }
+        }
+        this.checkFloorUnlock(this.maxFloorReached, true);
+        if (!this.unlockedIds.includes(this.selectedId)) this.selectedId = 'dark_mage';
+        this.save();
+    },
+
+    save() {
+        try {
+            localStorage.setItem('intoTheBoxSkins', JSON.stringify({
+                selectedId: this.selectedId,
+                unlockedIds: this.unlockedIds,
+                maxFloorReached: this.maxFloorReached
+            }));
+        } catch (e) {}
+    },
+
+    getCurrentSkin() {
+        return this.skins.find(s => s.id === this.selectedId) || this.skins[0];
+    },
+
+    checkFloorUnlock(floor, silent = false) {
+        let changed = false;
+        if (floor > this.maxFloorReached) {
+            this.maxFloorReached = floor;
+            changed = true;
+        }
+        for (let i = 0; i < this.skins.length; i++) {
+            let s = this.skins[i];
+            if (floor >= s.unlockFloor && !this.unlockedIds.includes(s.id)) {
+                this.unlockedIds.push(s.id);
+                changed = true;
+                if (!silent) {
+                    this.hasNewUnlock = true;
+                    let badge = document.getElementById('skin-new-badge');
+                    if (badge) badge.classList.remove('hidden');
+                    setTimeout(() => {
+                        if (Game.player && !Game.player.dead) {
+                            AudioEngine.playRelicDrop();
+                            Game.getFloatingText().spawn(Game.player.x, Game.player.y + 40, `SKIN SBLOCCATA: ${s.name.toUpperCase()}!`, '#fbbf24', 42, true);
+                        }
+                    }, 1200);
+                }
+            }
+        }
+        if (changed) this.save();
+    },
+
+    selectSkin(id) {
+        if (!this.unlockedIds.includes(id)) return;
+        this.selectedId = id;
+        this.save();
+        AudioEngine.playClick();
+        this.renderModal();
+        if (Game.player) {
+            Game.player.applySkin();
+        }
+    },
+
+    renderModal() {
+        this.hasNewUnlock = false;
+        let badge = document.getElementById('skin-new-badge');
+        if (badge) badge.classList.add('hidden');
+
+        let floorBadge = document.getElementById('skin-max-floor-badge');
+        if (floorBadge) floorBadge.innerText = `RECORD PIANO: ${this.maxFloorReached}`;
+
+        let container = document.getElementById('skinListContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        this.skins.forEach(skin => {
+            let isUnlocked = this.unlockedIds.includes(skin.id);
+            let isSelected = (this.selectedId === skin.id);
+
+            let rarityBorder = skin.rarity === 'legendary' ? 'border-amber-500/80' :
+                               skin.rarity === 'epic' ? 'border-purple-500/80' :
+                               skin.rarity === 'rare' ? 'border-blue-500/80' : 'border-gray-600/80';
+
+            let rarityLabel = skin.rarity === 'legendary' ? '<span class="text-amber-400">LEGGENDARIA</span>' :
+                              skin.rarity === 'epic' ? '<span class="text-purple-400">EPICA</span>' :
+                              skin.rarity === 'rare' ? '<span class="text-blue-400">RARA</span>' : '<span class="text-gray-400">COMUNE</span>';
+
+            let card = document.createElement('div');
+            card.className = `p-3 border-2 transition-all flex items-center justify-between gap-3 ${
+                isSelected ? 'bg-purple-950/40 border-white shadow-[0_0_20px_rgba(168,85,247,0.4)]' :
+                isUnlocked ? `bg-black/70 ${rarityBorder} hover:brightness-125 cursor-pointer` :
+                'bg-black/40 border-gray-800 opacity-60'
+            }`;
+
+            if (isUnlocked && !isSelected) {
+                card.onclick = () => this.selectSkin(skin.id);
+            }
+
+            let statusHtml = '';
+            if (isSelected) {
+                statusHtml = `<div class="px-3 py-1.5 bg-purple-600 text-white font-black text-[10px] sm:text-xs uppercase tracking-widest border border-white shrink-0">IN USO</div>`;
+            } else if (isUnlocked) {
+                statusHtml = `<button class="px-3 py-1.5 bg-gray-900 hover:bg-purple-900 text-gray-200 font-bold text-[10px] sm:text-xs uppercase tracking-widest border border-gray-600 shrink-0">SCEGLI</button>`;
+            } else {
+                statusHtml = `<div class="px-2.5 py-1.5 bg-red-950/60 text-red-400 font-bold text-[9px] sm:text-[10px] uppercase tracking-wider border border-red-900/50 flex items-center gap-1.5 shrink-0"><i class="fa-solid fa-lock"></i> PIANO ${skin.unlockFloor}</div>`;
+            }
+
+            card.innerHTML = `
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-12 h-12 shrink-0 border-2 border-gray-700 bg-black flex items-center justify-center relative overflow-hidden">
+                        <svg viewBox="0 0 40 40" class="w-10 h-10">${skin.svg}</svg>
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="font-black text-xs sm:text-sm text-white uppercase tracking-wide truncate">${skin.name}</span>
+                            <span class="text-[8px] sm:text-[9px] font-black tracking-widest uppercase">${rarityLabel}</span>
+                        </div>
+                        <p class="text-[10px] sm:text-[11px] text-gray-400 font-bold leading-tight mt-0.5">${isUnlocked ? skin.desc : `Sblocca raggiungendo il Piano ${skin.unlockFloor}`}</p>
+                    </div>
+                </div>
+                ${statusHtml}
+            `;
+            container.appendChild(card);
+        });
+    }
+};
   const TransitionSystem = {
     el: null,
     init() { this.el = document.getElementById('wipe-transition'); },
@@ -2069,11 +2502,12 @@ const ScoreManager = {
 };
 
 const UIManager = {
-    showModal(id) {
-        AudioEngine.playClick();
-        document.getElementById(id).classList.remove('hidden');
-        if(id === 'optionsModal') this.updateOptionsUI();
-    },
+    showModal(id) {
+        AudioEngine.playClick();
+        document.getElementById(id).classList.remove('hidden');
+        if(id === 'optionsModal') this.updateOptionsUI();
+        if(id === 'skinModal') SkinSystem.renderModal();
+    },
     hideModal(id) {
         AudioEngine.playClick();
         document.getElementById(id).classList.add('hidden');
@@ -3037,19 +3471,44 @@ const SharedMatSet = new Set(Object.values(SharedMat));
 const ModelFactory = {
     setupShadows(mesh) { mesh.traverse(c => { if(c.isMesh) { c.castShadow = true; c.receiveShadow = true; } }); },
     buildPlayer(mat, gemMat) {
+        let skin = SkinSystem.getCurrentSkin();
+        let geos = PlayerGeometryBuilder.getGeometries(skin.id);
         let group = new THREE.Group();
-        let body = new THREE.Mesh(SharedGeo.cone, mat); body.scale.set(12, 36, 12); body.position.y = 18;
-        // Aggiunta Texture Materica per dare identità alla corazza, sciarpa e legni
-        let head = new THREE.Mesh(SharedGeo.sphere, new THREE.MeshStandardMaterial({color: 0xdddddd, emissive: 0x222222, map: CHAR_GRUNGE_TEX})); head.scale.set(6, 6, 6); head.position.y = 28;
-        let scarf = new THREE.Mesh(SharedGeo.torus, new THREE.MeshStandardMaterial({color: 0x880000, roughness: 0.9, map: CHAR_GRUNGE_TEX, bumpMap: isTouchDevice ? null : CHAR_GRUNGE_TEX, bumpScale: 0.05})); scarf.scale.set(6, 6, 2); scarf.position.y = 24; scarf.rotation.x = Math.PI/2;
-        let weaponGroup = new THREE.Group(); weaponGroup.position.set(12, 16, 8);
-        let staff = new THREE.Mesh(SharedGeo.cylinder, new THREE.MeshStandardMaterial({color: 0x444444, metalness: 0.8, map: CHAR_GRUNGE_TEX})); staff.scale.set(2, 35, 2); staff.position.y = 10;
-        let staffGem = new THREE.Mesh(SharedGeo.icosahedron, gemMat); staffGem.scale.set(4, 4, 4); staffGem.position.y = 28;
-        let halo = new THREE.Mesh(SharedGeo.torus, gemMat); halo.scale.set(5, 5, 5); halo.position.y = 28; halo.rotation.x = Math.PI/2;
-        weaponGroup.add(staff); weaponGroup.add(staffGem); weaponGroup.add(halo);
-        group.add(body); group.add(head); group.add(scarf); group.add(weaponGroup);
+
+        let body = new THREE.Mesh(geos.body, mat);
+        body.position.y = 12; // Centro di rotazione sul busto: non compenetra mai sciarpa o testa
+
+        let headMat = new THREE.MeshStandardMaterial({color: skin.colors.head, emissive: 0x222222, map: CHAR_GRUNGE_TEX});
+        let head = new THREE.Mesh(geos.head, headMat);
+        head.position.y = 29;
+
+        let scarfMat = new THREE.MeshStandardMaterial({color: skin.colors.scarf, roughness: 0.9, map: CHAR_GRUNGE_TEX, bumpMap: isTouchDevice ? null : CHAR_GRUNGE_TEX, bumpScale: 0.05});
+        let scarf = new THREE.Mesh(geos.scarf, scarfMat);
+        scarf.position.y = 24;
+
+        let weaponGroup = new THREE.Group();
+        weaponGroup.position.set(12, 16, 8);
+        let staffMat = new THREE.MeshStandardMaterial({color: skin.colors.staff, metalness: 0.8, map: CHAR_GRUNGE_TEX});
+        let staff = new THREE.Mesh(geos.staff, staffMat);
+        let staffGem = new THREE.Mesh(geos.gem, gemMat);
+        staffGem.position.y = 28;
+        let halo = new THREE.Mesh(geos.halo, gemMat);
+        halo.position.y = 28;
+        weaponGroup.add(staff, staffGem, halo);
+
+        // Accessori luminosi sul busto (Ali, Cristalli Orbitanti, Stabilizzatori)
+        let accentMesh = new THREE.Mesh(geos.accent || SharedGeo.box, gemMat);
+        accentMesh.visible = !!geos.accent;
+        body.add(accentMesh);
+
+        // Accessori luminosi sulla testa (Visori, Corone fluttuanti)
+        let headAccentMesh = new THREE.Mesh(geos.headAccent || SharedGeo.box, gemMat);
+        headAccentMesh.visible = !!geos.headAccent;
+        head.add(headAccentMesh);
+
+        group.add(body, head, scarf, weaponGroup);
         this.setupShadows(group);
-        return { group, staffGem, halo, weaponGroup, body, head, scarf };
+        return { group, staffGem, halo, weaponGroup, body, head, scarf, staff, accentMesh, headAccentMesh };
     },
     buildEnemy(type, size, mat) {
         let group = new THREE.Group(); let parts = {}; 
@@ -5141,6 +5600,7 @@ loop(timestamp) {
       
 
     setupFloor() {
+        SkinSystem.checkFloorUnlock(this.floor);
         this.bossDefeatedTimer = 0; this.isBossFloor = (this.floor % 5 === 0);
         this.floorEndTimer = 0; this.floorEndTriggered = false;
         this.floorProphets = 0; // CAP PROFETI: Inizializza il contatore
@@ -8641,15 +9101,9 @@ class Player extends Entity {
         this.shadowMesh.scale.set(32, 1, 32); 
         this.shadowMesh.visible = !AppSettings.shadowsEnabled;
         
-        this.updateAppearance();
-        
-        // --- PRE-ALLOCAZIONE SMEMBRAMENTO GIOCATORE (Zero-Allocation Death) ---
-       if (!window.GLOBAL_DEAD_BODY_GEO) window.GLOBAL_DEAD_BODY_GEO = new THREE.CylinderGeometry(0.35, 1, 1, 8);
-        this.deadBody = new THREE.Mesh(window.GLOBAL_DEAD_BODY_GEO, this.mesh.children[0].material);
+       // --- PRE-ALLOCAZIONE SMEMBRAMENTO GIOCATORE (Zero-Allocation Death) ---
+        this.deadBody = new THREE.Mesh(this.modelParts.body.geometry, this.mesh.children[0].material);
         this.deadBody.matrixAutoUpdate = false;
-        let pScarf = this.mesh.children[2].clone();
-        pScarf.position.set(0, 0.5, 0); pScarf.scale.set(6/16, 6/24, 2/16); pScarf.rotation.x = Math.PI / 2;
-        this.deadBody.add(pScarf);
         
         this.deadHead = this.mesh.children[1].clone();
         this.deadHead.matrixAutoUpdate = false;
@@ -8672,12 +9126,14 @@ class Player extends Entity {
         this._ghostIdx = 0;
         for (let i = 0; i < 4; i++) {
             let gMat = new THREE.MeshBasicMaterial({ color: 0x00ddff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
-            let gMesh = new THREE.Mesh(SharedGeo.cone, gMat);
+            let gMesh = new THREE.Mesh(this.modelParts.body.geometry, gMat);
             gMesh.matrixAutoUpdate = false;
             gMesh.visible = false;
             Game.scene.add(gMesh);
             this.dashGhosts.push({ mesh: gMesh, mat: gMat, life: 0 });
         }
+
+        this.applySkin();
     }
     collectEssence(type) {
         if (this.overdrive) { 
@@ -8882,17 +9338,73 @@ class Player extends Entity {
         // 5. Aggiorna la grafica nel caso la reliquia alterasse le aure/essenze
         this.updateAppearance();
     }
-   updateAppearance() {
-        let colorHex = 0x222222; let lColor = 0xffffff; let gemColor = 0xffff00;
-        if (this.essence) { colorHex = ESSENCE_COLORS[this.essence]; lColor = ESSENCE_COLORS[this.essence]; gemColor = ESSENCE_COLORS[this.essence]; }
-        
-        // PRIORITÀ ASSOLUTA ULTIMATE: Se attiva, ignora qualsiasi colore di essenza o overdrive
-        if (Game.ultimateActive) {
-            colorHex = 0x0088ff; lColor = 0x00DDFF; gemColor = 0x00DDFF;
+   applySkin() {
+        let skin = SkinSystem.getCurrentSkin();
+        let geos = PlayerGeometryBuilder.getGeometries(skin.id);
+
+        this.modelParts.body.geometry = geos.body;
+        this.modelParts.head.geometry = geos.head;
+        this.modelParts.scarf.geometry = geos.scarf;
+        this.modelParts.staff.geometry = geos.staff;
+        this.modelParts.staffGem.geometry = geos.gem;
+        this.modelParts.halo.geometry = geos.halo;
+
+        if (this.modelParts.accentMesh) {
+            this.modelParts.accentMesh.rotation.set(0, 0, 0);
+            if (geos.accent) {
+                this.modelParts.accentMesh.geometry = geos.accent;
+                this.modelParts.accentMesh.visible = true;
+            } else {
+                this.modelParts.accentMesh.visible = false;
+            }
         }
 
-        this.modelParts.body.material.color.setHex(colorHex); this.light.color.setHex(lColor);
-        this.staffGemMat.color.setHex(gemColor); this.staffGemMat.emissive.setHex(gemColor);
+        if (this.modelParts.headAccentMesh) {
+            if (geos.headAccent) {
+                this.modelParts.headAccentMesh.geometry = geos.headAccent;
+                this.modelParts.headAccentMesh.visible = true;
+            } else {
+                this.modelParts.headAccentMesh.visible = false;
+            }
+        }
+
+        if (this.deadBody) this.deadBody.geometry = geos.body;
+        if (this.dashGhosts) {
+            for (let i = 0; i < this.dashGhosts.length; i++) {
+                this.dashGhosts[i].mesh.geometry = geos.body;
+            }
+        }
+
+        this.modelParts.head.material.color.setHex(skin.colors.head);
+        this.modelParts.scarf.material.color.setHex(skin.colors.scarf);
+        if (this.modelParts.staff) this.modelParts.staff.material.color.setHex(skin.colors.staff);
+
+        this.updateAppearance();
+    }
+    updateAppearance() {
+        let skin = SkinSystem.getCurrentSkin();
+        // Senza elemento attivo, gemma e luce della bacchetta sono SEMPRE gialle/calde per tutte le skin
+        let colorHex = skin.colors.body;
+        let lColor = 0xffddaa;
+        let gemColor = 0xffff00;
+
+        if (this.essence) {
+            colorHex = ESSENCE_COLORS[this.essence];
+            lColor = ESSENCE_COLORS[this.essence];
+            gemColor = ESSENCE_COLORS[this.essence];
+        }
+        
+        // PRIORITÀ ASSOLUTA ULTIMATE
+        if (Game.ultimateActive) {
+            colorHex = 0x0088ff;
+            lColor = 0x00DDFF;
+            gemColor = 0x00DDFF;
+        }
+
+        this.modelParts.body.material.color.setHex(colorHex);
+        this.light.color.setHex(lColor);
+        this.staffGemMat.color.setHex(gemColor);
+        this.staffGemMat.emissive.setHex(gemColor);
         this.fakeBloom.material.color.setHex(gemColor);
         this.fakeBloom.material.opacity = (this.overdrive || Game.ultimateActive) ? 1.0 : 0.6;
         
@@ -8912,14 +9424,12 @@ class Player extends Entity {
         }
 
         if (Game.isCorrupted && Game.corruptedType === 'darkness') {
-            // Intensità massima alzato per fendere il buio, distanza accorciata per creare un cono ristretto
             this.light.intensity = Game.ultimateActive ? 6.0 : 4.0; 
             this.light.distance = isTouchDevice ? 500 : 750; 
         }
 
-       // --- AGGIORNAMENTO COLORE SCUDO CINETICO ---
         if (this.shieldMesh.visible) {
-            let sColor = 0x00DDFF; // Ciano default
+            let sColor = 0x00DDFF;
             if (this.essence === 'red') sColor = ESSENCE_COLORS.red;
             else if (this.essence === 'blue') sColor = ESSENCE_COLORS.blue;
             else if (this.essence === 'green') sColor = ESSENCE_COLORS.green;
@@ -8932,7 +9442,6 @@ class Player extends Entity {
             this.auraRingMesh.material.color.setHex(ringColor);
             this.auraGlow.material.color.setHex(ringColor);
             
-            // Applica l'emissive dell'obelisco SOLO se il giocatore NON è in Ultimate o Overdrive
             if (!Game.ultimateActive && !this.overdrive) {
                 let emitColor = pAura === 'blue' ? 0x002255 : (pAura === 'green' ? 0x113311 : (pAura === 'red' ? 0x440000 : 0x440055));
                 this.modelParts.body.material.emissive.setHex(emitColor);
@@ -9691,8 +10200,43 @@ if (Game.ultimateActive) currentSpeed *= 1.5; currentSpeed = Math.min(currentSpe
         this.light.intensity = baseInt + flicker + attackIntensityBurst;
         this.light.distance = baseRadius + attackRadiusBurst;
         
-        let baseOpacity = this.overdrive ? 1.0 : (this.essence ? 0.8 : 0.5);
+       let baseOpacity = this.overdrive ? 1.0 : (this.essence ? 0.8 : 0.5);
         this.fakeBloom.material.opacity = Math.max(0.1, Math.min(1.0, baseOpacity + (flicker * 0.5)));
+
+        // Rotazione dei 3 cristalli orbitanti per il Viandante del Vuoto
+        let activeSkinId = SkinSystem.selectedId;
+        if (activeSkinId === 'void_walker' && this.modelParts.accentMesh) {
+            this.modelParts.accentMesh.rotation.y += dt * 2.5;
+        }
+
+        // --- EFFETTI PARTICELLARI A TEMA PER LE SKIN PIÙ RARE (Pool-Based, Zero-Lag) ---
+        if (!AppSettings.isLow && Game.frameCount % (isTouchDevice ? 16 : 10) === 0) {
+            if (activeSkinId === 'crimson_inquisitor') {
+                let p = Game.getParticle();
+                let side = (Math.random() > 0.5 ? 1 : -1) * 10;
+                p.spawn(this.x + side, 20, this.y + MathUtils.randomRange(-6, 6), Math.random() > 0.35 ? SharedMat.spriteRed : SharedMat.spriteBlackSmoke, 'trail');
+                p.vy = MathUtils.randomRange(35, 70);
+                p.baseSize = MathUtils.randomRange(10, 16);
+            } else if (activeSkinId === 'void_walker') {
+                let p = Game.getParticle();
+                let a = Game.playTime * 2.5 + Math.random() * 6.28;
+                p.spawn(this.x + Math.cos(a) * 15, 18, this.y + Math.sin(a) * 15, Math.random() > 0.35 ? SharedMat.spritePink : SharedMat.spriteBlackSmoke, 'trail');
+                p.vy = MathUtils.randomRange(25, 55);
+                p.baseSize = MathUtils.randomRange(10, 18);
+            } else if (activeSkinId === 'solar_archon') {
+                let p = Game.getParticle();
+                let side = (Math.random() > 0.5 ? 1 : -1) * MathUtils.randomRange(10, 15);
+                p.spawn(this.x + side, 22, this.y + MathUtils.randomRange(-6, 4), Math.random() > 0.3 ? SharedMat.spriteYellow : SharedMat.spriteWhite, 'trail');
+                p.vy = MathUtils.randomRange(30, 65);
+                p.baseSize = MathUtils.randomRange(9, 15);
+            } else if (activeSkinId === 'cyber_phantom') {
+                let p = Game.getParticle();
+                let side = (Math.random() > 0.5 ? 1 : -1) * MathUtils.randomRange(9, 14);
+                p.spawn(this.x + side, 20, this.y + MathUtils.randomRange(-6, 4), Math.random() > 0.4 ? SharedMat.spriteBlue : SharedMat.spriteYellow, 'electric');
+                p.baseSize = MathUtils.randomRange(8, 13);
+            }
+        }
+
         this.mesh.updateMatrix();
 
         // --- GESTIONE SCIA OLOGRAFICA DI SCATTO (AFTERIMAGE) ---
@@ -9706,9 +10250,9 @@ if (Game.ultimateActive) currentSpeed *= 1.5; currentSpeed = Math.min(currentSpe
                 let gColor = this.essence ? ESSENCE_COLORS[this.essence] : 0x00ddff;
                 g.mat.color.setHex(gColor);
                 g.mat.opacity = 0.55;
-                g.mesh.position.set(this.x, this.mesh.position.y + 18 * massScale, this.y);
+                g.mesh.position.set(this.x, this.mesh.position.y + 12 * massScale, this.y);
                 g.mesh.rotation.set(0.25, this.mesh.rotation.y, 0);
-                g.mesh.scale.set(12 * massScale, 36 * massScale, 12 * massScale);
+                g.mesh.scale.setScalar(massScale);
                 g.mesh.updateMatrix();
                 g.mesh.visible = true;
             }
@@ -12574,10 +13118,15 @@ function clearScene() {
     for(let i=0, len=Game.coinDrops.length; i<len; i++) { Game.coinDrops[i].destroy(); }
     
  if(Game.player) {
-        // RIMUOVI I PEZZI DEL CADAVERE (Basta nasconderli, sono riutilizzati!)
         if (Game.player.deadPhysicsParts) {
             for (let i = 0; i < Game.player.deadPhysicsParts.length; i++) {
                 Game.player.deadPhysicsParts[i].mesh.visible = false;
+            }
+        }
+        if (Game.player.dashGhosts) {
+            for (let i = 0; i < Game.player.dashGhosts.length; i++) {
+                Game.player.dashGhosts[i].life = 0;
+                Game.player.dashGhosts[i].mesh.visible = false;
             }
         }
         Game.scene.remove(Game.player.mesh);
@@ -13068,6 +13617,9 @@ window.addEventListener('popstate', function (event) {
     else if (!document.getElementById('infoModal').classList.contains('hidden')) {
         UIManager.hideModal('infoModal'); // Chiude le info
     }
+    else if (!document.getElementById('skinModal').classList.contains('hidden')) {
+        UIManager.hideModal('skinModal'); // Chiude il menu skin
+    }
     else if (!document.getElementById('collectedRelicsModal').classList.contains('hidden')) {
         UIManager.hideModal('collectedRelicsModal'); // Chiude l'inventario reliquie in game
     }
@@ -13078,7 +13630,7 @@ history.pushState(null, null, document.URL);
     window.onload = () => {
     AppSettings.init();
     Preloader.init(); // Avvia il LoadingManager globale
-    ScoreManager.init(); Game.init(); TitleSystem.init();
+    ScoreManager.init(); SkinSystem.init(); Game.init(); TitleSystem.init();
     const initScreen = document.getElementById('initScreen'); const mainMenu = document.getElementById('mainMenu');
     
     let mobileControls = document.getElementById('mobile-controls-desc');
