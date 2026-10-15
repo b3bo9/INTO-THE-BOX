@@ -1470,24 +1470,24 @@ playCoin() {
 
     playCrystalDrop() {
         if (this.sfxMuted || !this.ctx || this.ctx.state === 'suspended') return;
-        let t = this.ctx.currentTime;
+        let t = this.ctx.currentTime + 0.08; // Leggero offset per emergere sopra il boato dell'obelisco
         let dest = this.masterCompressor ? this.masterCompressor : this.ctx.destination;
-        // Accordo cristallino arcano (risonanza di ametista ad alta frequenza)
-        const freqs = [587.33, 880.0, 1174.66, 1760.0];
+        // Doppio arpeggio cristallino ad alta frequenza (taglia il mix sonoro)
+        const freqs = [587.33, 880.0, 1174.66, 1479.98, 1760.0, 2349.32];
         for (let i = 0; i < freqs.length; i++) {
             let osc = this.ctx.createOscillator();
             let gain = this.ctx.createGain();
             osc.type = i % 2 === 0 ? 'sine' : 'triangle';
-            let start = t + i * 0.045;
+            let start = t + i * 0.055;
             osc.frequency.setValueAtTime(freqs[i], start);
-            osc.frequency.exponentialRampToValueAtTime(freqs[i] * 1.02, start + 0.45);
+            osc.frequency.exponentialRampToValueAtTime(freqs[i] * 1.015, start + 0.75);
             gain.gain.setValueAtTime(0.001, start);
-            gain.gain.linearRampToValueAtTime(0.12 / (i * 0.4 + 1), start + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.001, start + 0.55);
+            gain.gain.linearRampToValueAtTime(0.24 / (i * 0.25 + 1), start + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.001, start + 0.80);
             osc.connect(gain);
             gain.connect(dest);
             osc.start(start);
-            osc.stop(start + 0.56);
+            osc.stop(start + 0.82);
         }
     },
 
@@ -1839,33 +1839,50 @@ const PlayerGeometryBuilder = {
         return g;
     },
 
+    _prims: null,
+    getPrimitives() {
+        if (!this._prims) {
+            this._prims = {
+                robeFrustum: new THREE.CylinderGeometry(3.5, 12, 1, 8),
+                robeHex: new THREE.CylinderGeometry(3.5, 12.2, 1, 6),
+                robePyramid: new THREE.CylinderGeometry(3.5, 13, 1, 4),
+                cone4: new THREE.ConeGeometry(1, 1, 4),
+                dodeca: new THREE.DodecahedronGeometry(1, 0),
+                quad: new THREE.PlaneGeometry(1, 1)
+            };
+        }
+        return this._prims;
+    },
+
     merge(list) {
         if (!list || list.length === 0) return null;
         const nonIndexed = [];
         for (let i = 0; i < list.length; i++) {
-            let g = list[i].index ? list[i].toNonIndexed() : list[i].clone();
+            let g = list[i].index ? list[i].toNonIndexed() : list[i];
             g.clearGroups();
             nonIndexed.push(g);
+            if (g !== list[i]) list[i].dispose();
         }
         let merged = THREE.BufferGeometryUtils.mergeBufferGeometries(nonIndexed, false);
         merged.computeVertexNormals();
+        for (let i = 0; i < nonIndexed.length; i++) nonIndexed[i].dispose();
         return merged;
     },
 
     getGeometries(skinId) {
         if (this.cache[skinId]) return this.cache[skinId];
 
-        // Tronchi di cono chiusi al collo (altezza 24): non bucano mai sciarpa e testa durante l'inclinazione
-        const robeFrustum = new THREE.CylinderGeometry(3.5, 12, 1, 8);
-        const robeHex = new THREE.CylinderGeometry(3.5, 12.2, 1, 6);
-        const robePyramid = new THREE.CylinderGeometry(3.5, 13, 1, 4);
+        const prims = this.getPrimitives();
+        const robeFrustum = prims.robeFrustum;
+        const robeHex = prims.robeHex;
+        const robePyramid = prims.robePyramid;
         const cone = SharedGeo.cone;
-        const cone4 = new THREE.ConeGeometry(1, 1, 4);
+        const cone4 = prims.cone4;
         const cyl = SharedGeo.cylinder;
         const box = SharedGeo.box;
         const sphere = SharedGeo.sphere;
         const icosa = SharedGeo.icosahedron;
-        const dodeca = new THREE.DodecahedronGeometry(1, 0);
+        const dodeca = prims.dodeca;
         const torus = SharedGeo.torus;
 
         let bodyParts = [this.part(robeFrustum, 1, 24, 1, 0, 0, 0)];
@@ -2079,25 +2096,43 @@ const SkinSystem = {
         if (saved) {
             try {
                 let data = JSON.parse(saved);
-                if (typeof data.crystals === 'number') this.crystals = data.crystals;
-                if (typeof data.maxFloorReached === 'number') this.maxFloorReached = data.maxFloorReached;
-                // Usa solo le skin acquistate con il nuovo sistema Shop (shopV2)
+                let parsedCrystals = Number(data.crystals);
+                this.crystals = Number.isFinite(parsedCrystals) ? Math.max(0, Math.floor(parsedCrystals)) : 0;
+
+                let parsedFloor = Number(data.maxFloorReached);
+                this.maxFloorReached = Number.isFinite(parsedFloor) ? Math.max(1, Math.floor(parsedFloor)) : 1;
+
                 if (data.shopV2 && Array.isArray(data.unlockedIds)) {
-                    this.unlockedIds = data.unlockedIds;
-                    if (data.selectedId) this.selectedId = data.selectedId;
+                    this.unlockedIds = data.unlockedIds.filter(id => typeof id === 'string');
+                    if (typeof data.selectedId === 'string') this.selectedId = data.selectedId;
                 } else {
                     this.unlockedIds = ['dark_mage'];
                     this.selectedId = 'dark_mage';
                 }
-            } catch (e) {}
+            } catch (e) {
+                this.crystals = 0;
+                this.unlockedIds = ['dark_mage'];
+                this.selectedId = 'dark_mage';
+            }
         }
         if (!this.unlockedIds.includes('dark_mage')) this.unlockedIds.push('dark_mage');
         if (!this.unlockedIds.includes(this.selectedId)) this.selectedId = 'dark_mage';
+
+        let countEl = document.getElementById('skin-crystals-count');
+        if (countEl) countEl.innerText = this.crystals;
+
         this.updateBadge();
         this.save();
+
+        if (!this._unloadBound) {
+            this._unloadBound = true;
+            window.addEventListener('pagehide', () => this.save());
+            window.addEventListener('beforeunload', () => this.save());
+        }
     },
 
     save() {
+        this.crystals = Number.isFinite(this.crystals) ? Math.max(0, Math.floor(this.crystals)) : 0;
         try {
             localStorage.setItem('intoTheBoxSkins', JSON.stringify({
                 shopV2: true,
@@ -2121,7 +2156,8 @@ const SkinSystem = {
     },
 
     addCrystals(amount) {
-        this.crystals += amount;
+        let add = Number(amount) || 0;
+        this.crystals = Math.max(0, Math.floor((Number(this.crystals) || 0) + add));
         this.save();
         this.updateBadge();
         let countEl = document.getElementById('skin-crystals-count');
@@ -3201,35 +3237,19 @@ window.GLOBAL_SCORCH_GEO = new THREE.PlaneGeometry(90, 90);
 
 class Coin {
     constructor() {
-        this.active = false; this.isCrystal = false; this.group = new THREE.Group();
-        this.coinMesh = new THREE.Mesh(SharedGeo.coin, SharedMat.coin);
-        this.coinMesh.rotation.x = Math.PI / 2;
-        this.coinMesh.matrixAutoUpdate = false; this.coinMesh.updateMatrix();
-
-        if (!SharedMat.purpleCrystal) {
-            SharedMat.purpleCrystal = new THREE.MeshStandardMaterial({
-                color: 0xe9d5ff, emissive: 0x9333ea, emissiveIntensity: 1.4, metalness: 0.9, roughness: 0.1
-            });
-        }
-        this.crystalMesh = new THREE.Mesh(SharedGeo.icosahedron, SharedMat.purpleCrystal);
-        this.crystalMesh.scale.set(9, 14, 9);
-        this.crystalMesh.matrixAutoUpdate = false; this.crystalMesh.updateMatrix();
-        this.crystalMesh.visible = false;
-
+        this.active = false; this.group = new THREE.Group();
+        let core = new THREE.Mesh(SharedGeo.coin, SharedMat.coin);
+        core.rotation.x = Math.PI / 2;
         this.group.matrixAutoUpdate = false; 
-        this.group.add(this.coinMesh, this.crystalMesh); this.group.visible = false; Game.scene.add(this.group);
+        core.matrixAutoUpdate = false; core.updateMatrix();
+        this.group.add(core); this.group.visible = false; Game.scene.add(this.group);
         this.groundGlow = new THREE.Mesh(new THREE.PlaneGeometry(55, 55), new THREE.MeshBasicMaterial({map: GLOW_TEX, color: 0xffaa00, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}));
         this.groundGlow.rotation.x = -Math.PI / 2; this.groundGlow.visible = false; Game.scene.add(this.groundGlow);
         this.isHealingFromShield = false;
     }
-    spawn(x, y, isVolcano = false, isCrystal = false) { 
-        this.active = true; this.x = x; this.y = y;
-        this.isCrystal = isCrystal;
-        this.life = isCrystal ? 25.0 : 15.0; 
+    spawn(x, y, isVolcano = false) { 
+        this.active = true; this.x = x; this.y = y; this.life = 15.0; 
         this.isMagnetized = false; 
-        this.coinMesh.visible = !isCrystal;
-        this.crystalMesh.visible = isCrystal;
-        
         if (isVolcano) {
             this.z = 60;
             let a = Math.random() * Math.PI * 2;
@@ -3241,21 +3261,17 @@ class Coin {
             this.z = 15;
             this.vx = 0; this.vy = 0; this.vz = 0;
         }
-        
         this.group.position.set(x, this.z, y); this.group.updateMatrix(); this.group.visible = true; 
-        this.groundGlow.material.color.setHex(isCrystal ? 0xaa00ff : 0xffaa00);
-        if (isTouchDevice || isCrystal) { this.groundGlow.position.set(x, 0.2, y); this.groundGlow.visible = true; }
+        if (isTouchDevice) { this.groundGlow.position.set(x, 0.2, y); this.groundGlow.visible = true; }
     }
     destroy() { 
         this.active = false; 
         this.group.visible = false; 
         this.groundGlow.visible = false; 
-        
         if (Game.particlesThisFrame < 40) {
             let sparkCount = isTouchDevice ? 1 : 3;
-            let sparkMat = this.isCrystal ? SharedMat.spritePink : SharedMat.spriteYellow;
             for(let i=0; i<sparkCount; i++) {
-                Game.getParticle().spawn(this.x, this.z || 15, this.y, sparkMat, 'spark');
+                Game.getParticle().spawn(this.x, this.z || 15, this.y, SharedMat.spriteYellow, 'spark');
             }
         }
     }
@@ -6149,8 +6165,7 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
 
                         let droppedCrystal = false;
                         if (a.type === 'corrupted') {
-                            // Obelisco Corrotto: 100% probabilità di droppare un Cristallo Viola
-                            itemsToSpawn.push('crystal');
+                            // Obelisco Corrotto: 100% probabilità di ottenere un Cristallo Viola
                             droppedCrystal = true;
                             if (Math.random() < 0.5) dropsRelic = true;
                             else for(let c=0; c<25; c++) itemsToSpawn.push('coin');
@@ -6159,7 +6174,6 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
                             // Obelisco Normale: probabilità bassa ai primi piani (14% al Piano 1) e più alta nei piani avanzati (fino all'85%)
                             let crystalChance = Math.min(0.85, 0.10 + (this.floor * 0.04));
                             if (Math.random() < crystalChance) {
-                                itemsToSpawn.push('crystal');
                                 droppedCrystal = true;
                             }
 
@@ -6170,9 +6184,13 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
                             if (Math.random() < 0.005) dropsRelic = true;
                         }
 
-                        if (droppedCrystal && this.player) {
-                            this.player.showOverheadCrystal();
+                        if (droppedCrystal) {
+                            SkinSystem.addCrystals(1);
                             AudioEngine.playCrystalDrop();
+                            if (this.player) {
+                                this.player.showOverheadCrystal();
+                                this.getFloatingText().spawn(this.player.x, this.player.y - 35, "CRISTALLO VIOLA +1!", '#e879f9', 42, true);
+                            }
                         }
                         
                         let minRadius = 45; 
@@ -6804,10 +6822,8 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
                 let dy = this.player.y - c.y;
                 let dist = Math.sqrt(dx*dx + dy*dy);
 
-              // MAGNETE DELLE ANIME (o attrazione ravvicinata per i Cristalli Viola)
-                if (this.player.modifiers.coinMagnet || c.isCrystal) {
-                    let magDist = c.isCrystal ? 120 : 150;
-                    if (dist < magDist) c.isMagnetized = true;
+              if (this.player.modifiers.coinMagnet) {
+                    if (dist < 150) c.isMagnetized = true;
                     if (dist > 300) c.isMagnetized = false;
 
                     if (c.isMagnetized && dist > 10) {
@@ -6827,27 +6843,19 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
                 }
 
                 if (MathUtils.distanceSq(this.player, c) < pRadiusSq) { 
-                    if (c.isCrystal) {
-                        c.destroy();
-                        AudioEngine.playCrystalDrop();
-                        this.player.showOverheadCrystal();
-                        SkinSystem.addCrystals(1);
-                        Game.getFloatingText().spawn(this.player.x, this.player.y + 20, "+1 CRISTALLO VIOLA!", '#c084fc', 32, true);
-                    } else {
-                        c.destroy(); AudioEngine.playCoin();
-                        Game.coins++; 
-                        if(UI.els.coins) UI.els.coins.innerText = Game.coins;
-                        let shopCoinsEl = document.getElementById('shop-coins');
-                        if(shopCoinsEl) shopCoinsEl.innerText = Game.coins;
+                    c.destroy(); AudioEngine.playCoin();
+                    Game.coins++; 
+                    if(UI.els.coins) UI.els.coins.innerText = Game.coins;
+                    let shopCoinsEl = document.getElementById('shop-coins');
+                    if(shopCoinsEl) shopCoinsEl.innerText = Game.coins;
 
-                        Game.getFloatingText().spawn(this.player.x, this.player.y, "+1", '#ffaa00', 25, true);
-                        
-                        if (this.player.modifiers.miserPact) {
-                            if (this.player.miserBuffStacks === undefined) { this.player.miserBuffStacks = 0; this.player.miserBuffTimer = 0; }
-                            this.player.miserBuffTimer = 3.0;
-                            this.player.miserBuffStacks = Math.min(5, this.player.miserBuffStacks + 1); 
-                            Game.getFloatingText().spawn(this.player.x, this.player.y + 15, `FRENESIA x${this.player.miserBuffStacks}`, '#ffd700', 18, true);
-                        }
+                    Game.getFloatingText().spawn(this.player.x, this.player.y, "+1", '#ffaa00', 25, true);
+                    
+                    if (this.player.modifiers.miserPact) {
+                        if (this.player.miserBuffStacks === undefined) { this.player.miserBuffStacks = 0; this.player.miserBuffTimer = 0; }
+                        this.player.miserBuffTimer = 3.0;
+                        this.player.miserBuffStacks = Math.min(5, this.player.miserBuffStacks + 1); 
+                        Game.getFloatingText().spawn(this.player.x, this.player.y + 15, `FRENESIA x${this.player.miserBuffStacks}`, '#ffd700', 18, true);
                     }
                 }
             }
@@ -9265,19 +9273,31 @@ class Player extends Entity {
             this.dashGhosts.push({ mesh: gMesh, mat: gMat, life: 0 });
         }
 
-        // --- CRISTALLO VIOLA 3D SOPRA LA TESTA (Zero-Allocation) ---
+        // --- CRISTALLO VIOLA 3D SOPRA LA TESTA (Zero-Allocation, Alta Visibilità) ---
         if (!SharedMat.purpleCrystal) {
             SharedMat.purpleCrystal = new THREE.MeshStandardMaterial({
-                color: 0xe9d5ff, emissive: 0x9333ea, emissiveIntensity: 1.4, metalness: 0.9, roughness: 0.1
+                color: 0xf3e8ff, emissive: 0xa855f7, emissiveIntensity: 2.2, metalness: 0.9, roughness: 0.1
             });
         }
         this.overheadCrystal = new THREE.Group();
+        this.overheadCrystal.matrixAutoUpdate = false;
+
         let ohCore = new THREE.Mesh(SharedGeo.icosahedron, SharedMat.purpleCrystal);
-        ohCore.scale.set(5.5, 9.0, 5.5);
+        ohCore.scale.set(8.5, 14.5, 8.5);
+        ohCore.matrixAutoUpdate = false; ohCore.updateMatrix();
+
+        let ohRing = new THREE.Mesh(SharedGeo.torus, SharedMat.auraCorruptedRing);
+        ohRing.scale.set(13.5, 13.5, 2.5);
+        ohRing.rotation.x = Math.PI / 3;
+        ohRing.matrixAutoUpdate = false; ohRing.updateMatrix();
+
         let ohGlow = new THREE.Sprite(SharedMat.spritePink);
-        ohGlow.scale.set(26, 26, 1);
-        this.overheadCrystal.add(ohCore, ohGlow);
-        this.overheadCrystal.position.set(0, 46, 0);
+        ohGlow.scale.set(48, 48, 1);
+        ohGlow.matrixAutoUpdate = false; ohGlow.updateMatrix();
+
+        this.overheadCrystal.add(ohCore, ohRing, ohGlow);
+        this.overheadCrystal.position.set(0, 50, 0);
+        this.overheadCrystal.updateMatrix();
         this.overheadCrystal.visible = false;
         this.overheadCrystalTimer = 0;
         this.mesh.add(this.overheadCrystal);
@@ -9287,8 +9307,22 @@ class Player extends Entity {
 
     showOverheadCrystal() {
         if (!this.overheadCrystal) return;
-        this.overheadCrystalTimer = 1.3;
+        this.overheadCrystalTimer = 2.5;
         this.overheadCrystal.visible = true;
+
+        // Annuncio ben visibile in alto al centro + Flash luminoso viola + Scintille
+        if (UI.showAnnouncer) UI.showAnnouncer("CRISTALLO VIOLA +1", "#d8b4fe");
+        Game.spawnLightFlash(this.x, this.y, 0xaa00ff, 12.0, 550, 0.45);
+        Haptics.vibrate([30, 40, 70]);
+
+        let pCount = AppSettings.isLow ? 6 : 16;
+        for (let i = 0; i < pCount; i++) {
+            let a = (Math.PI * 2 / pCount) * i;
+            let p = Game.getParticle();
+            p.spawn(this.x, 28, this.y, i % 2 === 0 ? SharedMat.spritePink : SharedMat.spriteWhite, 'spark', a);
+            p.vy = MathUtils.randomRange(120, 260);
+            p.baseSize = MathUtils.randomRange(16, 26);
+        }
     }
     collectEssence(type) {
         if (this.overdrive) { 
@@ -9886,11 +9920,13 @@ class Player extends Entity {
         // OTTIMIZZAZIONE CPU: Ciclo for standard per evitare la creazione di funzioni anonime ad ogni frame
        if (this.overheadCrystalTimer > 0) {
             this.overheadCrystalTimer -= dt;
-            let prog = 1.0 - (this.overheadCrystalTimer / 1.3);
-            let popScale = Math.sin(prog * Math.PI);
-            this.overheadCrystal.position.y = 44 + prog * 10;
-            this.overheadCrystal.rotation.y += dt * 6.0;
-            this.overheadCrystal.scale.setScalar(Math.max(0.01, popScale * 1.15));
+            let prog = 1.0 - (this.overheadCrystalTimer / 2.5);
+            // Scatta subito alla dimensione massima (primi 0.3s), resta grande e visibile, poi sfuma negli ultimi 0.4s
+            let popScale = prog < 0.12 ? (prog / 0.12) * 1.25 : (prog > 0.84 ? ((1.0 - prog) / 0.16) : 1.0 + Math.sin(prog * Math.PI * 6) * 0.08);
+            this.overheadCrystal.position.y = 50 + Math.sin(prog * Math.PI * 4) * 3.5;
+            this.overheadCrystal.rotation.y += dt * 5.5;
+            this.overheadCrystal.scale.setScalar(Math.max(0.01, popScale));
+            this.overheadCrystal.updateMatrix();
             if (this.overheadCrystalTimer <= 0) {
                 this.overheadCrystal.visible = false;
             }
