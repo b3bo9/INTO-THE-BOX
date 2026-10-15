@@ -7134,23 +7134,22 @@ class GameMap {
         }
         
        if (!window.GLOBAL_WALL_GEO) {
-            // Formazione rocciosa organica Low-Poly (3 massi fusi a basso profilo, zero effetto "cioccolato")
+            // Formazione rocciosa organica più alta e massiccia per i bordi perimetrali
             const sculptRock = (geo, sx, sy, sz, ox, oy, oz) => {
                 geo.scale(sx, sy, sz);
                 const pos = geo.attributes.position;
                 for (let i = 0; i < pos.count; i++) {
                     let vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
-                    // Appiattisce morbidamente le cime e allarga la base per fondersi col terreno
-                    if (vy > 4) vy = 4 + (vy - 4) * 0.45;
+                    if (vy > 12) vy = 12 + (vy - 12) * 0.65;
                     let n = 1.0 + Math.sin(vx * 0.14 + vz * 0.11) * 0.12 + Math.cos(vy * 0.18 - vx * 0.09) * 0.08;
                     pos.setXYZ(i, vx * n + ox, vy + oy, vz * n + oz);
                 }
                 geo.clearGroups();
                 return geo;
             };
-            let rMain = sculptRock(new THREE.DodecahedronGeometry(34, 1), 1.18, 0.58, 1.18, 0, 2, 0);
-            let rSub1 = sculptRock(new THREE.DodecahedronGeometry(24, 1), 1.15, 0.50, 1.10, -14, -2, 12);
-            let rSub2 = sculptRock(new THREE.DodecahedronGeometry(22, 1), 1.10, 0.46, 1.15, 15, -3, -13);
+            let rMain = sculptRock(new THREE.DodecahedronGeometry(34, 1), 1.24, 0.92, 1.24, 0, 5, 0);
+            let rSub1 = sculptRock(new THREE.DodecahedronGeometry(24, 1), 1.20, 0.80, 1.18, -14, 1, 12);
+            let rSub2 = sculptRock(new THREE.DodecahedronGeometry(22, 1), 1.18, 0.75, 1.20, 15, 0, -13);
             window.GLOBAL_WALL_GEO = THREE.BufferGeometryUtils.mergeBufferGeometries([rMain, rSub1, rSub2]);
             window.GLOBAL_WALL_GEO.computeVertexNormals();
             window.GLOBAL_WALL_GEO.boundingSphere = window.GLOBAL_GIANT_SPHERE;
@@ -7164,19 +7163,24 @@ class GameMap {
     window.GLOBAL_TELEGRAPH_GEO.rotateX(-Math.PI / 2);
 }
       const wallMesh = new THREE.InstancedMesh(window.GLOBAL_WALL_GEO, this.wallMat, wallCount);
-        // --- PREPARAZIONE PAVIMENTI LIQUIDI (PIANO GIGANTE SOTTERRANEO) ---
+
+        // --- DISTESA OSCURA (Sigilla il terreno sotto le rocce perimetrali e oltre i confini) ---
+        let abyssColor = new THREE.Color(currentTheme.fog).multiplyScalar(0.35);
+        const abyssMat = new THREE.MeshBasicMaterial({ color: abyssColor });
+        const meshAbyss = new THREE.InstancedMesh(floorGeo, abyssMat, wallCount);
+        meshAbyss.renderOrder = -11;
+        let idxAbyss = 0;
+
+        // --- PREPARAZIONE PAVIMENTI LIQUIDI (CONFINATI ESCLUSIVAMENTE ALLE FOSSE) ---
         let pitColor, pitEmissive, pitOpacity, pitRoughness, pitMetalness, baseTexImage;
         
-        if (Game.currentThemeIndex === 0) { // Foresta -> Acqua Azzurra
-            // Acqua notevolmente più azzurra, magica e luminosa
+        if (Game.currentThemeIndex === 0) {
             pitColor = 0x00d4ff; pitEmissive = 0x55bbee; pitOpacity = 0.90; pitRoughness = 0.15; pitMetalness = 0.80;
             baseTexImage = Preloader.textures.water;
-        } else if (Game.currentThemeIndex === 1) { // Lava -> Lava Jpeg
-            pitColor = 0xffffff; pitEmissive = 0xffffff; 
-            pitOpacity = 0.99; // Forza la trasparenza per evitare conflitti Z-Index coi muri neri
-            pitRoughness = 0.4; pitMetalness = 0.1;
+        } else if (Game.currentThemeIndex === 1) {
+            pitColor = 0xffffff; pitEmissive = 0xffffff; pitOpacity = 0.99; pitRoughness = 0.4; pitMetalness = 0.1;
             baseTexImage = Preloader.textures.waterLava;
-        } else { // Ghiaccio -> Acqua Jpeg (sotto la crosta)
+        } else {
             pitColor = 0x3388cc; pitEmissive = 0xffffff; pitOpacity = 0.9; pitRoughness = 0.1; pitMetalness = 0.9;
             baseTexImage = Preloader.textures.water;
         }
@@ -7186,17 +7190,13 @@ class GameMap {
         liquidTex.wrapT = THREE.RepeatWrapping;
         liquidTex.encoding = THREE.sRGBEncoding;
         
-        // Calcoliamo la reale larghezza della mappa in unità 3D
         let mapRealWidth = (this.width + 16) * TILE_SIZE; 
         let mapRealHeight = (this.height + 16) * TILE_SIZE;
-        
-        // Diciamo alla texture di ripetersi proporzionalmente per mantenere l'alta definizione
         liquidTex.repeat.set(mapRealWidth / 250, mapRealHeight / 250);
         liquidTex.needsUpdate = true;
         
         this.pitMat = new THREE.MeshStandardMaterial({
             color: pitColor, emissive: pitEmissive,
-            // Aumentiamo la luminosità anche per la Foresta (Index 0) per far brillare l'acqua
             emissiveIntensity: Game.currentThemeIndex === 1 ? 1.5 : (Game.currentThemeIndex === 0 ? 1.4 : 1.0),
             roughness: pitRoughness, metalness: pitMetalness,
             map: liquidTex, emissiveMap: liquidTex, 
@@ -7204,114 +7204,146 @@ class GameMap {
             depthWrite: false
         });
 
-       // CREIAMO UN SOLO PIANO GIGANTE INVECE DI 100 BLOCCHETTI
-        let giantGeo = new THREE.PlaneGeometry(mapRealWidth, mapRealHeight);
-        giantGeo.rotateX(-Math.PI / 2);
-        
-        this.meshPitFloor = new THREE.Mesh(giantGeo, this.pitMat);
-        // Lo centriamo perfettamente sotto la mappa a profondità -17.5
-        this.meshPitFloor.position.set((this.width * TILE_SIZE) / 2, -17.5, (this.height * TILE_SIZE) / 2);
-        this.meshPitFloor.receiveShadow = true;
-        this.meshPitFloor.renderOrder = 1; // FIX LAMPEGGIAMENTO: Costringe la GPU a disegnare sempre il liquido per primo
-        this.mapGroup.add(this.meshPitFloor);
-        
-       // SETUP LASTRA DI GHIACCIO SUPERIORE (Stessa tecnica gigante)
-        if (Game.currentThemeIndex === 2) {
-            let iceTex = Preloader.textures.iceCrust || CHAR_GRUNGE_TEX;
-            iceTex.wrapS = THREE.RepeatWrapping; 
-            iceTex.wrapT = THREE.RepeatWrapping;
-            iceTex.repeat.set(mapRealWidth / 200, mapRealHeight / 200); 
-            iceTex.encoding = THREE.sRGBEncoding;
-            iceTex.needsUpdate = true;
-            
-            this.iceMat = new THREE.MeshStandardMaterial({
-                color: 0xffffff, emissive: 0xffffff,
-                emissiveIntensity: 0.35, // MODIFICA: Abbassato per non "bruciare" il blu dell'acqua sotto
-                roughness: 0.05, metalness: 0.8,
-                map: iceTex, emissiveMap: iceTex,
-                transparent: true, opacity: 0.55, // MODIFICA: Più trasparente per vedere lo scorrimento dell'acqua
-                depthWrite: false
-            });
-
-            this.meshIceFloor = new THREE.Mesh(giantGeo, this.iceMat);
-            // La lastra è posizionata a -14.5, sospesa sopra l'acqua!
-            this.meshIceFloor.position.set((this.width * TILE_SIZE) / 2, -14.5, (this.height * TILE_SIZE) / 2);
-            this.meshIceFloor.receiveShadow = true;
-            this.meshIceFloor.renderOrder = 2; // MODIFICA: Disegna per secondo (dopo l'acqua)
-            this.mapGroup.add(this.meshIceFloor);
+        // Costruisce la geometria dei liquidi SOLO nelle fosse (e 1 tile sotto il pavimento adiacente, MAI sotto le rocce perimetrali)
+        let pitAreaGeo = null;
+        if (pitFloorCount > 0) {
+            const pitQuads = [];
+            const minX = -8 * TILE_SIZE;
+            const minZ = -8 * TILE_SIZE;
+            for (let gx = 0; gx < this.width; gx++) {
+                for (let gy = 0; gy < this.height; gy++) {
+                    let isPitTile = (this.grid[gx][gy] === 5);
+                    let isAdjPlayableFloor = false;
+                    if (!isPitTile && (this.grid[gx][gy] === 2 || this.grid[gx][gy] === 3)) {
+                        for (let dx = -1; dx <= 1 && !isAdjPlayableFloor; dx++) {
+                            for (let dy = -1; dy <= 1; dy++) {
+                                let nx = gx + dx, ny = gy + dy;
+                                if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height && this.grid[nx][ny] === 5) {
+                                    isAdjPlayableFloor = true; break;
+                                }
+                            }
+                        }
+                    }
+                    if (isPitTile || isAdjPlayableFloor) {
+                        let q = new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE);
+                        q.rotateX(-Math.PI / 2);
+                        let wx = gx * TILE_SIZE + TILE_SIZE / 2;
+                        let wz = gy * TILE_SIZE + TILE_SIZE / 2;
+                        q.translate(wx, 0, wz);
+                        let uv = q.attributes.uv;
+                        let pos = q.attributes.position;
+                        for (let i = 0; i < uv.count; i++) {
+                            let u = (pos.getX(i) - minX) / mapRealWidth;
+                            let v = 1.0 - (pos.getZ(i) - minZ) / mapRealHeight;
+                            uv.setXY(i, u, v);
+                        }
+                        pitQuads.push(q);
+                    }
+                }
+            }
+            if (pitQuads.length > 0) {
+                pitAreaGeo = THREE.BufferGeometryUtils.mergeBufferGeometries(pitQuads);
+            }
         }
 
-       // --- PREPARAZIONE PARETI INTERNE DELLA FOSSA ---
-        // Adattiamo il colore del muro profondo al tema per evitare il brutto "buco nero"
+        if (pitAreaGeo) {
+            this.meshPitFloor = new THREE.Mesh(pitAreaGeo, this.pitMat);
+            this.meshPitFloor.position.set(0, -17.5, 0);
+            this.meshPitFloor.receiveShadow = true;
+            this.meshPitFloor.renderOrder = 1;
+            this.mapGroup.add(this.meshPitFloor);
+
+            if (Game.currentThemeIndex === 2) {
+                let iceTex = Preloader.textures.iceCrust || CHAR_GRUNGE_TEX;
+                iceTex.wrapS = THREE.RepeatWrapping; 
+                iceTex.wrapT = THREE.RepeatWrapping;
+                iceTex.repeat.set(mapRealWidth / 200, mapRealHeight / 200); 
+                iceTex.encoding = THREE.sRGBEncoding;
+                iceTex.needsUpdate = true;
+                
+                this.iceMat = new THREE.MeshStandardMaterial({
+                    color: 0xffffff, emissive: 0xffffff,
+                    emissiveIntensity: 0.35,
+                    roughness: 0.05, metalness: 0.8,
+                    map: iceTex, emissiveMap: iceTex,
+                    transparent: true, opacity: 0.55,
+                    depthWrite: false
+                });
+
+                this.meshIceFloor = new THREE.Mesh(pitAreaGeo, this.iceMat);
+                this.meshIceFloor.position.set(0, -14.5, 0);
+                this.meshIceFloor.receiveShadow = true;
+                this.meshIceFloor.renderOrder = 2;
+                this.mapGroup.add(this.meshIceFloor);
+            }
+        }
+
+        // --- PREPARAZIONE PARETI INTERNE DELLA FOSSA ---
         let pitWallColor = 0x050508;
-        if (Game.currentThemeIndex === 0) pitWallColor = 0x061812; // Foresta: Smeraldo scurissimo
-        else if (Game.currentThemeIndex === 1) pitWallColor = 0x250505; // Lava: Rosso scurissimo
-        else if (Game.currentThemeIndex === 2) pitWallColor = 0x051220; // Ghiaccio: Blu profondo
+        if (Game.currentThemeIndex === 0) pitWallColor = 0x061812;
+        else if (Game.currentThemeIndex === 1) pitWallColor = 0x250505;
+        else if (Game.currentThemeIndex === 2) pitWallColor = 0x051220;
 
         const pitWallMat = new THREE.MeshBasicMaterial({ color: pitWallColor }); 
         const meshPitWalls = new THREE.InstancedMesh(window.GLOBAL_WALL_GEO, pitWallMat, pitFloorCount);
         this.mapGroup.add(meshPitWalls);
         let pWallIdx = 0;
 
-        // --- NUOVA VIGNETTATURA SOTTERRANEA GLOBALE (Effetto Profondità Morbido) ---
-        if (!window.GLOBAL_PIT_SHADOW_CANVAS) {
-            window.GLOBAL_PIT_SHADOW_CANVAS = document.createElement('canvas');
-            window.GLOBAL_PIT_SHADOW_TEX = new THREE.CanvasTexture(window.GLOBAL_PIT_SHADOW_CANVAS);
-            window.GLOBAL_PIT_SHADOW_TEX.minFilter = THREE.LinearFilter;
-            window.GLOBAL_PIT_SHADOW_TEX.magFilter = THREE.LinearFilter;
-            window.GLOBAL_PIT_SHADOW_MAT = new THREE.MeshBasicMaterial({ 
-                map: window.GLOBAL_PIT_SHADOW_TEX, 
-                transparent: true, depthWrite: false, opacity: 0.95 
-            });
-        }
-        
-        // Ammorbidiamo drasticamente l'ombra 2D per TUTTI i temi, permettendo al colore 
-        // dell'acqua e del ghiaccio di fondersi morbidamente col bordo senza linee nere decise.
-        if (Game.currentThemeIndex === 0) window.GLOBAL_PIT_SHADOW_MAT.opacity = 0.50; // Foresta
-        else if (Game.currentThemeIndex === 1) window.GLOBAL_PIT_SHADOW_MAT.opacity = 0.25; // Lava
-        else if (Game.currentThemeIndex === 2) window.GLOBAL_PIT_SHADOW_MAT.opacity = 0.40; // Ghiaccio
+        // --- VIGNETTATURA SOTTERRANEA (Applicata solo sulle fosse) ---
+        if (pitAreaGeo) {
+            if (!window.GLOBAL_PIT_SHADOW_CANVAS) {
+                window.GLOBAL_PIT_SHADOW_CANVAS = document.createElement('canvas');
+                window.GLOBAL_PIT_SHADOW_TEX = new THREE.CanvasTexture(window.GLOBAL_PIT_SHADOW_CANVAS);
+                window.GLOBAL_PIT_SHADOW_TEX.minFilter = THREE.LinearFilter;
+                window.GLOBAL_PIT_SHADOW_TEX.magFilter = THREE.LinearFilter;
+                window.GLOBAL_PIT_SHADOW_MAT = new THREE.MeshBasicMaterial({ 
+                    map: window.GLOBAL_PIT_SHADOW_TEX, 
+                    transparent: true, depthWrite: false, opacity: 0.95 
+                });
+            }
+            
+            if (Game.currentThemeIndex === 0) window.GLOBAL_PIT_SHADOW_MAT.opacity = 0.50;
+            else if (Game.currentThemeIndex === 1) window.GLOBAL_PIT_SHADOW_MAT.opacity = 0.25;
+            else if (Game.currentThemeIndex === 2) window.GLOBAL_PIT_SHADOW_MAT.opacity = 0.40;
 
-        const sCanvas = window.GLOBAL_PIT_SHADOW_CANVAS;
-        const res = 32; 
-        sCanvas.width = (this.width + 16) * res;
-        sCanvas.height = (this.height + 16) * res;
-        const sCtx = sCanvas.getContext('2d');
-        
-        sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
-        sCtx.globalCompositeOperation = 'source-over';
-        
-        // Tinta di base coerente con il muro interno invece del nero puro
-        if (Game.currentThemeIndex === 0) sCtx.fillStyle = '#061812';
-        else if (Game.currentThemeIndex === 1) sCtx.fillStyle = '#250505';
-        else if (Game.currentThemeIndex === 2) sCtx.fillStyle = '#051220';
-        else sCtx.fillStyle = '#050508'; 
-        
-        // Ombra leggermente più trasparente per facilitare il blending
-        sCtx.shadowColor = 'rgba(0, 0, 0, 0.85)'; 
-        sCtx.shadowBlur = 20;
-        
-        sCtx.beginPath();
-        for(let gx = -8; gx < this.width + 8; gx++) {
-            for(let gy = -8; gy < this.height + 8; gy++) {
-                let isPit = (gx >= 0 && gx < this.width && gy >= 0 && gy < this.height && this.grid[gx][gy] === 5);
-                if (!isPit) {
-                    let px = (gx + 8) * res;
-                    let py = (gy + 8) * res;
-                    sCtx.rect(px - 0.5, py - 0.5, res + 1, res + 1);
-                    sCtx.moveTo(px + res/2, py);
-                    sCtx.arc(px + res/2, py + res/2, res * 0.75, 0, Math.PI * 2);
+            const sCanvas = window.GLOBAL_PIT_SHADOW_CANVAS;
+            const res = 32; 
+            sCanvas.width = (this.width + 16) * res;
+            sCanvas.height = (this.height + 16) * res;
+            const sCtx = sCanvas.getContext('2d');
+            
+            sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
+            sCtx.globalCompositeOperation = 'source-over';
+            
+            if (Game.currentThemeIndex === 0) sCtx.fillStyle = '#061812';
+            else if (Game.currentThemeIndex === 1) sCtx.fillStyle = '#250505';
+            else if (Game.currentThemeIndex === 2) sCtx.fillStyle = '#051220';
+            else sCtx.fillStyle = '#050508'; 
+            
+            sCtx.shadowColor = 'rgba(0, 0, 0, 0.85)'; 
+            sCtx.shadowBlur = 20;
+            
+            sCtx.beginPath();
+            for(let gx = -8; gx < this.width + 8; gx++) {
+                for(let gy = -8; gy < this.height + 8; gy++) {
+                    let isPit = (gx >= 0 && gx < this.width && gy >= 0 && gy < this.height && this.grid[gx][gy] === 5);
+                    if (!isPit) {
+                        let px = (gx + 8) * res;
+                        let py = (gy + 8) * res;
+                        sCtx.rect(px - 0.5, py - 0.5, res + 1, res + 1);
+                        sCtx.moveTo(px + res/2, py);
+                        sCtx.arc(px + res/2, py + res/2, res * 0.75, 0, Math.PI * 2);
+                    }
                 }
             }
+            sCtx.fill();
+            
+            window.GLOBAL_PIT_SHADOW_TEX.needsUpdate = true;
+            const meshDepthShadows = new THREE.Mesh(pitAreaGeo, window.GLOBAL_PIT_SHADOW_MAT);
+            meshDepthShadows.position.set(0, -14.0, 0);
+            meshDepthShadows.renderOrder = 3; 
+            this.mapGroup.add(meshDepthShadows);
         }
-        sCtx.fill();
-        
-        window.GLOBAL_PIT_SHADOW_TEX.needsUpdate = true;
-        const meshDepthShadows = new THREE.Mesh(giantGeo, window.GLOBAL_PIT_SHADOW_MAT);
-        // FIX CRITICO Z-BUFFER: Abbassiamo l'ombra a -14.0 (appena sopra il ghiaccio e l'acqua). 
-        // In questo modo NON taglierà a metà i sassi e le zolle creando false linee nette di luce!
-        meshDepthShadows.position.set((this.width * TILE_SIZE) / 2, -14.0, (this.height * TILE_SIZE) / 2);
-        meshDepthShadows.renderOrder = 3; 
-        this.mapGroup.add(meshDepthShadows);
 
 
         // --- PREPARAZIONE BORDI: GEOMETRIA E MATERIALI IDENTICI AL PAVIMENTO ---
@@ -7770,7 +7802,14 @@ class GameMap {
                         if (hasTopFloor) placeEdgeElements(px - half, pz - half, px + half, pz - half, x, y-1);
                         if (hasBottomFloor) placeEdgeElements(px - half, pz + half, px + half, pz + half, x, y+1);
                 } else {
-                        // Controlla se questo blocco roccioso delimita l'area giocabile
+                        // Sigilla il suolo sotto le rocce e crea la distesa oscura oltre il perimetro
+                        dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2, -0.05, y * TILE_SIZE + TILE_SIZE / 2);
+                        dummy.scale.set(1, 1, 1);
+                        dummy.rotation.set(0, 0, 0);
+                        dummy.updateMatrix();
+                        meshAbyss.setMatrixAt(idxAbyss++, dummy.matrix);
+
+                        // Controlla se questo blocco delimita direttamente l'area giocabile
                         let isBorder = false;
                         for (let dx = -1; dx <= 1 && !isBorder; dx++) {
                             for (let dy = -1; dy <= 1; dy++) {
@@ -7780,42 +7819,32 @@ class GameMap {
                                 }
                             }
                         }
-                        if (!window._wallTint) window._wallTint = new THREE.Color();
-                        let hash = Math.abs(Math.sin(x * 12.989 + y * 78.233)) % 1;
+                        // Genera le rocce alte SOLO lungo il perimetro; oltre il perimetro resta la distesa oscura
                         if (isBorder) {
-                            // Rocce di confine: sovrapposte e ruotate organicamente per eliminare la griglia a quadretti
-                            let ox = (hash - 0.5) * 8;
-                            let oz = (((hash * 17.3) % 1) - 0.5) * 8;
-                            dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2 + ox, 12, y * TILE_SIZE + TILE_SIZE / 2 + oz);
-                            let sx = 1.08 + hash * 0.16;
-                            let sy = 0.90 + ((hash * 7.1) % 1) * 0.22;
-                            let sz = 1.08 + ((hash * 3.7) % 1) * 0.16;
+                            if (!window._wallTint) window._wallTint = new THREE.Color();
+                            let hash = Math.abs(Math.sin(x * 12.989 + y * 78.233)) % 1;
+                            let ox = (hash - 0.5) * 6;
+                            let oz = (((hash * 17.3) % 1) - 0.5) * 6;
+                            dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2 + ox, 18, y * TILE_SIZE + TILE_SIZE / 2 + oz);
+                            let sx = 1.16 + hash * 0.18;
+                            let sy = 1.45 + ((hash * 7.1) % 1) * 0.45;
+                            let sz = 1.16 + ((hash * 3.7) % 1) * 0.18;
                             dummy.scale.set(sx, sy, sz);
                             dummy.rotation.set(0, hash * Math.PI * 2, 0);
                             let shade = 0.78 + hash * 0.18;
                             window._wallTint.setRGB(shade, shade, shade);
-                        } else {
-                            // Riempimento interno lontano: lastra rocciosa bassa e scura che non disturba mai la vista
-                            dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2, 3, y * TILE_SIZE + TILE_SIZE / 2);
-                            dummy.scale.set(1.28, 0.22, 1.28);
-                            dummy.rotation.set(0, hash * Math.PI * 2, 0);
-                            window._wallTint.setRGB(0.28, 0.28, 0.32);
+                            dummy.updateMatrix();
+                            wallMesh.setColorAt(wIdx, window._wallTint);
+                            wallMesh.setMatrixAt(wIdx++, dummy.matrix);
                         }
-                        dummy.updateMatrix();
-                        wallMesh.setColorAt(wIdx, window._wallTint);
-                        wallMesh.setMatrixAt(wIdx++, dummy.matrix);
                     }
                 } else {
-                    // Confine Esterno Mappa (PADDING): Fondale roccioso piatto e scuro che sfuma nella nebbia
-                    if (!window._wallTint) window._wallTint = new THREE.Color();
-                    let hash = Math.abs(Math.sin(x * 19.13 + y * 41.77)) % 1;
-                    dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2, 2, y * TILE_SIZE + TILE_SIZE / 2);
-                    dummy.scale.set(1.32, 0.18, 1.32);
-                    dummy.rotation.set(0, hash * Math.PI * 2, 0);
+                    // Confine Esterno Mappa (PADDING): Distesa oscura piatta che non riflette le luci di gioco
+                    dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2, -0.05, y * TILE_SIZE + TILE_SIZE / 2);
+                    dummy.scale.set(1, 1, 1);
+                    dummy.rotation.set(0, 0, 0);
                     dummy.updateMatrix();
-                    window._wallTint.setRGB(0.22, 0.22, 0.26);
-                    wallMesh.setColorAt(wIdx, window._wallTint);
-                    wallMesh.setMatrixAt(wIdx++, dummy.matrix);
+                    meshAbyss.setMatrixAt(idxAbyss++, dummy.matrix);
                 }
 
                // Strutture interattive (Colonne e Cristalli nel Labirinto)
@@ -7954,8 +7983,12 @@ Game.auras.push({
         interactiveGrassMesh.instanceMatrix.needsUpdate = true; 
         if (idxInteractiveGrass > 0) this.mapGroup.add(interactiveGrassMesh);
 
-       if (wallMesh.instanceColor) wallMesh.instanceColor.needsUpdate = true;
-        this.mapGroup.add(meshDirt, meshGrass, meshRock); 
+      wallMesh.count = wIdx;
+        wallMesh.instanceMatrix.needsUpdate = true;
+        if (wallMesh.instanceColor) wallMesh.instanceColor.needsUpdate = true;
+        meshAbyss.count = idxAbyss;
+        meshAbyss.instanceMatrix.needsUpdate = true;
+        this.mapGroup.add(meshAbyss, meshDirt, meshGrass, meshRock); 
         this.mapGroup.add(wallMesh);
         
      if(pillarCount > 0) {
