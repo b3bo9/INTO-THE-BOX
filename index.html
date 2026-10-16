@@ -2089,9 +2089,13 @@ const SkinSystem = {
     selectedId: 'dark_mage',
     unlockedIds: ['dark_mage'],
     crystals: 0,
+    skinKills: {},
     maxFloorReached: 1,
 
     init() {
+        this.skinKills = {};
+        for (let i = 0; i < this.skins.length; i++) this.skinKills[this.skins[i].id] = 0;
+
         let saved = localStorage.getItem('intoTheBoxSkins');
         if (saved) {
             try {
@@ -2101,6 +2105,14 @@ const SkinSystem = {
 
                 let parsedFloor = Number(data.maxFloorReached);
                 this.maxFloorReached = Number.isFinite(parsedFloor) ? Math.max(1, Math.floor(parsedFloor)) : 1;
+
+                if (data.skinKills && typeof data.skinKills === 'object') {
+                    for (let i = 0; i < this.skins.length; i++) {
+                        let id = this.skins[i].id;
+                        let k = Number(data.skinKills[id]);
+                        this.skinKills[id] = Number.isFinite(k) ? Math.max(0, Math.floor(k)) : 0;
+                    }
+                }
 
                 if (data.shopV2 && Array.isArray(data.unlockedIds)) {
                     this.unlockedIds = data.unlockedIds.filter(id => typeof id === 'string');
@@ -2139,6 +2151,7 @@ const SkinSystem = {
                 selectedId: this.selectedId,
                 unlockedIds: this.unlockedIds,
                 crystals: this.crystals,
+                skinKills: this.skinKills,
                 maxFloorReached: this.maxFloorReached
             }));
         } catch (e) {}
@@ -2162,6 +2175,12 @@ const SkinSystem = {
         this.updateBadge();
         let countEl = document.getElementById('skin-crystals-count');
         if (countEl) countEl.innerText = this.crystals;
+    },
+
+    addKill(amount = 1) {
+        let id = this.selectedId || 'dark_mage';
+        this.skinKills[id] = Math.max(0, Math.floor((Number(this.skinKills[id]) || 0) + amount));
+        this.save();
     },
 
     updateBadge() {
@@ -2210,11 +2229,13 @@ const SkinSystem = {
         let container = document.getElementById('skinListContainer');
         if (!container) return;
         container.innerHTML = '';
+        let frag = document.createDocumentFragment();
 
         this.skins.forEach(skin => {
             let isUnlocked = this.unlockedIds.includes(skin.id);
             let isSelected = (this.selectedId === skin.id);
             let canAfford = this.crystals >= skin.cost;
+            let kills = this.skinKills[skin.id] || 0;
 
             let rarityBorder = skin.rarity === 'legendary' ? 'border-amber-500/80' :
                                skin.rarity === 'epic' ? 'border-purple-500/80' :
@@ -2256,13 +2277,17 @@ const SkinSystem = {
                     </div>
                     <div class="flex flex-col min-w-0">
                         <span class="font-black text-xs sm:text-sm text-white uppercase tracking-wide truncate">${skin.name}</span>
-                        <span class="text-[8px] sm:text-[9px] font-black tracking-widest uppercase mt-0.5">${rarityLabel}</span>
+                        <div class="flex items-center gap-2.5 mt-0.5">
+                            <span class="text-[8px] sm:text-[9px] font-black tracking-widest uppercase">${rarityLabel}</span>
+                            <span class="text-[9px] sm:text-[10px] font-bold text-gray-300 flex items-center gap-1 bg-white/5 px-1.5 py-0.5 border border-gray-700/70"><i class="fa-solid fa-skull text-red-500 text-[8px]"></i> ${kills}</span>
+                        </div>
                     </div>
                 </div>
                 ${statusHtml}
             `;
-            container.appendChild(card);
+            frag.appendChild(card);
         });
+        container.appendChild(frag);
     }
 };
   const TransitionSystem = {
@@ -4444,7 +4469,7 @@ const UI = {
                 }
             }
             let maxTimer = Game.player.overdrive ? (5.0 * Game.player.modifiers.essenceDurationMult) : (8.0 * Game.player.modifiers.essenceDurationMult);
-            let ePct = Math.round((Game.player.essenceTimer / maxTimer) * 100);
+            let ePct = Math.min(100, Math.round((Game.player.essenceTimer / maxTimer) * 100));
             if (this.cache.essenceWidth !== ePct) {
                 this.els.essenceTimer.style.height = `${ePct}%`;
                 this.cache.essenceWidth = ePct;
@@ -6039,7 +6064,7 @@ startGame(diffMult) {
         }
 
      // --- GESTIONE "KING OF THE HILL" DEGLI OBELISCHI ---
-        if (this.auras && combatDt > 0) {
+        if (this.auras && combatDt > 0 && this.player && !this.player.dead) {
             // FIX GPU: Tracciamo quali instancedMesh vanno aggiornate a fine ciclo
             let updateFlags = { blue: false, green: false, red: false, corrupted: false, obelisks: false };
 
@@ -6163,20 +6188,16 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
                         let itemsToSpawn = [];
                         let dropsRelic = false;
 
-                        let droppedCrystal = false;
+                        // Usa l'esito individuale di questo specifico obelisco 'a'
+                        let droppedCrystal = (a.dropsCrystal !== undefined)
+                            ? a.dropsCrystal
+                            : ((a.type === 'corrupted') ? true : (Math.random() < Math.min(0.85, 0.10 + (this.floor * 0.04))));
+
                         if (a.type === 'corrupted') {
-                            // Obelisco Corrotto: 100% probabilità di ottenere un Cristallo Viola
-                            droppedCrystal = true;
                             if (Math.random() < 0.5) dropsRelic = true;
                             else for(let c=0; c<25; c++) itemsToSpawn.push('coin');
                             if (Math.random() < 0.25) itemsToSpawn.push('life'); 
                         } else {
-                            // Obelisco Normale: probabilità bassa ai primi piani (14% al Piano 1) e più alta nei piani avanzati (fino all'85%)
-                            let crystalChance = Math.min(0.85, 0.10 + (this.floor * 0.04));
-                            if (Math.random() < crystalChance) {
-                                droppedCrystal = true;
-                            }
-
                             if (Math.random() < 0.25) itemsToSpawn.push('life');
                             for(let c=0; c<MathUtils.randomInt(4, 8); c++) itemsToSpawn.push('coin');
                             itemsToSpawn.push('essence');
@@ -6734,6 +6755,7 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
                     this.enemies[i] = this.enemies[this.enemies.length - 1];
                     this.enemies.pop();
                     this.floorKills++; this.totalKills++;
+                    if (e.type !== 'crystal') SkinSystem.addKill(1);
                     if (!this.isBossFloor && this.floorKills + this.enemies.length < this.floorMaxKills) this.spawnEnemy();
                 }
             }
@@ -7649,7 +7671,7 @@ class GameMap {
         this.floorMat = activeMats.dirt; 
         this.wallMat = activeMats.wall;
 
-       const meshDirt = new THREE.InstancedMesh(floorGeo, activeMats.dirt, floorCount);
+       const meshDirt = new THREE.InstancedMesh(floorGeo, activeMats.dirt, floorCount + wallCount);
         const meshGrass = new THREE.InstancedMesh(floorGeo, activeMats.grass, floorCount);
         const meshRock = new THREE.InstancedMesh(floorGeo, activeMats.rock, floorCount);
         meshDirt.renderOrder = -10; meshGrass.renderOrder = -9; meshRock.renderOrder = -8;
@@ -8416,16 +8438,16 @@ class GameMap {
                                 }
                             }
                         }
-                        // Genera le rocce alte SOLO lungo il perimetro; oltre il perimetro resta la distesa oscura
+                        // Genera le rocce alte SOLO lungo il perimetro rispettando il bordo di collisione del tile
                         if (isBorder) {
                             if (!window._wallTint) window._wallTint = new THREE.Color();
                             let hash = Math.abs(Math.sin(x * 12.989 + y * 78.233)) % 1;
-                            let ox = (hash - 0.5) * 6;
-                            let oz = (((hash * 17.3) % 1) - 0.5) * 6;
+                            let ox = (hash - 0.5) * 3.0;
+                            let oz = (((hash * 17.3) % 1) - 0.5) * 3.0;
                             dummy.position.set(x * TILE_SIZE + TILE_SIZE / 2 + ox, 18, y * TILE_SIZE + TILE_SIZE / 2 + oz);
-                            let sx = 1.16 + hash * 0.18;
+                            let sx = 0.98 + hash * 0.10;
                             let sy = 1.45 + ((hash * 7.1) % 1) * 0.45;
-                            let sz = 1.16 + ((hash * 3.7) % 1) * 0.18;
+                            let sz = 0.98 + ((hash * 3.7) % 1) * 0.10;
                             dummy.scale.set(sx, sy, sz);
                             dummy.rotation.set(0, hash * Math.PI * 2, 0);
                             let shade = 0.78 + hash * 0.18;
@@ -8509,13 +8531,18 @@ iconSprite.scale.set(20, 20, 1);
 this.mapGroup.add(iconSprite);
 Game.auraIcons.push(iconSprite);
 
+// Calcolo indipendente per QUESTO singolo obelisco (100% se corrotto, altrimenti probabilità crescente col piano)
+let singleObeliskCrystalChance = (aType === 'corrupted') ? 1.0 : Math.min(0.85, 0.10 + (Game.floor * 0.04));
+let singleObeliskDropsCrystal = (Math.random() < singleObeliskCrystalChance);
+
 // SALVATAGGIO DEI DATI COMPLETI NELL'ARRAY
 Game.auras.push({ 
     x: px, y: pz, type: aType, 
     radius: auraRadius, radiusSq: auraRadius * auraRadius, 
     active: true, colorIdx: colorIdx, obeliskIdx: (pIdx - 1), icon: iconSprite,
-    runeIdx: currentRuneIdx, // Passiamo l'indice all'aura per poter scurire la runa in seguito
-    rayIdx: currentRayIdx // Passiamo l'indice per far scomparire il raggio
+    runeIdx: currentRuneIdx,
+    rayIdx: currentRayIdx,
+    dropsCrystal: singleObeliskDropsCrystal
 });
                     } else if (!isBossFloor && Math.random() < 0.015 && this.grid[x][y] !== 1) {
                         let crystal = Game.getEnemy();
@@ -8798,8 +8825,15 @@ this.fogMesh.renderOrder = -1; // Assicura che venga disegnato DOPO il terreno (
         let gx = Math.floor(x / TILE_SIZE), gy = Math.floor(y / TILE_SIZE);
         if (gx < 0 || gy < 0 || gx >= this.width || gy >= this.height) return true; 
         let tile = this.grid[gx][gy];
-        if (tile === 1 || tile === 3) return true; // I muri e gli obelischi fermano TUTTO
-        // NOVITÀ: Le Fosse (5) bloccano i nemici, ma il giocatore (e i proiettili volanti) passano!
+        if (tile === 1) return true; // I muri perimetrali fermano tutto
+        if (tile === 3) {
+            // L'obelisco blocca solo in corrispondenza della sua base centrale (permette di avvicinarsi per prosciugarlo)
+            let cx = gx * TILE_SIZE + TILE_SIZE / 2;
+            let cy = gy * TILE_SIZE + TILE_SIZE / 2;
+            let obHalf = isFlying ? 10 : 12;
+            return Math.abs(x - cx) < obHalf && Math.abs(y - cy) < obHalf;
+        }
+        // Le Fosse (5) bloccano i nemici, ma il giocatore (e i proiettili volanti) passano!
         if (tile === 5 && !isFlying && !isPlayer) return true;  
         return false; 
     }
@@ -9006,23 +9040,53 @@ class Entity {
     move(dx, dy, dt) {
         let isP = (this === Game.player);
         let len = Math.sqrt(dx*dx + dy*dy); if (len > 0) { dx /= len; dy /= len; }
-        let totalDist = this.speed * dt; let steps = Math.max(1, Math.ceil(totalDist / 15)); let stepDist = totalDist / steps; const r = this.radius * 0.8; 
+        let totalDist = this.speed * dt; let steps = Math.max(1, Math.ceil(totalDist / 12)); let stepDist = totalDist / steps;
+        const r = isP ? Math.max(this.radius * 1.25, 20) : this.radius * 0.8;
         for (let i = 0; i < steps; i++) {
             let newX = this.x + dx * stepDist; let newY = this.y + dy * stepDist;
-            if (dx !== 0) { let testX = dx > 0 ? newX + r : newX - r; if (!Game.map.isSolid(testX, this.y - r, this.isFlying, isP) && !Game.map.isSolid(testX, this.y + r, this.isFlying, isP)) this.x = newX; }
-            if (dy !== 0) { let testY = dy > 0 ? newY + r : newY - r; if (!Game.map.isSolid(this.x - r, testY, this.isFlying, isP) && !Game.map.isSolid(this.x + r, testY, this.isFlying, isP)) this.y = newY; }
+            if (dx !== 0) {
+                let testX = dx > 0 ? newX + r : newX - r;
+                if (!Game.map.isSolid(testX, this.y - r, this.isFlying, isP) &&
+                    !Game.map.isSolid(testX, this.y, this.isFlying, isP) &&
+                    !Game.map.isSolid(testX, this.y + r, this.isFlying, isP)) {
+                    this.x = newX;
+                }
+            }
+            if (dy !== 0) {
+                let testY = dy > 0 ? newY + r : newY - r;
+                if (!Game.map.isSolid(this.x - r, testY, this.isFlying, isP) &&
+                    !Game.map.isSolid(this.x, testY, this.isFlying, isP) &&
+                    !Game.map.isSolid(this.x + r, testY, this.isFlying, isP)) {
+                    this.y = newY;
+                }
+            }
         }
         this.mesh.position.set(this.x, this.mesh.position.y, this.y);
         this.mesh.updateMatrix();
     }
     push(nx, ny, dist) {
-        if (this.isPursuer) return; // L'inseguitore non viene mai sbalzato
+        if (this.isPursuer) return;
         let isP = (this === Game.player);
-        let steps = Math.max(1, Math.ceil(dist / 15)); let stepDist = dist / steps; const r = this.radius * 0.8;
+        let steps = Math.max(1, Math.ceil(dist / 12)); let stepDist = dist / steps;
+        const r = isP ? Math.max(this.radius * 1.25, 20) : this.radius * 0.8;
         for (let i = 0; i < steps; i++) {
             let newX = this.x + nx * stepDist; let newY = this.y + ny * stepDist;
-            if (nx !== 0) { let testX = nx > 0 ? newX + r : newX - r; if (!Game.map.isSolid(testX, this.y - r, this.isFlying, isP) && !Game.map.isSolid(testX, this.y + r, this.isFlying, isP)) this.x = newX; }
-            if (ny !== 0) { let testY = ny > 0 ? newY + r : newY - r; if (!Game.map.isSolid(this.x - r, testY, this.isFlying, isP) && !Game.map.isSolid(this.x + r, testY, this.isFlying, isP)) this.y = newY; }
+            if (nx !== 0) {
+                let testX = nx > 0 ? newX + r : newX - r;
+                if (!Game.map.isSolid(testX, this.y - r, this.isFlying, isP) &&
+                    !Game.map.isSolid(testX, this.y, this.isFlying, isP) &&
+                    !Game.map.isSolid(testX, this.y + r, this.isFlying, isP)) {
+                    this.x = newX;
+                }
+            }
+            if (ny !== 0) {
+                let testY = ny > 0 ? newY + r : newY - r;
+                if (!Game.map.isSolid(this.x - r, testY, this.isFlying, isP) &&
+                    !Game.map.isSolid(this.x, testY, this.isFlying, isP) &&
+                    !Game.map.isSolid(this.x + r, testY, this.isFlying, isP)) {
+                    this.y = newY;
+                }
+            }
         }
         this.mesh.position.set(this.x, this.mesh.position.y, this.y);
         this.mesh.updateMatrix();
@@ -9325,22 +9389,31 @@ class Player extends Entity {
         }
     }
     collectEssence(type) {
-        if (this.overdrive) { 
-            let kept = this.modifiers.keepEssenceOnCombo ? this.essence : null;
-            this.overdrive = false; this.essenceList.length = 0; // FIX MEMORIA: Svuota array senza distruggerlo
-            if (kept) this.essenceList.push(kept);
-        }
-        // NUOVO: Accumulo velocità per Magnete delle Anime
+        // Accumulo velocità per Magnete delle Anime
         if (this.modifiers.essenceSpeedStacks) {
             if (this.essenceSpeedBonus === undefined) this.essenceSpeedBonus = 0;
             this.essenceSpeedBonus = Math.min(0.20, this.essenceSpeedBonus + 0.05); // Max 20%
             Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteWhite, 'dust');
         }
 
-        this.essenceList.push(type); this.essence = type;
         Game.addUltimateCharge(10);
+        AudioEngine.playCollect();
+
+        // Se l'Overdrive è attivo: lo stesso colore lo prolunga, un colore diverso NON lo interrompe
+        if (this.overdrive) {
+            if (type === this.essence) {
+                let baseOdTime = 5.0 * this.modifiers.essenceDurationMult;
+                let bonusTime = 3.0 * this.modifiers.essenceDurationMult;
+                this.essenceTimer = Math.min(baseOdTime * 1.5, this.essenceTimer + bonusTime);
+                let colHex = '#' + ESSENCE_COLORS[this.essence].toString(16).padStart(6, '0');
+                Game.getFloatingText().spawn(this.x, this.y + 20, "+OVERDRIVE!", colHex, 28, true);
+            }
+            return;
+        }
+
+        this.essenceList.push(type); this.essence = type;
         this.essenceTimer = 8.0 * this.modifiers.essenceDurationMult;
-        this.updateAppearance(); AudioEngine.playCollect();
+        this.updateAppearance();
         if (this.essenceList.length === 3) this.evaluateCombinations();
     }
   evaluateCombinations() {
@@ -10697,9 +10770,9 @@ if (Game.ultimateActive) currentSpeed *= 1.5; currentSpeed = Math.min(currentSpe
         if (this.modifiers.dashCritsEnabled) this.modifiers.dashCritsStacks = 2;
         
         if (this.essence === 'blue') {
-            let maxDist = 250; 
-            let dx = Math.cos(this.dashAngle); let dy = Math.sin(this.dashAngle);
-            let safeDist = 0; let step = 10; let rCheck = this.radius * 0.8;
+            let maxDist = 250; 
+            let dx = Math.cos(this.dashAngle); let dy = Math.sin(this.dashAngle);
+           let safeDist = 0; let step = 8; let rCheck = Math.max(this.radius * 1.25, 20);
             
            for (let d = step; d <= maxDist; d += step) {
                 let nx = this.x + dx * d; let ny = this.y + dy * d;
