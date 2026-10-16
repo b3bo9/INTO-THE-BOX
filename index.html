@@ -32,6 +32,23 @@
 .btn-relic-pulse {
     animation: btn-gold-glow 1.5s infinite !important;
 }
+@keyframes corrupted-bar-pulse {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(168, 85, 247, 0.75), 0 0 16px rgba(147, 51, 234, 0.45), inset 0 0 6px rgba(216, 180, 254, 0.5);
+        border-color: rgba(192, 132, 252, 0.9) !important;
+    }
+    50% {
+        box-shadow: 0 0 16px rgba(232, 121, 249, 1), 0 0 28px rgba(168, 85, 247, 0.95), inset 0 0 10px rgba(255, 255, 255, 0.85);
+        border-color: #ffffff !important;
+    }
+}
+.corrupted-progress-wrap {
+    animation: corrupted-bar-pulse 1.2s infinite ease-in-out !important;
+}
+.corrupted-progress-fill {
+    background: linear-gradient(90deg, #7e22ce, #d946ef, #c084fc) !important;
+    box-shadow: 0 0 12px #e879f9 !important;
+}
        
        
      * { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
@@ -4399,6 +4416,7 @@ const UI = {
         if (this.cache.floor !== Game.floor || this.cache.corrupted !== Game.isCorrupted || this.cache.isBossFloor !== Game.isBossFloor) { 
             this.els.floor.innerText = Game.floor; 
             
+           let progWrap = this.els.floorProgress ? this.els.floorProgress.parentElement : null;
             if (Game.isCorrupted) {
                 let typeText = "";
                 if (Game.corruptedType === 'darkness') typeText = "OSCURITÀ";
@@ -4408,13 +4426,18 @@ const UI = {
                 if (Game.corruptedType === 'pursuer') typeText = "NEMESI";
                 if (Game.corruptedType === 'acid_pools') typeText = "CORROSIONE";
                 if (Game.corruptedType === 'retaliation') typeText = "RAPPRESAGLIA";
+                if (Game.corruptedType === 'snake') typeText = "SNAKE";
                 
                 this.els.corruptionLabel.innerText = typeText;
                 this.els.corruptionLabel.classList.remove('hidden');
                 this.els.corruptionLabel.classList.add('animate-pulse');
+                if (progWrap) progWrap.classList.add('corrupted-progress-wrap');
+                if (this.els.floorProgress) this.els.floorProgress.classList.add('corrupted-progress-fill');
             } else {
                 this.els.corruptionLabel.classList.add('hidden');
                 this.els.corruptionLabel.classList.remove('animate-pulse');
+                if (progWrap) progWrap.classList.remove('corrupted-progress-wrap');
+                if (this.els.floorProgress) this.els.floorProgress.classList.remove('corrupted-progress-fill');
             }
 
             // GESTIONE COLORE ICONA DEL PIANO (Demone)
@@ -5863,7 +5886,8 @@ loop(timestamp) {
             }
             else if (this.corruptedType === 'acid_pools') { mutatorText = "POZZE CORROSIVE"; floorColor = "#99ff00"; }
             else if (this.corruptedType === 'unstable') { mutatorText = "PAVIMENTO INSTABILE"; floorColor = "#ff3300"; this.standStillTimer = 0; }
-            else if (this.corruptedType === 'volatile') { mutatorText = "ESSENZE VOLATILI"; floorColor = "#33ff00"; }
+            else if (this.corruptedType === 'critical_mass') { mutatorText = "MASSA CRITICA"; floorColor = "#ffaa00"; }
+            else if (this.corruptedType === 'snake') { mutatorText = "SCIA MALEDETTA"; floorColor = "#ff00aa"; this.snakeStepTimer = 0; }
             else if (this.corruptedType === 'retaliation') { mutatorText = "RAPPRESAGLIA"; floorColor = "#ff00ff"; }
             else if (this.corruptedType === 'pursuer') {
                 mutatorText = "INSEGUITORE IMPLACABILE"; floorColor = "#aa00ff"; 
@@ -6384,6 +6408,17 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
                     let dmg = this.player.stats.maxHp * 0.18;
                     this.getHazard().spawn(this.player.x, this.player.y, 45, 3.5, dmg, 0xff3300, 'enemy_fire');
                     this.getParticle().spawn(this.player.x, 10, this.player.y, SharedMat.spriteRed, 'nova');
+                }
+            } else if (this.corruptedType === 'snake') {
+                // Livello Snake: lascia una scia di fuoco corrotto dietro i passi del giocatore (0.6s di ritardo attivazione)
+                let isMoving = Math.abs(this.player.slideDx || 0) > 0.05 || Math.abs(this.player.slideDy || 0) > 0.05 || this.player.isDashing;
+                if (isMoving) {
+                    this.snakeStepTimer = (this.snakeStepTimer || 0) + combatDt;
+                    if (this.snakeStepTimer >= 0.22) {
+                        this.snakeStepTimer = 0;
+                        let dmg = this.player.stats.maxHp * 0.16;
+                        this.getHazard().spawn(this.player.x, this.player.y, 28, 4.5, dmg, 0xff00aa, 'snake_fire');
+                    }
                 }
             }
         }
@@ -9072,23 +9107,32 @@ class Entity {
         let isP = (this === Game.player);
         let len = Math.sqrt(dx*dx + dy*dy); if (len > 0) { dx /= len; dy /= len; }
         let totalDist = this.speed * dt; let steps = Math.max(1, Math.ceil(totalDist / 12)); let stepDist = totalDist / steps;
-        const r = isP ? Math.max(this.radius * 1.25, 20) : this.radius * 0.8;
+        const r = isP ? Math.max(this.radius * 1.25, 20) : this.radius * 0.8; 
         for (let i = 0; i < steps; i++) {
             let newX = this.x + dx * stepDist; let newY = this.y + dy * stepDist;
             if (dx !== 0) {
                 let testX = dx > 0 ? newX + r : newX - r;
-                if (!Game.map.isSolid(testX, this.y - r, this.isFlying, isP) &&
-                    !Game.map.isSolid(testX, this.y, this.isFlying, isP) &&
-                    !Game.map.isSolid(testX, this.y + r, this.isFlying, isP)) {
+                let topFree = !Game.map.isSolid(testX, this.y - r, this.isFlying, isP);
+                let midFree = !Game.map.isSolid(testX, this.y, this.isFlying, isP);
+                let botFree = !Game.map.isSolid(testX, this.y + r, this.isFlying, isP);
+                if (topFree && midFree && botFree) {
                     this.x = newX;
+                } else if (!isP && midFree && (topFree !== botFree)) {
+                    // Corner-sliding per i nemici: scivola via dallo spigolo della fossa senza incastrarsi
+                    let slideY = this.y + (topFree ? -1 : 1) * stepDist * 0.75;
+                    if (!Game.map.isSolid(this.x, slideY + (topFree ? -r : r), this.isFlying, false)) this.y = slideY;
                 }
             }
             if (dy !== 0) {
                 let testY = dy > 0 ? newY + r : newY - r;
-                if (!Game.map.isSolid(this.x - r, testY, this.isFlying, isP) &&
-                    !Game.map.isSolid(this.x, testY, this.isFlying, isP) &&
-                    !Game.map.isSolid(this.x + r, testY, this.isFlying, isP)) {
+                let leftFree = !Game.map.isSolid(this.x - r, testY, this.isFlying, isP);
+                let midFree = !Game.map.isSolid(this.x, testY, this.isFlying, isP);
+                let rightFree = !Game.map.isSolid(this.x + r, testY, this.isFlying, isP);
+                if (leftFree && midFree && rightFree) {
                     this.y = newY;
+                } else if (!isP && midFree && (leftFree !== rightFree)) {
+                    let slideX = this.x + (leftFree ? -1 : 1) * stepDist * 0.75;
+                    if (!Game.map.isSolid(slideX + (leftFree ? -r : r), this.y, this.isFlying, false)) this.x = slideX;
                 }
             }
         }
@@ -11731,42 +11775,69 @@ class Enemy extends Entity {
                 }
             }
 
-            // 2. OBSTACLE AVOIDANCE (Whiskers Steering)
-            // Scivolamento fluido sui muri
-            let avoidX = 0, avoidY = 0;
-            let lookAhead = this.radius * 2.0; // Quanto in là "guarda" il nemico
-            
-            // Se la via frontale è bloccata da un muro...
-            if (Game.map.isSolid(this.x + this.moveX * lookAhead, this.y + this.moveY * lookAhead, this.isFlying)) {
-                let currentDirAngle = Math.atan2(this.moveY, this.moveX);
-                
-                // Tasta il terreno a 45 gradi a sinistra e a destra (passando il flag volo per scivolare sopra i baratri)
-                let leftClear = !Game.map.isSolid(this.x + Math.cos(currentDirAngle - 0.8) * lookAhead, this.y + Math.sin(currentDirAngle - 0.8) * lookAhead, this.isFlying);
-                let rightClear = !Game.map.isSolid(this.x + Math.cos(currentDirAngle + 0.8) * lookAhead, this.y + Math.sin(currentDirAngle + 0.8) * lookAhead, this.isFlying);
+            // 2. OBSTACLE & PIT AVOIDANCE (Multi-Angle Ray-Fan con direzione di aggiramento persistente)
+            if (!this.orbitDir) this.orbitDir = (this.thinkOffset % 2 === 0) ? 1 : -1;
+            let currentDirAngle = Math.atan2(this.moveY, this.moveX);
+            let probeNear = this.radius + 14;
+            let probeFar = Math.max(this.radius * 2.4, 38);
 
-                if (leftClear && !rightClear) {
-                    avoidX = Math.cos(currentDirAngle - 1.2); avoidY = Math.sin(currentDirAngle - 1.2);
-                } else if (rightClear && !leftClear) {
-                    avoidX = Math.cos(currentDirAngle + 1.2); avoidY = Math.sin(currentDirAngle + 1.2);
-                } else if (!leftClear && !rightClear) {
-                    // Muro totale: arretra o scivola lateralmente di emergenza
-                    avoidX = -this.moveX; avoidY = -this.moveY; 
+            const isRayClear = (ang) => {
+                let cx = Math.cos(ang), sy = Math.sin(ang);
+                return !Game.map.isSolid(this.x + cx * probeNear, this.y + sy * probeNear, this.isFlying) &&
+                       !Game.map.isSolid(this.x + cx * probeFar, this.y + sy * probeFar, this.isFlying);
+            };
+
+            if (!isRayClear(currentDirAngle)) {
+                // Cerca il primo angolo libero a ventaglio (da ~30° fino a ~135°)
+                let chosenAngle = null;
+                const fanAngles = [0.5, 0.95, 1.4, 1.85, 2.35];
+                for (let f = 0; f < fanAngles.length; f++) {
+                    let aPref = currentDirAngle + fanAngles[f] * this.orbitDir;
+                    let aAlt  = currentDirAngle - fanAngles[f] * this.orbitDir;
+                    let prefClear = isRayClear(aPref);
+                    let altClear  = isRayClear(aAlt);
+
+                    if (prefClear) {
+                        chosenAngle = aPref;
+                        break;
+                    } else if (altClear) {
+                        chosenAngle = aAlt;
+                        this.orbitDir = -this.orbitDir; // Inverte stabilmente il lato di aggiramento
+                        break;
+                    }
+                }
+                if (chosenAngle !== null) {
+                    this.moveX = Math.cos(chosenAngle);
+                    this.moveY = Math.sin(chosenAngle);
+                } else {
+                    // Tangente di disimpegno (mai -moveX puro per evitare oscillazioni avanti/indietro)
+                    let escapeAngle = currentDirAngle + (Math.PI * 0.75) * this.orbitDir;
+                    this.moveX = Math.cos(escapeAngle);
+                    this.moveY = Math.sin(escapeAngle);
                 }
             }
 
-            // 3. BLENDING DEI VETTORI (Miscela delle intelligenze)
-            // Se non c'è motivo di separarsi o evitare ostacoli, questi vettori valgono 0
-            this.moveX = (this.moveX * 1.0) + (sepX * 1.8) + (avoidX * 3.5);
-            this.moveY = (this.moveY * 1.0) + (sepY * 1.8) + (avoidY * 3.5);
+            // 3. BLENDING DEI VETTORI E SMORZAMENTO ANTI-JITTER
+            let rawX = this.moveX + (sepX * 1.6);
+            let rawY = this.moveY + (sepY * 1.6);
+            let rawMag = Math.sqrt(rawX * rawX + rawY * rawY);
+            if (rawMag > 0) { rawX /= rawMag; rawY /= rawMag; }
 
-            // Normalizzazione finale
-            let mag = Math.sqrt(this.moveX * this.moveX + this.moveY * this.moveY); 
+            if (this._smoothMoveX === undefined) {
+                this._smoothMoveX = rawX;
+                this._smoothMoveY = rawY;
+            } else {
+                this._smoothMoveX = this._smoothMoveX * 0.45 + rawX * 0.55;
+                this._smoothMoveY = this._smoothMoveY * 0.45 + rawY * 0.55;
+            }
+
+            let mag = Math.sqrt(this._smoothMoveX * this._smoothMoveX + this._smoothMoveY * this._smoothMoveY); 
             if (mag > 0) { 
-                this.moveX /= mag; 
-                this.moveY /= mag; 
+                this.moveX = this._smoothMoveX / mag; 
+                this.moveY = this._smoothMoveY / mag; 
             }
             
-            // Aggiorna l'angolo visivo del modello per guardare nella direzione in cui si muove davvero
+            // Aggiorna l'angolo visivo senza scatti bruschi
             if (this.distToTargetSq > this.attackRangeSq) {
                 this.angle = Math.atan2(this.moveY, this.moveX);
             }
@@ -13966,8 +14037,22 @@ window.prepareFloorScreen = function() {
     } else if (window.nextIsCorrupted) {
         btnNext.className = baseBtnClass + " animate-pulse";
         
-        let curses = ['darkness', 'unstable', 'retaliation', 'critical_mass', 'pursuer', 'acid_pools'];
-        window.nextCorruptedType = curses[Math.floor(Math.random() * curses.length)];
+        // Shuffle Bag: garantisce che tutti i livelli corrotti abbiano esattamente la stessa probabilità senza ripetizioni
+        if (!window.corruptedBag || window.corruptedBag.length === 0) {
+            window.corruptedBag = ['darkness', 'unstable', 'retaliation', 'critical_mass', 'pursuer', 'acid_pools', 'snake'];
+            for (let i = window.corruptedBag.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [window.corruptedBag[i], window.corruptedBag[j]] = [window.corruptedBag[j], window.corruptedBag[i]];
+            }
+            // Evita che il primo elemento della nuova borsa sia identico all'ultimo appena giocato
+            if (window.lastCorruptedType && window.corruptedBag[window.corruptedBag.length - 1] === window.lastCorruptedType) {
+                let first = window.corruptedBag[0];
+                window.corruptedBag[0] = window.corruptedBag[window.corruptedBag.length - 1];
+                window.corruptedBag[window.corruptedBag.length - 1] = first;
+            }
+        }
+        window.nextCorruptedType = window.corruptedBag.pop();
+        window.lastCorruptedType = window.nextCorruptedType;
         window.nextCorruptedReward = Math.random() < 0.5 ? 'coins' : 'relic';
 
         let rewardText = window.nextCorruptedReward === 'coins' ? "+ DOPPIE MONETE" : "+ RELIQUIA GARANTITA";
