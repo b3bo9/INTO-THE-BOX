@@ -2052,36 +2052,43 @@ const SkinSystem = {
     skins: [
         {
             id: 'dark_mage', name: 'Mago Oscuro', rarity: 'common', cost: 0,
+            passive: 'Overdrive dura +2s',
             colors: { body: 0x222222, head: 0xdddddd, scarf: 0x880000, staff: 0x444444 },
             svg: '<polygon points="20,10 30,34 10,34" fill="#555"/><circle cx="20" cy="11" r="4.5" fill="#ddd"/><rect x="13" y="14" width="14" height="3" rx="1.5" fill="#880000"/>'
         },
         {
             id: 'astral_arcanist', name: 'Arcanista Astrale', rarity: 'common', cost: 2,
+            passive: '+15% ricarica Ultimate da tutte le fonti',
             colors: { body: 0x1e293b, head: 0xdbeafe, scarf: 0x0284c7, staff: 0x64748b },
             svg: '<polygon points="20,11 30,34 10,34" fill="#1e293b"/><polygon points="20,2 25,11 15,11" fill="#dbeafe"/><ellipse cx="20" cy="11" rx="9" ry="2" fill="#dbeafe"/><rect x="13" y="14" width="14" height="3" rx="1.5" fill="#0284c7"/>'
         },
         {
             id: 'emerald_warden', name: 'Custode Silvano', rarity: 'common', cost: 4,
+            passive: '+50% velocità prosciugamento e +3s bonus Obelischi',
             colors: { body: 0x1b3626, head: 0xd1fae5, scarf: 0xb45309, staff: 0x5c3a21 },
             svg: '<path d="M10,4 L15,11 M30,4 L25,11" stroke="#d1fae5" stroke-width="2.5"/><polygon points="20,10 30,34 10,34" fill="#1b3626"/><circle cx="11" cy="19" r="3.2" fill="#1b3626"/><circle cx="29" cy="19" r="3.2" fill="#1b3626"/><circle cx="20" cy="11" r="4.5" fill="#d1fae5"/><rect x="13" y="14" width="14" height="3" rx="1.5" fill="#b45309"/>'
         },
         {
             id: 'crimson_inquisitor', name: 'Inquisitore Cremisi', rarity: 'rare', cost: 8,
+            passive: 'Ogni 10 kill: +1 Moneta e cura 1% HP',
             colors: { body: 0x3b1216, head: 0xa1a1aa, scarf: 0x991b1b, staff: 0x27272a },
             svg: '<polygon points="8,3 16,12 12,12" fill="#a1a1aa"/><polygon points="32,3 24,12 28,12" fill="#a1a1aa"/><polygon points="20,10 30,34 10,34" fill="#3b1216"/><circle cx="20" cy="11" r="4.5" fill="#a1a1aa"/><rect x="16" y="9.5" width="8" height="2" fill="#ffff00"/><rect x="13" y="14" width="14" height="3" rx="1.5" fill="#991b1b"/>'
         },
         {
             id: 'void_walker', name: 'Viandante del Vuoto', rarity: 'epic', cost: 14,
+            passive: 'Volo: ignora acqua, lava e ghiaccio',
             colors: { body: 0x27173a, head: 0xc084fc, scarf: 0x6b21a8, staff: 0x3b0764 },
             svg: '<polygon points="20,10 30,34 10,34" fill="#27173a"/><polygon points="20,5 25,11 20,16 15,11" fill="#c084fc"/><circle cx="7" cy="21" r="2.6" fill="#ffff00"/><circle cx="33" cy="21" r="2.6" fill="#ffff00"/>'
         },
         {
             id: 'solar_archon', name: 'Arconte Solare', rarity: 'legendary', cost: 22,
+            passive: 'Brucia i nemici (100% Danno Base in 5s)',
             colors: { body: 0x422810, head: 0xfef3c7, scarf: 0xd97706, staff: 0xb45309 },
             svg: '<polygon points="4,13 15,20 11,26" fill="#ffff00"/><polygon points="36,13 25,20 29,26" fill="#ffff00"/><polygon points="20,10 30,34 10,34" fill="#422810"/><circle cx="20" cy="12" r="4.2" fill="#fef3c7"/><ellipse cx="20" cy="6" rx="5" ry="1.6" fill="none" stroke="#ffff00" stroke-width="2"/>'
         },
         {
             id: 'cyber_phantom', name: 'Spettro Cibernetico', rarity: 'legendary', cost: 30,
+            passive: 'Ogni 5 spari lancia un Raggio Laser (100% Danno Base)',
             colors: { body: 0x182232, head: 0x475569, scarf: 0x0f172a, staff: 0x334155 },
             svg: '<polygon points="20,11 31,34 9,34" fill="#182232"/><polygon points="20,4 32,9 8,9" fill="#475569"/><rect x="15" y="9.5" width="10" height="2.5" fill="#ffff00"/><rect x="24" y="18" width="14" height="3.5" fill="#94a3b8"/><rect x="33" y="18.8" width="5" height="1.8" fill="#ffff00"/>'
         }
@@ -2281,6 +2288,7 @@ const SkinSystem = {
                             <span class="text-[8px] sm:text-[9px] font-black tracking-widest uppercase">${rarityLabel}</span>
                             <span class="text-[9px] sm:text-[10px] font-bold text-gray-300 flex items-center gap-1 bg-white/5 px-1.5 py-0.5 border border-gray-700/70"><i class="fa-solid fa-skull text-red-500 text-[8px]"></i> ${kills}</span>
                         </div>
+                        <span class="text-[9px] sm:text-[10px] font-bold text-cyan-300/90 leading-tight mt-1">${skin.passive}</span>
                     </div>
                 </div>
                 ${statusHtml}
@@ -4468,7 +4476,8 @@ const UI = {
                     this.els.overdriveText.classList.add('hidden');
                 }
             }
-            let maxTimer = Game.player.overdrive ? (5.0 * Game.player.modifiers.essenceDurationMult) : (8.0 * Game.player.modifiers.essenceDurationMult);
+            let odBase = 5.0 + (SkinSystem.selectedId === 'dark_mage' ? 2.0 : 0.0);
+            let maxTimer = Game.player.overdrive ? (odBase * Game.player.modifiers.essenceDurationMult) : (8.0 * Game.player.modifiers.essenceDurationMult);
             let ePct = Math.min(100, Math.round((Game.player.essenceTimer / maxTimer) * 100));
             if (this.cache.essenceWidth !== ePct) {
                 this.els.essenceTimer.style.height = `${ePct}%`;
@@ -5219,7 +5228,12 @@ pushDebris(px, pz, radius, force) {
         }
     },
     resetCombo() { this.combo = 0; this.comboTimer = 0; },
-    addUltimateCharge(amount) { if (!this.ultimateActive) this.ultimateCharge = Math.min(100, this.ultimateCharge + amount); },
+   addUltimateCharge(amount) {
+        if (!this.ultimateActive) {
+            if (SkinSystem.selectedId === 'astral_arcanist') amount *= 1.15;
+            this.ultimateCharge = Math.min(100, this.ultimateCharge + amount);
+        }
+    },
 
    activateUltimate() {
        if (this.state !== 'PLAYING' || !this.player || this.player.dead) return;
@@ -6102,6 +6116,7 @@ startGame(diffMult) {
                             }
                         }
 
+                        if (SkinSystem.selectedId === 'emerald_warden') shrinkSpeed *= 1.5;
                         a.radius -= shrinkSpeed * combatDt;
                         a.radiusSq = a.radius * a.radius;
                         
@@ -6249,31 +6264,32 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
                                 
                                 this.getFloatingText().spawn(a.x, a.y + 40, "OBELISCO PROSCIUGATO!", '#00DDFF', 40, true);
 
-                                // --- MODIFICA: EFFETTI SPECIFICI PER TIPO DI OBELISCO ---
+                                // --- EFFETTI SPECIFICI PER TIPO DI OBELISCO (+3s per Custode Silvano) ---
+                                let obDur = (SkinSystem.selectedId === 'emerald_warden') ? 9.0 : 6.0;
                                 if (a.type === 'corrupted') {
                                     Game.addUltimateCharge(40);
-                                    Game.player.obeliskDmgTimer = 6.0; Game.player.obeliskDmgVal = 1.10;
-                                    Game.player.obeliskSpdTimer = 6.0; Game.player.obeliskSpdVal = 1.10;
+                                    Game.player.obeliskDmgTimer = obDur; Game.player.obeliskDmgVal = 1.10;
+                                    Game.player.obeliskSpdTimer = obDur; Game.player.obeliskSpdVal = 1.10;
                                     Game.getFloatingText().spawn(Game.player.x - 15, Game.player.y + 20, `+40% ULT`, '#aa00ff', 25, true);
-                                    Game.getFloatingText().spawn(Game.player.x + 15, Game.player.y + 20, `+10% ATK/VEL 6s`, '#ff3300', 25, true);
+                                    Game.getFloatingText().spawn(Game.player.x + 15, Game.player.y + 20, `+10% ATK/VEL ${obDur}s`, '#ff3300', 25, true);
                                     Game.getParticle().spawn(Game.player.x, 20, Game.player.y, SharedMat.spritePink, 'spark');
                                 } else if (a.type === 'red') {
                                     Game.addUltimateCharge(15);
-                                    Game.player.obeliskDmgTimer = 6.0; Game.player.obeliskDmgVal = 1.20;
+                                    Game.player.obeliskDmgTimer = obDur; Game.player.obeliskDmgVal = 1.20;
                                     Game.getFloatingText().spawn(Game.player.x - 15, Game.player.y + 20, `+15% ULT`, '#00DDFF', 25, true);
-                                    Game.getFloatingText().spawn(Game.player.x + 15, Game.player.y + 20, `+20% DMG 6s`, '#ff3300', 25, true);
+                                    Game.getFloatingText().spawn(Game.player.x + 15, Game.player.y + 20, `+20% DMG ${obDur}s`, '#ff3300', 25, true);
                                     Game.getParticle().spawn(Game.player.x, 20, Game.player.y, SharedMat.spriteRed, 'spark');
                                 } else if (a.type === 'blue') {
                                     Game.addUltimateCharge(15);
-                                    Game.player.obeliskSpdTimer = 6.0; Game.player.obeliskSpdVal = 1.20;
+                                    Game.player.obeliskSpdTimer = obDur; Game.player.obeliskSpdVal = 1.20;
                                     Game.getFloatingText().spawn(Game.player.x - 15, Game.player.y + 20, `+15% ULT`, '#00DDFF', 25, true);
-                                    Game.getFloatingText().spawn(Game.player.x + 15, Game.player.y + 20, `+20% VEL 6s`, '#00aaff', 25, true);
+                                    Game.getFloatingText().spawn(Game.player.x + 15, Game.player.y + 20, `+20% VEL ${obDur}s`, '#00aaff', 25, true);
                                     Game.getParticle().spawn(Game.player.x, 20, Game.player.y, SharedMat.spriteBlue, 'spark');
                                 } else if (a.type === 'green') {
                                     Game.addUltimateCharge(15);
-                                    Game.player.obeliskHealTimer = 6.0;
+                                    Game.player.obeliskHealTimer = obDur;
                                     Game.getFloatingText().spawn(Game.player.x - 15, Game.player.y + 20, `+15% ULT`, '#00DDFF', 25, true);
-                                    Game.getFloatingText().spawn(Game.player.x + 15, Game.player.y + 20, `CURA 20% 6s`, '#33ff00', 25, true);
+                                    Game.getFloatingText().spawn(Game.player.x + 15, Game.player.y + 20, `CURA ${obDur}s`, '#33ff00', 25, true);
                                     Game.getParticle().spawn(Game.player.x, 20, Game.player.y, SharedMat.spriteGreen, 'spark');
                                 }
                                 Game.getParticle().spawn(Game.player.x, 20, Game.player.y, SharedMat.spriteWhite, 'spark');
@@ -6750,12 +6766,27 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
                 if ((Game.frameCount + e.thinkOffset) % 2 === 0) {
                     this.enemyGrid.updateClient(e); 
                 }
-                if (e.dead) {
+               if (e.dead) {
                     e.onDeath(); this.enemyGrid.remove(e); 
                     this.enemies[i] = this.enemies[this.enemies.length - 1];
                     this.enemies.pop();
                     this.floorKills++; this.totalKills++;
-                    if (e.type !== 'crystal') SkinSystem.addKill(1);
+                    if (e.type !== 'crystal') {
+                        SkinSystem.addKill(1);
+                        if (SkinSystem.selectedId === 'crimson_inquisitor' && this.player && !this.player.dead) {
+                            this.player.crimsonKillCount = (this.player.crimsonKillCount || 0) + 1;
+                            if (this.player.crimsonKillCount >= 10) {
+                                this.player.crimsonKillCount = 0;
+                                this.coins++;
+                                if (UI.els.coins) UI.els.coins.innerText = this.coins;
+                                let heal = this.player.stats.maxHp * 0.01;
+                                this.player.stats.hp = Math.min(this.player.stats.maxHp, this.player.stats.hp + heal);
+                                AudioEngine.playCoin();
+                                this.getFloatingText().spawn(this.player.x, this.player.y + 25, `+1 MONETA | +${Math.max(1, Math.floor(heal))} HP`, '#ef4444', 24, true);
+                                this.getParticle().spawn(this.player.x, 20, this.player.y, SharedMat.spriteRed, 'spark');
+                            }
+                        }
+                    }
                     if (!this.isBossFloor && this.floorKills + this.enemies.length < this.floorMaxKills) this.spawnEnemy();
                 }
             }
@@ -9402,7 +9433,8 @@ class Player extends Entity {
         // Se l'Overdrive è attivo: lo stesso colore lo prolunga, un colore diverso NON lo interrompe
         if (this.overdrive) {
             if (type === this.essence) {
-                let baseOdTime = 5.0 * this.modifiers.essenceDurationMult;
+                let odBase = 5.0 + (SkinSystem.selectedId === 'dark_mage' ? 2.0 : 0.0);
+                let baseOdTime = odBase * this.modifiers.essenceDurationMult;
                 let bonusTime = 3.0 * this.modifiers.essenceDurationMult;
                 this.essenceTimer = Math.min(baseOdTime * 1.5, this.essenceTimer + bonusTime);
                 let colHex = '#' + ESSENCE_COLORS[this.essence].toString(16).padStart(6, '0');
@@ -9556,7 +9588,8 @@ class Player extends Entity {
     }
     triggerOverdrive() {
         this.overdrive = true; Game.hitStop = 0.2; Game.addTrauma(1.0); 
-        this.essenceTimer = 5.0 * this.modifiers.essenceDurationMult;
+        let odBase = 5.0 + (SkinSystem.selectedId === 'dark_mage' ? 2.0 : 0.0);
+        this.essenceTimer = odBase * this.modifiers.essenceDurationMult;
         if (Game.matchStats) Game.matchStats.essencesUsed[this.essence]++;
         Game.getFloatingText().spawn(this.x, this.y, ESSENCE_NAMES[this.essence] + "!", '#' + ESSENCE_COLORS[this.essence].toString(16).padStart(6, '0'), 40, true);
         let mat = this.essence === 'red' ? SharedMat.spriteRed : (this.essence === 'blue' ? SharedMat.spriteBlue : SharedMat.spriteGreen);
@@ -9794,10 +9827,12 @@ class Player extends Entity {
         this.updateFlash(dt);
         if (dt === 0) return; // FIX BETA: Blocca input, attacchi e i-frames se il gioco è in pausa!
         
-        // FIX CRASH: Calcoliamo SE siamo nella fossa all'inizio del frame, così tutti possono leggerlo!
+        // Passiva Viandante del Vuoto: Vola (ignora gli effetti di acqua, lava e ghiaccio)
+        let isVoidWalker = (SkinSystem.selectedId === 'void_walker');
         let tileX = Math.floor(this.x / TILE_SIZE);
         let tileY = Math.floor(this.y / TILE_SIZE);
-        let inPit = (Game.map && Game.map.grid[tileX] && Game.map.grid[tileX][tileY] === 5);
+        let rawInPit = (Game.map && Game.map.grid[tileX] && Game.map.grid[tileX][tileY] === 5);
+        let inPit = isVoidWalker ? false : rawInPit;
 
         // --- HOt: CURA NEL TEMPO CAOS ELEMENTALE ---
         if (this.chaosHoTTimer > 0) {
@@ -10284,49 +10319,57 @@ if (Game.ultimateActive) currentSpeed *= 1.5; currentSpeed = Math.min(currentSpe
                 }
             }
             
-           // 4. SPROFONDAMENTO E DANNI (LAVA E ACQUA)
-            let targetDepth = 0; 
+           // 4. SPROFONDAMENTO E DANNI (LAVA E ACQUA) O VOLO DEL VIANDANTE DEL VUOTO
+            let targetDepth = isVoidWalker ? 8.0 : 0; 
             if (inPit && !isIce) {
-                // MODIFICA: Il liquido è a -17.5. Spingendo la base del giocatore a -30, 
-                // la metà inferiore del corpo finirà SOTTO il piano dell'acqua/lava, 
-                // venendo tagliata e coperta magicamente dal motore grafico 3D!
                 targetDepth = -30; 
-                
                 if (Game.currentThemeIndex === 1) { // TEMA LAVA
-    if (this.lavaTimer === undefined) this.lavaTimer = 0;
-    this.lavaTimer += dt;
-    if (this.lavaTimer >= 1.0) { // Un tick di danno ogni secondo
-        this.takeDamage(this.stats.maxHp * 0.10, 'hazard', false, false); // -10% HP!
-        this.lavaTimer = 0;
-        
-        // --- EFFETTO FUOCHERELLO ---
-        AudioEngine.playShoot('flame');
-        for(let i=0; i<6; i++) {
-            let p = Game.getParticle();
-            p.spawn(this.x + MathUtils.randomRange(-6, 6), 10, this.y + MathUtils.randomRange(-6, 6), SharedMat.spriteRed, 'flame');
-            p.baseSize = MathUtils.randomRange(25, 40);
-            p.vy = MathUtils.randomRange(60, 150);
-        }
-        for(let i=0; i<3; i++) {
-            let p = Game.getParticle();
-            p.spawn(this.x + MathUtils.randomRange(-4, 4), 12, this.y + MathUtils.randomRange(-4, 4), SharedMat.spriteYellow, 'flame');
-            p.baseSize = MathUtils.randomRange(15, 25);
-            p.vy = MathUtils.randomRange(80, 180);
-        }
-        if (!AppSettings.isLow) {
-            let smoke = Game.getParticle();
-            smoke.spawn(this.x, 25, this.y, SharedMat.spriteDust, 'dust');
-            smoke.baseSize = 45;
-            smoke.vy = 80;
-        }
-    }
-}
-           } else {
-                this.lavaTimer = 0; // Azzera il timer se esce
+                    if (this.lavaTimer === undefined) this.lavaTimer = 0;
+                    this.lavaTimer += dt;
+                    if (this.lavaTimer >= 1.0) {
+                        this.takeDamage(this.stats.maxHp * 0.10, 'hazard', false, false);
+                        this.lavaTimer = 0;
+                        AudioEngine.playShoot('flame');
+                        for(let i=0; i<6; i++) {
+                            let p = Game.getParticle();
+                            p.spawn(this.x + MathUtils.randomRange(-6, 6), 10, this.y + MathUtils.randomRange(-6, 6), SharedMat.spriteRed, 'flame');
+                            p.baseSize = MathUtils.randomRange(25, 40);
+                            p.vy = MathUtils.randomRange(60, 150);
+                        }
+                        for(let i=0; i<3; i++) {
+                            let p = Game.getParticle();
+                            p.spawn(this.x + MathUtils.randomRange(-4, 4), 12, this.y + MathUtils.randomRange(-4, 4), SharedMat.spriteYellow, 'flame');
+                            p.baseSize = MathUtils.randomRange(15, 25);
+                            p.vy = MathUtils.randomRange(80, 180);
+                        }
+                        if (!AppSettings.isLow) {
+                            let smoke = Game.getParticle();
+                            smoke.spawn(this.x, 25, this.y, SharedMat.spriteDust, 'dust');
+                            smoke.baseSize = 45;
+                            smoke.vy = 80;
+                        }
+                    }
+                }
+            } else {
+                this.lavaTimer = 0;
             }
 
-           // Interpolazione morbida dell'altezza: 
-            let activeBounce = isMoving ? (Game.animBounce * 0.75) : (Math.sin(Game.playTime * 3.0) * 0.4);
+            // Sbuffi di fumo animati sotto il Viandante del Vuoto per dare il senso di levitazione/volo
+            if (isVoidWalker && Game.frameCount % (isTouchDevice ? 6 : 4) === 0) {
+                let p = Game.getParticle();
+                let ox = MathUtils.randomRange(-7, 7);
+                let oz = MathUtils.randomRange(-7, 7);
+                p.spawn(this.x + ox, 3, this.y + oz, Math.random() > 0.35 ? SharedMat.spriteBlackSmoke : SharedMat.spritePink, 'dust');
+                p.baseSize = MathUtils.randomRange(16, 26);
+                p.vy = MathUtils.randomRange(4, 12);
+                p.vx = MathUtils.randomRange(-12, 12) - (this.slideDx || 0) * 25;
+                p.vz = MathUtils.randomRange(-12, 12) - (this.slideDy || 0) * 25;
+                p.life = MathUtils.randomRange(0.35, 0.55);
+                p.maxLife = p.life;
+            }
+
+            // Interpolazione morbida dell'altezza (fluttuazione eterea per il Viandante del Vuoto)
+            let activeBounce = isVoidWalker ? (Math.sin(Game.playTime * 4.5) * 2.2) : (isMoving ? (Game.animBounce * 0.75) : (Math.sin(Game.playTime * 3.0) * 0.4));
             this.mesh.position.y += ((targetDepth + activeBounce) - this.mesh.position.y) * dt * 10;
 
             // --- ANIMAZIONE SECONDARIA: INCLINAZIONE CORPO, TESTA E SCIARPA ---
@@ -10716,10 +10759,75 @@ if (Game.ultimateActive) currentSpeed *= 1.5; currentSpeed = Math.min(currentSpe
         }
 
         if (this.overdrive && this.essence === 'green') {
-            let p2 = Game.getProjectile(); p2.spawn(this.x, this.y, this.angle - 0.4, 800, baseDmg, 'player', 'homing_arrow', false, isCrit); p2.canInfect = true;
-            let p3 = Game.getProjectile(); p3.spawn(this.x, this.y, this.angle + 0.4, 800, baseDmg, 'player', 'homing_arrow', false, isCrit); p3.canInfect = true;
-        }
-    }
+            let p2 = Game.getProjectile(); p2.spawn(this.x, this.y, this.angle - 0.4, 800, baseDmg, 'player', 'homing_arrow', false, isCrit); p2.canInfect = true;
+            let p3 = Game.getProjectile(); p3.spawn(this.x, this.y, this.angle + 0.4, 800, baseDmg, 'player', 'homing_arrow', false, isCrit); p3.canInfect = true;
+        }
+
+        // Passiva Spettro Cibernetico: ogni 5 spari lancia un raggio laser perforante (100% Danno Base potenziato)
+        if (SkinSystem.selectedId === 'cyber_phantom') {
+            this.cyberShotCount = (this.cyberShotCount || 0) + 1;
+            if (this.cyberShotCount >= 5) {
+                this.cyberShotCount = 0;
+                this.fireCyberLaser();
+            }
+        }
+    }
+
+    fireCyberLaser() {
+        let maxDist = 650;
+        let dx = Math.cos(this.angle);
+        let dy = Math.sin(this.angle);
+        let dist = maxDist;
+        for (let d = 16; d <= maxDist; d += 16) {
+            if (Game.map.isSolid(this.x + dx * d, this.y + dy * d, true)) {
+                dist = d;
+                break;
+            }
+        }
+        let endX = this.x + dx * dist;
+        let endY = this.y + dy * dist;
+
+        // 100% del danno d'attacco base tenendo conto delle statistiche potenziate
+        let laserDmg = MathUtils.randomRange(this.stats.minDmg, this.stats.maxDmg) * this.modifiers.dmgMult;
+        if (this.obeliskDmgTimer > 0) laserDmg *= this.obeliskDmgVal;
+        if (Game.ultimateActive) laserDmg *= 2.0;
+
+        let dl = Game.getDashLine();
+        dl.spawn(this.x + dx * (dist * 0.5), this.y + dy * (dist * 0.5), dist, this.angle);
+        AudioEngine.playShoot('chain_lightning', true);
+        Game.addTrauma(0.25);
+
+        if (!AppSettings.isLow) {
+            let steps = isTouchDevice ? 4 : 8;
+            for (let i = 1; i <= steps; i++) {
+                let f = (i / steps) * dist;
+                let p = Game.getParticle();
+                p.spawn(this.x + dx * f, 16, this.y + dy * f, i % 2 === 0 ? SharedMat.spriteBlue : SharedMat.spriteWhite, 'spark', this.angle);
+                p.baseSize = 16;
+            }
+        }
+
+        if (dist > 0) {
+            let A = this.x - endX;
+            let B = endY - this.y;
+            let C = (endX * this.y) - (this.x * endY);
+            let denom = Math.sqrt(A * A + B * B) || 1;
+            let nearby = Game.enemyGrid.findNearby(this, dist + 40);
+            for (let i = 0, len = nearby.length; i < len; i++) {
+                let e = nearby[i];
+                if (e.dead) continue;
+                let ex = e.x - this.x;
+                let ey = e.y - this.y;
+                let proj = ex * dx + ey * dy;
+                if (proj >= -(e.radius || 16) && proj <= dist + (e.radius || 16)) {
+                    let orthoDist = Math.abs(A * e.y + B * e.x + C) / denom;
+                    if (orthoDist <= (e.radius || 16) + 18) {
+                        e.takeDamage(laserDmg, this, false, true);
+                    }
+                }
+            }
+        }
+    }
     
   dash() {
         if (this.dashCooldown > 0 && !(this.overdrive && this.essence === 'blue')) return; 
@@ -11145,6 +11253,9 @@ class Enemy extends Entity {
         this.mesh.rotation.set(0, 0, 0); 
         this.frozenTimer = 0;
         this.fireDebuffTimer = 0;
+        this.solarBurnTimer = 0;
+        this.solarBurnTick = 0;
+        this.solarBurnDps = 0;
         this.slowedTimer = 0;
         this.infected = false;
         this.isBerserk = false;
@@ -11496,6 +11607,25 @@ class Enemy extends Entity {
         }
         // ---------------------------------------------
         if (this.fireDebuffTimer > 0) this.fireDebuffTimer -= dt;
+
+        // Passiva Arconte Solare: Bruciatura lungo 5s (non cumulabile)
+        if (this.solarBurnTimer > 0 && !this.dead && this.type !== 'crystal' && !this.isPursuer) {
+            this.solarBurnTimer -= dt;
+            this.solarBurnTick = (this.solarBurnTick || 0) + dt;
+            if (this.solarBurnTick >= 0.5) {
+                this.solarBurnTick -= 0.5;
+                let burnDmg = (this.solarBurnDps || 2) * 0.5;
+                if (Game.matchStats) Game.matchStats.dmgDealt += burnDmg;
+                this.takeDamage(burnDmg, 'solar_burn', false, false);
+                if (!AppSettings.isLow) {
+                    let p = Game.getParticle();
+                    p.spawn(this.x + MathUtils.randomRange(-6, 6), 18, this.y + MathUtils.randomRange(-6, 6), Math.random() > 0.4 ? SharedMat.spriteYellow : SharedMat.spriteRed, 'flame');
+                    p.baseSize = 14;
+                    p.vy = 45;
+                }
+                if (this.dead) return;
+            }
+        }
 
         if (this.infected && Game.frameCount % 10 === 0 && !isTouchDevice) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteGreen, 'trail');
         if (this.type === 'crystal') return; 
@@ -11974,6 +12104,14 @@ class Enemy extends Entity {
 
        super.takeDamage(amount, source, isCrit);
         
+        // Passiva Arconte Solare: applica/rinfresca bruciatura da 100% Danno Base potenziato in 5s (non cumulabile)
+        if (source === Game.player && SkinSystem.selectedId === 'solar_archon' && this.type !== 'crystal' && !this.dead) {
+            let baseAtk = ((Game.player.stats.minDmg + Game.player.stats.maxDmg) * 0.5) * Game.player.modifiers.dmgMult;
+            if (Game.player.obeliskDmgTimer > 0) baseAtk *= Game.player.obeliskDmgVal;
+            this.solarBurnDps = baseAtk / 5.0;
+            this.solarBurnTimer = 5.0;
+        }
+
         // Applica Infezione solo se la fonte è il Player e l'Overdrive verde è attivo
         if (source === Game.player && Game.player.overdrive && Game.player.essence === 'green' && canInfect) {
             this.infected = true;
