@@ -763,9 +763,9 @@ body.colorblind-mode #opt-colorblind-text {
                             <span class="text-white font-bold text-[10px] sm:text-[11px] uppercase tracking-widest text-left leading-tight">Movimento</span>
                         </div>
                         <div class="flex items-center justify-center gap-1.5 w-[35%] bg-black/40 py-1.5 border border-gray-800">
-                            <span id="shop-spd-curr" class="text-gray-400 font-bold text-[9px] sm:text-[11px]">1.0x</span>
+                            <span id="shop-spd-curr" class="text-gray-400 font-bold text-[9px] sm:text-[11px]">1.00x</span>
                             <i class="fa-solid fa-chevron-right text-blue-400 text-[8px]"></i>
-                            <span id="shop-spd-next" class="text-blue-300 font-black text-[10px] sm:text-xs">1.05x</span>
+                            <span id="shop-spd-next" class="text-blue-300 font-black text-[10px] sm:text-xs">1.03x</span>
                         </div>
                         <div class="flex justify-end w-[25%] pr-1">
                             <div class="bg-black/50 text-yellow-400 border border-yellow-500/40 px-2 py-1 text-[10px] sm:text-xs font-black flex items-center justify-center gap-1.5 min-w-[50px]">
@@ -780,9 +780,9 @@ body.colorblind-mode #opt-colorblind-text {
                             <span class="text-white font-bold text-[10px] sm:text-[11px] uppercase tracking-widest text-left leading-tight">Ritmo</span>
                         </div>
                         <div class="flex items-center justify-center gap-1.5 w-[35%] bg-black/40 py-1.5 border border-gray-800">
-                            <span id="shop-atk-curr" class="text-gray-400 font-bold text-[9px] sm:text-[11px]">1.0x</span>
+                            <span id="shop-atk-curr" class="text-gray-400 font-bold text-[9px] sm:text-[11px]">1.00x</span>
                             <i class="fa-solid fa-chevron-right text-amber-500 text-[8px]"></i>
-                            <span id="shop-atk-next" class="text-amber-300 font-black text-[10px] sm:text-xs">1.05x</span>
+                            <span id="shop-atk-next" class="text-amber-300 font-black text-[10px] sm:text-xs">1.03x</span>
                         </div>
                         <div class="flex justify-end w-[25%] pr-1">
                             <div class="bg-black/50 text-yellow-400 border border-yellow-500/40 px-2 py-1 text-[10px] sm:text-xs font-black flex items-center justify-center gap-1.5 min-w-[50px]">
@@ -3952,8 +3952,8 @@ class Hazard {
     }
 
     update(dt) {
-        if (!this.active) return;
-        this.life -= dt;
+        if (!this.active || dt === 0) return;
+        this.life -= dt;
         
        // --- LOGICA DELL'ANELLO IN ESPANSIONE ---
         if (this.type === 'nova_ring' || this.type === 'crystal_nova_ring' || this.type === 'seismic_nova_ring') {
@@ -5179,8 +5179,13 @@ pushDebris(px, pz, radius, force) {
         this._debrisIdx = (this._debrisIdx + 1) % this.debris.length;
         return fallback; 
     },
-   getParticle() { 
-        // FIX OVERHEAD: Rimuove i cicli while. Se saturo, sovrascrive a O(1).
+  getParticle() { 
+        if ((this.particlesThisFrame || 0) >= (isTouchDevice ? 12 : 50)) {
+            if (!this._dummyParticle) {
+                this._dummyParticle = { spawn() {}, mesh: { scale: { set() {} }, position: { set() {} } }, active: false, baseSize: 1, vx: 0, vy: 0, vz: 0, life: 0, maxLife: 1 };
+            }
+            return this._dummyParticle;
+        }
         let p = this.particles[this._particleIdx];
         this._particleIdx = (this._particleIdx + 1) % this.particles.length;
         return p;
@@ -5758,15 +5763,18 @@ loop(timestamp) {
             return; 
         }
 
-        // Se il gioco è in pausa, combatDt è 0, ma l'aggiornamento visivo (visualDt) gira lo stesso!
-        let isPaused = (this.state === 'PAUSED');
+        // OTTIMIZZAZIONE GPU/CPU: Non renderizzare la scena di gioco 3D se siamo nel Menu, nello Shop, nelle Reliquie o in Pausa!
+        if (this.state === 'MENU' || this.state === 'FLOOR_TRANSITION' || this.state === 'RELIC_SELECTION' || this.state === 'PAUSED') {
+            this.accumulator = 0;
+            requestAnimationFrame(this._boundLoop);
+            return;
+        }
 
         this.accumulator += frameTime;
         let updateCount = 0;
         while(this.accumulator >= FIXED_TIME_STEP) {
-            // Se in hitStop o PAUSA, congela la fisica di combattimento
-            let combatDt = (this.hitStop > 0 || isPaused) ? 0 : FIXED_TIME_STEP;
-            if (this.hitStop > 0 && !isPaused) this.hitStop -= FIXED_TIME_STEP; 
+            let combatDt = (this.hitStop > 0) ? 0 : FIXED_TIME_STEP;
+            if (this.hitStop > 0) this.hitStop -= FIXED_TIME_STEP; 
             
             this.update(combatDt, FIXED_TIME_STEP);
             this.accumulator -= FIXED_TIME_STEP;
@@ -5787,6 +5795,7 @@ loop(timestamp) {
         this.bossDefeatedTimer = 0; this.isBossFloor = (this.floor % 5 === 0);
         this.floorEndTimer = 0; this.floorEndTriggered = false;
         this.floorProphets = 0; // CAP PROFETI: Inizializza il contatore
+        this.floorBonusRelics = 0; // Limite massimo di reliquie extra droppabili nel piano corrente
         this.enemyGrid = new SpatialHashGrid([[-1000, -1000], [CHUNK_SIZE*TILE_SIZE+1000, CHUNK_SIZE*TILE_SIZE+1000]], [200, 200]);
         
       // ---> FIX: ESTRAIAMO IL TEMA QUI, PRIMA DI GENERARE LA MAPPA <---
@@ -6024,6 +6033,8 @@ startGame(diffMult) {
         let safeVisualDt = Math.min(visualDt, 0.1);
         if (this.visualTime === undefined) this.visualTime = 0;
         this.visualTime += safeVisualDt;
+        this.particlesThisFrame = 0;
+        this.debrisThisFrame = 0;
 
         // --- SISTEMA TIME-SLICING: Elaborazione Coda Drop (Previene i freeze) ---
         if (this.pendingDrops && this.pendingDrops.length > 0) {
@@ -6074,6 +6085,8 @@ startGame(diffMult) {
         }
         for (let i = 0, len = this.particles.length; i < len; i++) if(this.particles[i].active) this.particles[i].update(safeVisualDt);
         for (let i = 0, len = this.floatingTexts.length; i < len; i++) if(this.floatingTexts[i].active) this.floatingTexts[i].update(safeVisualDt);
+
+        UI.update();
 
         // --- AGGIORNA LE LUCI ESPLOSIVE ---
         if (this.flashLights) {
@@ -6183,30 +6196,30 @@ startGame(diffMult) {
                     if (a.radius < 45) {
                         a.active = false;
                         
-                        dummy.position.y = -1000; dummy.updateMatrix();
+                        // Scala a 0 e rotazione pulita per collassare i poligoni ed evitare cilindri giganti
+                        dummy.position.set(0, -2000, 0);
+                        dummy.rotation.set(0, 0, 0);
+                        dummy.scale.set(0, 0, 0);
+                        dummy.updateMatrix();
+
                         meshes.dome.setMatrixAt(a.colorIdx, dummy.matrix);
                         meshes.ring.setMatrixAt(a.colorIdx, dummy.matrix);
                         if (a.icon) a.icon.visible = false;
                         
-                      this.map.auraMeshes.obelisks.getMatrixAt(a.obeliskIdx, dummy.matrix);
-                        dummy.position.y = -1000; dummy.updateMatrix(); // Rimosso decompose
                         this.map.auraMeshes.obelisks.setMatrixAt(a.obeliskIdx, dummy.matrix);
+                        updateFlags.obelisks = true;
                         
-                        updateFlags.obelisks = true; // Segna aggiornamento obelischi
-                        
-                   // --- Fai scomparire il Ray of Light (God Ray) ---
-if (a.rayIdx !== undefined && a.rayIdx >= 0 && this.map.raysMesh) {
-    dummy.position.y = -2000; dummy.updateMatrix();
-    this.map.raysMesh.setMatrixAt(a.rayIdx, dummy.matrix);
-    this.map.raysMesh.instanceMatrix.needsUpdate = true;
-}
+                        // --- Fai scomparire il Ray of Light (God Ray) ---
+                        if (a.rayIdx !== undefined && a.rayIdx >= 0 && this.map.raysMesh) {
+                            this.map.raysMesh.setMatrixAt(a.rayIdx, dummy.matrix);
+                            this.map.raysMesh.instanceMatrix.needsUpdate = true;
+                        }
 
                         // --- Fai scomparire la Runa al suolo ---
-if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
-    dummy.position.y = -2000; dummy.updateMatrix();
-    this.map.runesMesh.setMatrixAt(a.runeIdx, dummy.matrix);
-    this.map.runesMesh.instanceMatrix.needsUpdate = true;
-}
+                        if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
+                            this.map.runesMesh.setMatrixAt(a.runeIdx, dummy.matrix);
+                            this.map.runesMesh.instanceMatrix.needsUpdate = true;
+                        }
 
                         // Spawna il Cadavere Oscuro (usando materiali condivisi per evitare Memory Leak)
                         let deadObelisk = new THREE.Mesh(window.GLOBAL_OBELISK_GEO, SharedMat.deadObelisk);
@@ -6235,16 +6248,24 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
                             ? a.dropsCrystal
                             : ((a.type === 'corrupted') ? true : (Math.random() < Math.min(0.85, 0.10 + (this.floor * 0.04))));
 
+                        let obRelicPenalty = 1 / (1 + this.player.relics.length * 0.25);
                         if (a.type === 'corrupted') {
-                            if (Math.random() < 0.5) dropsRelic = true;
-                            else for(let c=0; c<25; c++) itemsToSpawn.push('coin');
+                            if ((this.floorBonusRelics || 0) < 1 && Math.random() < (0.20 * obRelicPenalty)) {
+                                dropsRelic = true;
+                                this.floorBonusRelics = (this.floorBonusRelics || 0) + 1;
+                            } else {
+                                for(let c=0; c<25; c++) itemsToSpawn.push('coin');
+                            }
                             if (Math.random() < 0.25) itemsToSpawn.push('life'); 
                         } else {
                             if (Math.random() < 0.25) itemsToSpawn.push('life');
                             for(let c=0; c<MathUtils.randomInt(4, 8); c++) itemsToSpawn.push('coin');
                             itemsToSpawn.push('essence');
                             if (Math.random() < 0.6) itemsToSpawn.push('essence'); 
-                            if (Math.random() < 0.005) dropsRelic = true;
+                            if ((this.floorBonusRelics || 0) < 1 && Math.random() < (0.002 * obRelicPenalty)) {
+                                dropsRelic = true;
+                                this.floorBonusRelics = (this.floorBonusRelics || 0) + 1;
+                            }
                         }
 
                         if (droppedCrystal) {
@@ -6566,10 +6587,12 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
             this.ultimateTimer -= combatDt; 
             if (this.ultimateTimer <= 0) { 
                 this.ultimateActive = false; 
-                // FIX: Reset del bonus della reliquia a fine Ultimate
-                if (this.player && this.player.modifiers.ultDurationPerKill) {
-                    this.player.modifiers.ultKillCount = 0;
-                    this.player.modifiers.ascensionDurationAdd = 0; // Azzera il bonus temporaneo
+                if (this.player) {
+                    if (this.player.modifiers.ultDurationPerKill) {
+                        this.player.modifiers.ultKillCount = 0;
+                        this.player.modifiers.ascensionDurationAdd = 0;
+                    }
+                    this.player.updateAppearance();
                 }
             } 
         }
@@ -6674,8 +6697,8 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
                 let px = this.player.x + Math.cos(angle) * dist;
                 let pz = this.player.y + Math.sin(angle) * dist;
                 
-                // Nascono altissime nel cielo, fuori dall'inquadratura principale
-                let py = MathUtils.randomRange(500, 800);
+                // Nascono sotto la quota della telecamera (600-750) per non passare mai davanti all'obiettivo
+                let py = MathUtils.randomRange(150, 280);
 
                 let p = this.getParticle();
                 let magicMat;
@@ -6711,10 +6734,9 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
         }
         
        // --- NUOVO: ALBERI INFUOCATI REALISTICI (SOLO TEMA LAVA) ---
-       if (Game.currentThemeIndex === 1 && this.map && this.map.treePositions && this.map.treePositions.length > 0) {
-            // OTTIMIZZAZIONE ZERO-ALLOCATION: Evitiamo il .filter() e la creazione di oggetti {x,y}
+       if (Game.currentThemeIndex === 1 && Game.frameCount % (isTouchDevice ? 15 : 6) === 0 && this.map && this.map.treePositions && this.map.treePositions.length > 0) {
             if (!this._tempVisibleTrees) this._tempVisibleTrees = [];
-            this._tempVisibleTrees.length = 0; // Svuota l'array senza distruggerlo dalla RAM
+            this._tempVisibleTrees.length = 0;
             
             let pX = this.player.x, pY = this.player.y;
             let maxDistSq = 1440000; // 1200 * 1200 precalcolato
@@ -6722,21 +6744,19 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
             for (let i = 0; i < this.map.treePositions.length; i++) {
                 let t = this.map.treePositions[i];
                 let dx = t.x - pX;
-                let dy = t.z - pY; // Z è la profondità
+                let dy = t.z - pY;
                 if ((dx * dx + dy * dy) < maxDistSq) {
                     this._tempVisibleTrees.push(t);
                 }
             }
 
-            // Capping dinamico per non fondere la CPU/GPU: elaboriamo max 3 alberi su mobile, 8 su PC
             let maxTreesToProcess = isTouchDevice ? 3 : 8;
             let visibleCount = this._tempVisibleTrees.length;
             
             for (let i = 0; i < Math.min(visibleCount, maxTreesToProcess); i++) {
                 let tree = this._tempVisibleTrees[Math.floor(Math.random() * visibleCount)];
 
-               // FIX OVERSPAWN: Genera fumo e fiamme solo a precisi intervalli per non bruciare tutto il pool!
-                if (Game.frameCount % (isTouchDevice ? 15 : 6) === 0 && Math.random() < 0.5) {
+                if (Math.random() < 0.5) {
                     // Il fuoco nasce alla base della chioma e sale
                     let rx = tree.x + MathUtils.randomRange(-7, 7) * tree.scale;
                     let rz = tree.z + MathUtils.randomRange(-7, 7) * tree.scale;
@@ -7022,6 +7042,13 @@ if (a.runeIdx !== undefined && a.runeIdx >= 0 && this.map.runesMesh) {
                         e.dead = true; e.active = false; e.mesh.visible = false;
                         if(e.shadowMesh) e.shadowMesh.visible = false;
                         e.hideAuras();
+                        if (e.beams) {
+                            for (let b = 0; b < 3; b++) {
+                                e.beams[b].visible = false;
+                                e.beamGlows[b].visible = false;
+                                e.targetShields[b].visible = false;
+                            }
+                        }
                     }
                     this.enemies.length = 0; 
                     
@@ -7931,6 +7958,7 @@ class GameMap {
             }
             if (pitQuads.length > 0) {
                 pitAreaGeo = THREE.BufferGeometryUtils.mergeBufferGeometries(pitQuads);
+                for (let i = 0; i < pitQuads.length; i++) pitQuads[i].dispose();
             }
         }
 
@@ -8254,7 +8282,7 @@ class GameMap {
                                         // FAKE SHADOW
                                         dummy.position.set(px + 15, 0.2, pz + 15);
                                         dummy.rotation.set(0, 0, 0);
-                                        dummy.scale.set(20 * uScale, 20 * uScale, 1);
+                                        dummy.scale.set(20 * uScale, 1, 20 * uScale); // FIX ASSE Z
                                         dummy.updateMatrix();
                                         this.urnShadowMesh.setMatrixAt(uPropIdx, dummy.matrix);
 
@@ -8273,12 +8301,12 @@ class GameMap {
                                     dummy.updateMatrix();
                                     this.urnMesh.setMatrixAt(uPropIdx, dummy.matrix);
                                     
-                                    // FAKE SHADOW (VASO)
-                                        dummy.position.set(px + 15, 0.2, pz + 15);
-                                        dummy.rotation.set(0, 0, 0);
-                                        dummy.scale.set(20 * uScale, 1, 20 * uScale); // FIX ASSE Z
-                                        dummy.updateMatrix();
-                                        this.urnShadowMesh.setMatrixAt(uPropIdx, dummy.matrix);
+                                    // FAKE SHADOW (VASO) allineata a px - 10, pz - 10
+                                    dummy.position.set(px - 10, 0.2, pz - 10);
+                                    dummy.rotation.set(0, 0, 0);
+                                    dummy.scale.set(20 * uScale, 1, 20 * uScale);
+                                    dummy.updateMatrix();
+                                    this.urnShadowMesh.setMatrixAt(uPropIdx, dummy.matrix);
 
                                     let pUrn = Game.propsUrns[uPropIdx];
                                     pUrn.spawn(px - 10, pz - 10);
@@ -9028,11 +9056,12 @@ this.fogMesh.renderOrder = -1; // Assicura che venga disegnato DOPO il terreno (
         
         // --- NUOVO SISTEMA DROP CASSE E VASI ---
         let r = Math.random();
+        let propRelicChance = 0.0025 / (1 + Game.player.relics.length * 0.25);
 
-        if (r < 0.006) { 
-            // BILANCIAMENTO: 0.6% - Reliquia Segreta (Drasticamente ridotto dal 1.5%)
+        if ((Game.floorBonusRelics || 0) < 1 && r < propRelicChance) { 
             let choices = RelicSystem.getChoices();
             if (choices.length > 0) {
+                Game.floorBonusRelics = (Game.floorBonusRelics || 0) + 1;
                 let dropRelic = choices[0]; 
                 dropRelic.apply(Game.player); Game.player.relics.push(dropRelic);
                 AudioEngine.playRelicDrop();
@@ -9040,7 +9069,7 @@ this.fogMesh.renderOrder = -1; // Assicura che venga disegnato DOPO il terreno (
             } else {
                 for(let c=0; c<10; c++) Game.queueDrop('coin', this.x, this.y, 30, false);
             }
-        } else if (r < 0.17) { 
+        } else if (r < 0.17) {
             // 16.4% - Buff Magici (5 Secondi)
             let buffType = Math.random();
             if (buffType < 0.33) {
@@ -10356,9 +10385,9 @@ if (Game.isCorrupted && Game.corruptedType === 'critical_mass') {
 this.radius = 16 * massScale;
 
 let buffMovMult = this.shortBuffs.movSpeed > 0 ? 1.10 : 1.0; 
-let currentSpeed = this.baseSpeed * (1 + Math.min(Game.combo * 0.02, 0.80 * flowCapMult)) * this.modifiers.speedMult * shockSpdMult * dashSpdMult * miserSpdBonus * (1.0 + (this.essenceSpeedBonus || 0)) * auraSpdMult * buffMovMult * greenSpdMult;
+let currentSpeed = this.baseSpeed * (1 + Math.min(Game.combo * 0.008, 0.35 * flowCapMult)) * this.modifiers.speedMult * shockSpdMult * dashSpdMult * miserSpdBonus * (1.0 + (this.essenceSpeedBonus || 0)) * auraSpdMult * buffMovMult * greenSpdMult;
 currentSpeed *= massSpeedPenalty; // Applica il rallentamento della massa
-if (Game.ultimateActive) currentSpeed *= 1.5; currentSpeed = Math.min(currentSpeed, Game.ultimateActive ? 750 : 550);
+if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSpeed, Game.ultimateActive ? 600 : 460);
         
         if (Game.ultimateActive && Game.frameCount % (isTouchDevice ? 8 : 3) === 0) Game.getParticle().spawn(this.x + MathUtils.randomRange(-15, 15), 15, this.y + MathUtils.randomRange(-15, 15), SharedMat.spriteBlue, 'trail');
         let isShooting = Game.mouse.leftDown || Game.inputs.right.active;
@@ -10813,8 +10842,8 @@ if (Game.ultimateActive) currentSpeed *= 1.5; currentSpeed = Math.min(currentSpe
        let auraAtkSpd = (aura === 'blue') ? 0.6 : (aura === 'red' ? 1.2 : 1.0);
         let buffAtkMult = this.shortBuffs.atkSpeed > 0 ? 1.15 : 1.0; // +15% Atk Speed
         if (this.obeliskSpdTimer > 0) buffAtkMult *= this.obeliskSpdVal; // Buff Obelisco
-        // REWORK: Aggiunto malus Follia Omicida (atkSpeedPenalty)
-        let spdMult = (1 + Math.min(Game.combo * 0.01, 0.5 * flowCapMult)) * this.modifiers.atkSpeedMult * shopSpeed * adrenalineSpeed * (1 + shieldSpeed) * shockAtkSpeed * miserAtkSpeedBonus * auraAtkSpd * buffAtkMult * this.modifiers.atkSpeedPenalty;
+        // REWORK: Aggiunto malus Follia Omicida (atkSpeedPenalty) e nerfato il bonus velocità d'attacco
+        let spdMult = (1 + Math.min(Game.combo * 0.005, 0.25 * flowCapMult)) * this.modifiers.atkSpeedMult * shopSpeed * adrenalineSpeed * (1 + shieldSpeed) * shockAtkSpeed * miserAtkSpeedBonus * auraAtkSpd * buffAtkMult * this.modifiers.atkSpeedPenalty;
         if (this.overdrive && this.essence === 'blue') spdMult *= 3.0; 
         
         // --- MODIFICA CADENZA ARMA ROSSA ---
@@ -12505,22 +12534,22 @@ class Enemy extends Entity {
                 Game.getFloatingText().spawn(this.x, this.y, "ELITE SCONFITTO", '#ffaa00', 30, true);
             }
             
-          // --- NUOVO: DROP RELIQUIA A SORPRESA DAGLI ELITE ---
-            // 4% di probabilità di ottenere una reliquia diretta
-            if (Math.random() < 0.04) { 
-                // Genera una singola reliquia (solo se ne sono rimaste!)
+          // --- DROP RELIQUIA A SORPRESA DAGLI ELITE (Bilanciato per densità e late-game) ---
+            // Scala la probabilità in base al numero totale di nemici del piano e alle reliquie già possedute (Max 1 per piano)
+            let eliteDensityScale = 28 / Math.max(28, Game.floorMaxKills);
+            let ownedRelicsPenalty = 1 / (1 + Game.player.relics.length * 0.25);
+            let eliteRelicChance = 0.018 * eliteDensityScale * ownedRelicsPenalty;
+
+            if ((Game.floorBonusRelics || 0) < 1 && Math.random() < eliteRelicChance) { 
                 let choices = RelicSystem.getChoices();
                 if (choices.length > 0) {
+                    Game.floorBonusRelics = (Game.floorBonusRelics || 0) + 1;
                     let dropRelic = choices[0]; 
                     
-                    // La applica direttamente al giocatore
                     dropRelic.apply(Game.player);
                     Game.player.relics.push(dropRelic);
                     
-                   // Effetti visivi e sonori epici
                     Game.getFloatingText().spawn(this.x, this.y + 30, "RELIQUIA TROVATA: " + dropRelic.name.toUpperCase(), '#fbbf24', 45, true);
-                    
-                    // FIX: Usa il nuovo suono dedicato!
                     AudioEngine.playRelicDrop(); 
                     
                     let pCount = AppSettings.isLow ? 10 : 40;
@@ -13292,29 +13321,31 @@ class Particle {
             this.vz = Math.sin(a) * speed;
         }
         
-        this.maxLife = this.life; 
-        this.mesh.material = mat; 
-        this.mesh.position.set(x, y, z); 
-        this.mesh.scale.set(this.baseSize, this.baseSize, 1);
-        this.mesh.updateMatrixWorld(true); // Previene il ghosting delle particelle
+        this.maxLife = this.life; 
+        this.mesh.material = mat; 
+        this.mesh.position.set(x, y, z); 
+        let initSize = (type === 'nova' || type === 'ambient') ? 0.01 : this.baseSize;
+        this.mesh.scale.set(initSize, initSize, 1);
+        this.mesh.updateMatrix(); // FONDAMENTALE: Ricalcola la matrice locale prima del render!
+        this.mesh.updateMatrixWorld(true);
         this.mesh.visible = true;
-    }
-    
-    update(dt) {
+    }
+    
+    update(dt) {
         if (!this.active) return;
         
-        // FIX THERMAL THROTTLING: Se la particella è ampiamente fuori dall'inquadratura, uccidila subito.
-        // Libera istantaneamente il Pool ed evita calcoli fisici e matriciali inutili.
+        // FIX THERMAL THROTTLING & NEAR-PLANE CLIP: Uccide la particella se esce dall'inquadratura o si avvicina troppo alla lente della camera
         let camX = Game.camera.position.x;
+        let camY = Game.camera.position.y;
         let camZ = Game.camera.position.z;
-        if (Math.abs(this.mesh.position.x - camX) > 1000 || Math.abs(this.mesh.position.z - camZ) > 1400) {
+        if (Math.abs(this.mesh.position.x - camX) > 1000 || Math.abs(this.mesh.position.z - camZ) > 1400 || (camY - this.mesh.position.y) < 160) {
             this.active = false; 
             this.mesh.visible = false; 
             return;
         }
 
         if (this.type === 'nova') {
-            let pct = this.life / this.maxLife;
+            let pct = Math.max(0, Math.min(1, this.life / this.maxLife));
             let currentSize = Math.sin(pct * Math.PI) * this.baseSize;
             this.mesh.scale.set(Math.max(0.01, currentSize), Math.max(0.01, currentSize), 1);
         } else if (this.type === 'ambient') { 
@@ -14032,17 +14063,17 @@ const Preloader = {
         document.getElementById('shop-dmg-next').innerText = (currentDmgMult + 0.10).toFixed(2) + "x";
         document.getElementById('shop-cost-dmg').innerText = this.costs.dmg;
 
-        // Agilità
+       // Agilità (+3% invece di +5%)
         let currentSpdMult = Game.player ? Game.player.modifiers.speedMult : 1.0;
         document.getElementById('shop-spd-curr').innerText = currentSpdMult.toFixed(2) + "x";
-        document.getElementById('shop-spd-next').innerText = (currentSpdMult + 0.05).toFixed(2) + "x";
+        document.getElementById('shop-spd-next').innerText = (currentSpdMult + 0.03).toFixed(2) + "x";
         document.getElementById('shop-cost-spd').innerText = this.costs.speed;
 
-        // Ritmo (Attack Speed)
+        // Ritmo (Attack Speed, +3% invece di +5%)
         let currentAtkMult = Game.player ? (1.0 + Game.player.modifiers.bonusAtkSpeed) : 1.0;
         if(document.getElementById('shop-atk-curr')){
             document.getElementById('shop-atk-curr').innerText = currentAtkMult.toFixed(2) + "x";
-            document.getElementById('shop-atk-next').innerText = (currentAtkMult + 0.05).toFixed(2) + "x";
+            document.getElementById('shop-atk-next').innerText = (currentAtkMult + 0.03).toFixed(2) + "x";
             document.getElementById('shop-cost-atk').innerText = this.costs.atkSpeed;
         }
 
@@ -14070,10 +14101,10 @@ const Preloader = {
                 Game.player.modifiers.dmgMult += 0.10; this.bonus.dmg += 0.10; 
             }
             if (type === 'speed') { 
-                Game.player.modifiers.speedMult += 0.05; this.bonus.speed += 0.05; 
+                Game.player.modifiers.speedMult += 0.03; this.bonus.speed += 0.03; 
             }
             if (type === 'atkSpeed') { 
-                Game.player.modifiers.bonusAtkSpeed += 0.05; this.bonus.atkSpeed += 0.05; 
+                Game.player.modifiers.bonusAtkSpeed += 0.03; this.bonus.atkSpeed += 0.03; 
             }
             if (type === 'crit') { 
                 Game.player.modifiers.bonusCritChance += 0.05; this.bonus.crit += 0.05; 
