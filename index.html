@@ -4561,8 +4561,8 @@ const UI = {
             }
         }
         
-        // Update Scudo Attivo
-        if (Game.player.activeShieldTimer > 0) {
+        // Update Scudo Attivo (Mostra lo stato disabilitato solo per lo scudo manuale, mai se è attivo l'Egidio gratuito fuori CD)
+        if (Game.player.activeShieldTimer > 0 && !Game.player.autoShieldActive) {
             if (this.cache.shieldActive !== true) {
                 if (this.els.btnShield) {
                     // UX REWORK: Mette il bottone in grigio trasparente per indicare che non è cliccabile
@@ -4580,6 +4580,7 @@ const UI = {
                 let shieldMaxDur = 3.0 + Game.player.modifiers.shieldDurationAdd;
                 let activePct = Math.round((Game.player.activeShieldTimer / shieldMaxDur) * 100);
                 this.els.btnShieldFill.style.height = `${activePct}%`;
+                this.cache.shieldPct = activePct; // Aggiorna la cache per forzare il ritorno al 100% a fine scudo
             }
         } else {
             this.cache.shieldActive = false;
@@ -5991,9 +5992,11 @@ startGame(diffMult) {
         this.floorEndTimer = 0; this.floorEndTriggered = false;
         this.isCorrupted = false; this.corruptedType = ''; this.corruptedReward = ''; this.standStillTimer = 0;
         ShopSystem.reset();
-        if (this.player) { Game.scene.remove(this.player.mesh); this.player = null; }
-        
         clearScene(); 
+        if (this.player) {
+            this.player.destroy();
+            this.player = null;
+        } 
         this.enemies = []; 
         this.setupFloor(); 
         
@@ -9743,7 +9746,30 @@ class Player extends Entity {
             }
         }
 
-        if (this.deadBody) this.deadBody.geometry = geos.body;
+       if (this.deadBody) this.deadBody.geometry = geos.body;
+        if (this.deadHead) {
+            this.deadHead.geometry = geos.head;
+            if (this.deadHead.children[0]) {
+                if (geos.headAccent) {
+                    this.deadHead.children[0].geometry = geos.headAccent;
+                    this.deadHead.children[0].visible = true;
+                } else {
+                    this.deadHead.children[0].visible = false;
+                }
+            }
+        }
+        if (this.deadWeapon && this.deadWeapon.children.length >= 3) {
+            this.deadWeapon.children[0].geometry = geos.staff;
+            this.deadWeapon.children[1].geometry = geos.gem;
+            this.deadWeapon.children[2].geometry = geos.halo;
+            this.deadWeapon.children[1].position.set(0, gemY, gemZ);
+            this.deadWeapon.children[2].position.set(0, gemY, gemZ);
+        }
+        if (this.deadPhysicsParts && !this.dead) {
+            for (let i = 0; i < this.deadPhysicsParts.length; i++) {
+                this.deadPhysicsParts[i].mesh.visible = false;
+            }
+        }
         if (this.dashGhosts) {
             for (let i = 0; i < this.dashGhosts.length; i++) {
                 this.dashGhosts[i].mesh.geometry = geos.body;
@@ -9751,6 +9777,39 @@ class Player extends Entity {
         }
 
         this.updateAppearance();
+    }
+    destroy() {
+        if (this.deadPhysicsParts) {
+            for (let i = 0; i < this.deadPhysicsParts.length; i++) {
+                this.deadPhysicsParts[i].mesh.visible = false;
+                this.deadPhysicsParts[i].vx = 0;
+                this.deadPhysicsParts[i].vy = 0;
+                this.deadPhysicsParts[i].vz = 0;
+                Game.scene.remove(this.deadPhysicsParts[i].mesh);
+            }
+        }
+        if (this.dashGhosts) {
+            for (let i = 0; i < this.dashGhosts.length; i++) {
+                this.dashGhosts[i].life = 0;
+                this.dashGhosts[i].mesh.visible = false;
+                Game.scene.remove(this.dashGhosts[i].mesh);
+            }
+        }
+        if (this.shadowMesh) {
+            this.shadowMesh.visible = false;
+            Game.scene.remove(this.shadowMesh);
+        }
+        if (this.auraRingMesh) {
+            this.auraRingMesh.visible = false;
+            Game.scene.remove(this.auraRingMesh);
+        }
+        if (this.auraGlow) {
+            this.auraGlow.visible = false;
+            Game.scene.remove(this.auraGlow);
+        }
+        if (this.mesh) {
+            Game.scene.remove(this.mesh);
+        }
     }
     updateAppearance() {
         let skin = SkinSystem.getCurrentSkin();
@@ -10019,15 +10078,15 @@ class Player extends Entity {
        if (this.modifiers.shieldActive) {
             if (this.modifiers.autoShieldTimer === undefined) this.modifiers.autoShieldTimer = 0;
             this.modifiers.autoShieldTimer += dt;
-            if (this.modifiers.autoShieldTimer >= 15.0) {
+            if (this.modifiers.autoShieldTimer >= 15.0 && this.activeShieldTimer <= 0) {
                 this.modifiers.autoShieldTimer = 0;
                 this.activeShieldTimer = 3.0 + this.modifiers.shieldDurationAdd;
                 this.shieldAbsorbed = 0;
-               this.shieldMesh.visible = true;
-               this.updateAppearance(); // Colora lo scudo dinamicamente
-               this.shieldMesh.material.opacity = 0.6;
-                this.autoShieldActive = true;
-                AudioEngine.playCollect();
+                this.shieldMesh.visible = true;
+                this.updateAppearance(); // Colora lo scudo dinamicamente
+                this.shieldMesh.material.opacity = 0.6;
+                this.autoShieldActive = true;
+                AudioEngine.playCollect();
                 if (this.modifiers.seismicShield) {
                     Game.getHazard().spawn(this.x, this.y, 250, 0.4, this.stats.maxDmg * 0.2, 0xffffff, 'seismic_nova_ring');
                 }
@@ -11243,8 +11302,9 @@ if (this.modifiers.flowMastery && !wasDead) {
         }
     }
 activateShield() {
-        if (this.activeShieldCooldown <= 0 && this.activeShieldTimer <= 0) {
-            this.activeShieldTimer = 3.0 + this.modifiers.shieldDurationAdd; 
+        if (this.activeShieldCooldown <= 0 && (this.activeShieldTimer <= 0 || this.autoShieldActive)) {
+            this.autoShieldActive = false;
+            this.activeShieldTimer = 3.0 + this.modifiers.shieldDurationAdd;
             if (this.modifiers.seismicShield) {
                 Game.getHazard().spawn(this.x, this.y, 250, 0.4, this.stats.maxDmg * 0.2, 0xffffff, 'seismic_nova_ring');
             }
@@ -12277,7 +12337,11 @@ class Enemy extends Entity {
                 // Genera solo il 70% dei frammenti a caso (salta il 30%)
                 if (Math.random() > 0.7) return; 
 
-                child.getWorldPosition(_pos);
+               child.getWorldPosition(_pos);
+                if (Game.map && Game.map.isSolid(_pos.x, _pos.z, true)) {
+                    _pos.x = this.x;
+                    _pos.z = this.y;
+                }
                 child.getWorldQuaternion(_quat);
                 child.getWorldScale(_scale);
                 
@@ -13419,9 +13483,25 @@ class Debris {
             this.baseScale = Math.max(0.001, this.baseScale - (dt * this.baseScale * 2));
         } else if (dt > 0) {
             this.vy -= 600 * dt; 
-            this.x += this.vx * dt;
             this.y += this.vy * dt;
-            this.z += this.vz * dt;
+
+            let margin = Math.max(6, this.baseScale * 0.5);
+            let nextX = this.x + this.vx * dt;
+            let testX = this.vx >= 0 ? nextX + margin : nextX - margin;
+            if (Game.map && (Game.map.isSolid(testX, this.z, true) || Game.map.isSolid(nextX, this.z, true))) {
+                this.vx *= -0.5;
+            } else {
+                this.x = nextX;
+            }
+
+            let nextZ = this.z + this.vz * dt;
+            let testZ = this.vz >= 0 ? nextZ + margin : nextZ - margin;
+            if (Game.map && (Game.map.isSolid(this.x, testZ, true) || Game.map.isSolid(this.x, nextZ, true))) {
+                this.vz *= -0.5;
+            } else {
+                this.z = nextZ;
+            }
+
             this.rotX += this.rx * dt;
             this.rotY += this.ry * dt;
             this.rotZ += this.rz * dt;
@@ -13751,7 +13831,12 @@ function goToMainMenu() {
         document.querySelector('.title-3d-text').classList.remove('opacity-0');
         document.getElementById('mainMenu').classList.remove('hidden');
         
-        clearScene(); Game.state = 'MENU'; AudioEngine.stopAllMusic(); AudioEngine.playMenuMusic();
+        clearScene();
+        if (Game.player) {
+            Game.player.destroy();
+            Game.player = null;
+        }
+        Game.state = 'MENU'; AudioEngine.stopAllMusic(); AudioEngine.playMenuMusic();
         
         if (typeof TitleSystem !== 'undefined') {
             TitleSystem.init(); // Ricrea il renderer solo quando l'utente torna al menu
