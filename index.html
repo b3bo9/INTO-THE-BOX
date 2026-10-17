@@ -4506,8 +4506,12 @@ const UI = {
                 this.els.essenceTimer.style.height = `${ePct}%`;
                 this.cache.essenceWidth = ePct;
             }
-        } else if (this.cache.essenceSig !== '') {
+       } else if (this.cache.essenceSig !== '') {
+            for (let i = 0; i < 3; i++) this.els.stacks[i].className = 'stack-dot';
+            this.els.overdriveText.classList.add('hidden');
+            this.els.essenceTimer.style.height = '0%';
             this.cache.essenceSig = '';
+            this.cache.essenceWidth = 0;
         }
 
      if (Game.ultimateActive) {
@@ -5981,6 +5985,24 @@ loop(timestamp) {
             AudioEngine.playGameMusic();
         }
         
+        if (this.player) {
+            if (this.player.shadowMesh && !this.player.shadowMesh.parent) {
+                Game.scene.add(this.player.shadowMesh);
+            }
+            // Reset totale delle essenze attive e dei buff temporanei ad ogni nuovo piano
+            this.player.essenceList.length = 0;
+            this.player.essence = null;
+            this.player.essenceTimer = 0;
+            this.player.overdrive = false;
+            this.player.obeliskDmgTimer = 0;
+            this.player.obeliskSpdTimer = 0;
+            this.player.obeliskHealTimer = 0;
+            this.player.obeliskBurnTimer = 0;
+            this.player.obeliskSlowTimer = 0;
+            this.player._lastAuraType = null;
+            this.player.updateAppearance();
+        }
+
         if (mutatorText !== "") setTimeout(() => Game.getFloatingText().spawn(this.player.x, this.player.y, mutatorText, floorColor, 45, true), 1500);
         this.resetCombo(); this.snapCamera();
     },
@@ -6312,8 +6334,8 @@ startGame(diffMult) {
                                 
                                 this.getFloatingText().spawn(a.x, a.y + 40, "OBELISCO PROSCIUGATO!", '#00DDFF', 40, true);
 
-                                // --- EFFETTI SPECIFICI PER TIPO DI OBELISCO (+3s per Custode Silvano) ---
-                                let obDur = (SkinSystem.selectedId === 'emerald_warden') ? 9.0 : 6.0;
+                               // --- EFFETTI SPECIFICI PER TIPO DI OBELISCO (8s base, 11s per Custode Silvano) ---
+                                let obDur = (SkinSystem.selectedId === 'emerald_warden') ? 11.0 : 8.0;
                                 if (a.type === 'corrupted') {
                                     Game.addUltimateCharge(40);
                                     Game.player.obeliskDmgTimer = obDur; Game.player.obeliskDmgVal = 1.10;
@@ -6323,15 +6345,15 @@ startGame(diffMult) {
                                     Game.getParticle().spawn(Game.player.x, 20, Game.player.y, SharedMat.spritePink, 'spark');
                                 } else if (a.type === 'red') {
                                     Game.addUltimateCharge(15);
-                                    Game.player.obeliskDmgTimer = obDur; Game.player.obeliskDmgVal = 1.20;
+                                    Game.player.obeliskBurnTimer = obDur;
                                     Game.getFloatingText().spawn(Game.player.x - 15, Game.player.y + 20, `+15% ULT`, '#00DDFF', 25, true);
-                                    Game.getFloatingText().spawn(Game.player.x + 15, Game.player.y + 20, `+20% DMG ${obDur}s`, '#ff3300', 25, true);
+                                    Game.getFloatingText().spawn(Game.player.x + 15, Game.player.y + 20, `BRUCIATURA ${obDur}s`, '#ff3300', 25, true);
                                     Game.getParticle().spawn(Game.player.x, 20, Game.player.y, SharedMat.spriteRed, 'spark');
                                 } else if (a.type === 'blue') {
                                     Game.addUltimateCharge(15);
-                                    Game.player.obeliskSpdTimer = obDur; Game.player.obeliskSpdVal = 1.20;
+                                    Game.player.obeliskSlowTimer = obDur;
                                     Game.getFloatingText().spawn(Game.player.x - 15, Game.player.y + 20, `+15% ULT`, '#00DDFF', 25, true);
-                                    Game.getFloatingText().spawn(Game.player.x + 15, Game.player.y + 20, `+20% VEL ${obDur}s`, '#00aaff', 25, true);
+                                    Game.getFloatingText().spawn(Game.player.x + 15, Game.player.y + 20, `COLPI GELIDI ${obDur}s`, '#00aaff', 25, true);
                                     Game.getParticle().spawn(Game.player.x, 20, Game.player.y, SharedMat.spriteBlue, 'spark');
                                 } else if (a.type === 'green') {
                                     Game.addUltimateCharge(15);
@@ -10295,13 +10317,15 @@ class Player extends Entity {
             }
         }
 
-        // --- GESTIONE BUFF OBELISCHI (6 SECONDI) ---
+        // --- GESTIONE BUFF OBELISCHI (6 SECONDI, 9s CON CUSTODE SILVANO) ---
         if (this.obeliskDmgTimer > 0) this.obeliskDmgTimer -= dt;
         if (this.obeliskSpdTimer > 0) this.obeliskSpdTimer -= dt;
+        if (this.obeliskBurnTimer > 0) this.obeliskBurnTimer -= dt;
+        if (this.obeliskSlowTimer > 0) this.obeliskSlowTimer -= dt;
         if (this.obeliskHealTimer > 0) {
             this.obeliskHealTimer -= dt;
-            // Cura il 20% in 6 secondi
-            let healAmount = this.stats.maxHp * (0.20 / 6.0) * dt; 
+            // Cura il 30% in 8 secondi
+            let healAmount = this.stats.maxHp * (0.30 / 8.0) * dt;
             this.stats.hp = Math.min(this.stats.maxHp, this.stats.hp + healAmount);
             if (Game.frameCount % 15 === 0) {
                 Game.getParticle().spawn(this.x + MathUtils.randomRange(-10, 10), 25, this.y + MathUtils.randomRange(-10, 10), SharedMat.spriteGreen, 'spark');
@@ -11389,6 +11413,8 @@ class Enemy extends Entity {
         this.solarBurnTimer = 0;
         this.solarBurnTick = 0;
         this.solarBurnDps = 0;
+        this.obeliskBurnTimer = 0;
+        this.obeliskBurnDps = 0;
         this.slowedTimer = 0;
         this.infected = false;
         this.isBerserk = false;
@@ -11741,13 +11767,21 @@ class Enemy extends Entity {
         // ---------------------------------------------
         if (this.fireDebuffTimer > 0) this.fireDebuffTimer -= dt;
 
-        // Passiva Arconte Solare: Bruciatura lungo 5s (non cumulabile)
-        if (this.solarBurnTimer > 0 && !this.dead && this.type !== 'crystal' && !this.isPursuer) {
-            this.solarBurnTimer -= dt;
+        // Passiva Arconte Solare + Buff Obelisco Rosso: Bruciatura lungo 5s (si sommano se entrambi attivi)
+        if ((this.solarBurnTimer > 0 || this.obeliskBurnTimer > 0) && !this.dead && this.type !== 'crystal' && !this.isPursuer) {
+            let totalBurnDps = 0;
+            if (this.solarBurnTimer > 0) {
+                this.solarBurnTimer -= dt;
+                totalBurnDps += (this.solarBurnDps || 2);
+            }
+            if (this.obeliskBurnTimer > 0) {
+                this.obeliskBurnTimer -= dt;
+                totalBurnDps += (this.obeliskBurnDps || 2);
+            }
             this.solarBurnTick = (this.solarBurnTick || 0) + dt;
             if (this.solarBurnTick >= 0.5) {
                 this.solarBurnTick -= 0.5;
-                let burnDmg = (this.solarBurnDps || 2) * 0.5;
+                let burnDmg = totalBurnDps * 0.5;
                 if (Game.matchStats) Game.matchStats.dmgDealt += burnDmg;
                 this.takeDamage(burnDmg, 'solar_burn', false, false);
                 if (!AppSettings.isLow) {
@@ -12264,12 +12298,26 @@ class Enemy extends Entity {
 
        super.takeDamage(amount, source, isCrit);
         
-        // Passiva Arconte Solare: applica/rinfresca bruciatura da 100% Danno Base potenziato in 5s (non cumulabile)
-        if (source === Game.player && SkinSystem.selectedId === 'solar_archon' && this.type !== 'crystal' && !this.dead) {
-            let baseAtk = ((Game.player.stats.minDmg + Game.player.stats.maxDmg) * 0.5) * Game.player.modifiers.dmgMult;
-            if (Game.player.obeliskDmgTimer > 0) baseAtk *= Game.player.obeliskDmgVal;
-            this.solarBurnDps = baseAtk / 5.0;
-            this.solarBurnTimer = 5.0;
+        // Passiva Arconte Solare + Buff Obelisco Rosso (Bruciatura cumulabile) e Obelisco Blu (Rallentamento)
+        if (source === Game.player && this.type !== 'crystal' && !this.dead) {
+            let isArchon = (SkinSystem.selectedId === 'solar_archon');
+            let hasObeliskBurn = (Game.player.obeliskBurnTimer > 0);
+            if (isArchon || hasObeliskBurn) {
+                let baseAtk = ((Game.player.stats.minDmg + Game.player.stats.maxDmg) * 0.5) * Game.player.modifiers.dmgMult;
+                if (Game.player.obeliskDmgTimer > 0) baseAtk *= Game.player.obeliskDmgVal;
+                if (isArchon) {
+                    this.solarBurnDps = baseAtk / 5.0;
+                    this.solarBurnTimer = 5.0;
+                }
+                if (hasObeliskBurn) {
+                    this.obeliskBurnDps = baseAtk / 5.0;
+                    this.obeliskBurnTimer = 5.0;
+                }
+            }
+            if (Game.player.obeliskSlowTimer > 0) {
+                this.slowedTimer = Math.max(this.slowedTimer || 0, 2.5);
+                this.slowType = 'blue';
+            }
         }
 
         // Applica Infezione solo se la fonte è il Player e l'Overdrive verde è attivo
