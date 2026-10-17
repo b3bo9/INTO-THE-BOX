@@ -3537,6 +3537,42 @@ SharedMat.urn = new THREE.MeshPhongMaterial({ map: createPatternTexture('urn'), 
 
 const SharedGeoSet = new Set(Object.values(SharedGeo));
 const SharedMatSet = new Set(Object.values(SharedMat));
+function applyCharacterShader(material, rimStrength = 0.65) {
+    material.onBeforeCompile = (shader) => {
+        // Calcola Altezza e Rim Light nel Vertex Shader: 100% compatibile con MeshLambertMaterial (Mobile) e MeshPhongMaterial (PC)
+        shader.vertexShader = `
+            varying float vCharHeight;
+            varying float vCharRim;
+        ` + shader.vertexShader.replace(
+            '#include <project_vertex>',
+            `
+            #include <project_vertex>
+            vCharHeight = clamp(( position.y + 5.0 ) / 32.0, 0.0, 1.0);
+            vec3 charN = normalize( transformedNormal );
+            vec3 charV = normalize( -mvPosition.xyz );
+            float rawRim = 1.0 - max( dot( charV, charN ), 0.0 );
+            vCharRim = smoothstep( 0.50, 1.0, rawRim );
+            `
+        );
+        shader.fragmentShader = `
+            varying float vCharHeight;
+            varying float vCharRim;
+        ` + shader.fragmentShader.replace(
+            '#include <dithering_fragment>',
+            `
+            // 1. Gradiente Verticale (Ambient Occlusion ai piedi, luce sulla testa)
+            gl_FragColor.rgb *= mix(0.55, 1.18, vCharHeight);
+
+            // 2. Fresnel Rim Light pre-calcolata sui bordi della silhouette
+            gl_FragColor.rgb += (gl_FragColor.rgb + vec3(0.18)) * vCharRim * ${rimStrength.toFixed(2)};
+
+            #include <dithering_fragment>
+            `
+        );
+    };
+    return material;
+}
+
 const ModelFactory = {
     setupShadows(mesh) { mesh.traverse(c => { if(c.isMesh) { c.castShadow = true; c.receiveShadow = true; } }); },
     buildPlayer(mat, gemMat) {
@@ -7102,10 +7138,13 @@ startGame(diffMult) {
                 let pos = this.toScreenPosition(e.x, e.radius + 35, e.y);
                 
                 if (pos.z < 1 && pos.x > -30 && pos.x < this.width + 30 && pos.y > -30 && pos.y < this.height + 30) {
-                    if (isDamaged && this._hpBarCount < this._hpBars.length) {
-                        this._hpBars[this._hpBarCount].x = pos.x;
-                        this._hpBars[this._hpBarCount].y = pos.y;
-                        this._hpBars[this._hpBarCount].pct = e.stats.hp / e.stats.maxHp;
+                    if (isDamaged && !e.isBoss && this._hpBarCount < this._hpBars.length) {
+                        let bar = this._hpBars[this._hpBarCount];
+                        bar.x = pos.x;
+                        bar.y = pos.y;
+                        bar.pct = Math.max(0, e.stats.hp / e.stats.maxHp);
+                        bar.isElite = e.isElite;
+                        bar.flash = e.flashTimer > 0;
                         this._hpBarCount++;
                     }
 
@@ -7159,10 +7198,61 @@ startGame(diffMult) {
         }
 
         if (this._hpBarCount > 0) {
-            this.uiCtx.fillStyle = 'rgba(0,0,0,0.8)';
-            for(let i=0; i<this._hpBarCount; i++) this.uiCtx.fillRect(this._hpBars[i].x - 16, this._hpBars[i].y-2, 32, 6);
-            this.uiCtx.fillStyle = '#ff0000';
-            for(let i=0; i<this._hpBarCount; i++) this.uiCtx.fillRect(this._hpBars[i].x - 15, this._hpBars[i].y-1, 30 * this._hpBars[i].pct, 4);
+            for(let i=0; i<this._hpBarCount; i++) {
+                let b = this._hpBars[i];
+                let w = b.isElite ? 44 : 32;
+                let h = b.isElite ? 7 : 5;
+                let bx = b.x - w * 0.5;
+                let by = b.y - 2;
+
+                this.uiCtx.fillStyle = 'rgba(5, 5, 8, 0.9)';
+                this.uiCtx.fillRect(bx - 1, by - 1, w + 2, h + 2);
+
+                this.uiCtx.fillStyle = b.flash ? '#ffffff' : (b.isElite ? '#fbbf24' : '#ef4444');
+                this.uiCtx.fillRect(bx, by, w * b.pct, h);
+            }
+        }
+
+        // --- BOSS HEALTH BAR DEDICATA (Stile Arcade Brutalism) ---
+        if (this.isBossFloor) {
+            let boss = null;
+            for (let i = 0; i < this.enemies.length; i++) {
+                if (this.enemies[i].isBoss && !this.enemies[i].dead) { boss = this.enemies[i]; break; }
+            }
+            if (boss) {
+                let bw = Math.min(this.width * 0.52, 420);
+                let bh = isTouchDevice ? 12 : 16;
+                let bx = (this.width - bw) * 0.5;
+                let by = isTouchDevice ? 22 : 32;
+                let hpPct = Math.max(0, boss.stats.hp / boss.stats.maxHp);
+
+                if (this._bossCatchupPct === undefined || this._bossCatchupPct < hpPct) this._bossCatchupPct = hpPct;
+                else this._bossCatchupPct += (hpPct - this._bossCatchupPct) * 0.08;
+
+                // Cornice Brutalista
+                this.uiCtx.fillStyle = 'rgba(5, 5, 8, 0.92)';
+                this.uiCtx.fillRect(bx - 3, by - 3, bw + 6, bh + 6);
+                this.uiCtx.strokeStyle = boss.isEnraged ? '#fbbf24' : '#555555';
+                this.uiCtx.lineWidth = 2;
+                this.uiCtx.strokeRect(bx - 3, by - 3, bw + 6, bh + 6);
+
+                // Barra Bianca Catch-up
+                this.uiCtx.fillStyle = '#ffffff';
+                this.uiCtx.fillRect(bx, by, bw * this._bossCatchupPct, bh);
+
+                // Barra Colore Elementale del Boss
+                let bossCol = boss.bossElement === 'blue' ? '#00aaff' : (boss.bossElement === 'green' ? '#33ff00' : '#ff1133');
+                this.uiCtx.fillStyle = boss.flashTimer > 0 ? '#ffffff' : bossCol;
+                this.uiCtx.fillRect(bx, by, bw * hpPct, bh);
+
+                // Nome del Boss sopra la barra
+                let bossTitle = boss.bossElement === 'blue' ? 'ARCONTE DELLA TEMPESTA' : (boss.bossElement === 'green' ? 'SIGNORE DELLA PANDEMIA' : 'GUARDIANO DELL\'INFERNO');
+                if (boss.isEnraged) bossTitle += ' [FURENTE]';
+                this.uiCtx.font = `800 ${isTouchDevice ? 11 : 13}px 'Orbitron', sans-serif`;
+                this.uiCtx.textAlign = 'center';
+                this.uiCtx.fillStyle = boss.isEnraged ? '#fbbf24' : '#ffffff';
+                this.uiCtx.fillText(bossTitle, this.width * 0.5, by - 8);
+            }
         }
       // INDICATORI NEMICI FUORI SCHERMO
        let offCount = 0;
@@ -10522,9 +10612,15 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
             let activeBounce = isVoidWalker ? (Math.sin(Game.playTime * 4.5) * 2.2) : (isMoving ? (Game.animBounce * 0.75) : (Math.sin(Game.playTime * 3.0) * 0.4));
             this.mesh.position.y += ((targetDepth + activeBounce) - this.mesh.position.y) * dt * 10;
 
-            // --- ANIMAZIONE SECONDARIA: INCLINAZIONE CORPO, TESTA E SCIARPA ---
-            let targetPitch = isMoving ? 0.18 : 0.0;
+            // --- ANIMAZIONE SECONDARIA: PITCH, BANKING LATERALE, TESTA E SCIARPA ---
+            let targetPitch = isMoving ? 0.20 : 0.0;
+            // Calcola la componente laterale (strafing) rispetto a dove guarda il personaggio per inclinarlo in curva
+            let forwardX = Math.cos(displayAngle), forwardY = Math.sin(displayAngle);
+            let strafeCross = (dx * forwardY) - (dy * forwardX);
+            let targetRoll = isMoving ? (strafeCross * 0.22) : 0.0;
+
             this.modelParts.body.rotation.x += (targetPitch - this.modelParts.body.rotation.x) * dt * 10;
+            this.modelParts.body.rotation.z += (targetRoll - this.modelParts.body.rotation.z) * dt * 10;
             if (this.modelParts.head) {
                 this.modelParts.head.position.y = 28 + Math.sin(Game.playTime * (isMoving ? 14 : 3.5)) * (isMoving ? 1.2 : 0.4);
             }
@@ -10894,7 +10990,18 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
         if (Game.ultimateActive) baseDmg *= 2.0;
         if (isCrit) baseDmg *= this.modifiers.critDmgMult;
         let projType = 'player_arrow'; if (this.essence === 'red') projType = 'explosive_arrow'; if (this.essence === 'blue') projType = 'chain_lightning'; if (this.essence === 'green') projType = 'homing_arrow';
-        let piercing = (this.overdrive && this.essence === 'blue'); AudioEngine.playShoot(projType, isCrit);
+      let piercing = (this.overdrive && this.essence === 'blue'); AudioEngine.playShoot(projType, isCrit);
+        
+        // MUZZLE FLASH SULLA PUNTA DELL'ARMA
+        if (!AppSettings.isLow) {
+            let muzzleX = this.x + Math.cos(this.angle) * 24 + Math.cos(this.angle + Math.PI/2) * 10;
+            let muzzleZ = this.y + Math.sin(this.angle) * 24 + Math.sin(this.angle + Math.PI/2) * 10;
+            let mMat = this.essence === 'red' ? SharedMat.spriteRed : (this.essence === 'blue' ? SharedMat.spriteBlue : (this.essence === 'green' ? SharedMat.spriteGreen : SharedMat.spriteYellow));
+            let mf = Game.getParticle();
+            mf.spawn(muzzleX, 24, muzzleZ, mMat, 'nova');
+            mf.baseSize = isCrit ? 42 : 26;
+            mf.life = 0.08; mf.maxLife = 0.08;
+        }
         
         // Calcola la velocità: 400 per il rosso, 800 per tutti gli altri
        let projSpeed = (projType === 'explosive_arrow') ? 400 : 800;
@@ -11518,15 +11625,15 @@ class Enemy extends Entity {
             if (this.mat) { this.mat.dispose(); this.mat = null; }
 
             const EnemyMatClass = isTouchDevice ? THREE.MeshLambertMaterial : THREE.MeshPhongMaterial;
-            this.mat = type === 'crystal' ? 
+           this.mat = type === 'crystal' ? 
                 new EnemyMatClass({color: 0x000000, emissive: color}) : 
-                new EnemyMatClass({ 
+                applyCharacterShader(new EnemyMatClass({ 
                     color: color, 
                     shininess: AppSettings.isUltraPC ? 60 : 30,
                     map: CHAR_GRUNGE_TEX,
                     bumpMap: isTouchDevice ? null : CHAR_GRUNGE_TEX,
                     bumpScale: 0.06
-                });
+                }), 0.75);
                 
             let modelData = ModelFactory.buildEnemy(type, size, this.mat);
             this.mesh.add(modelData.group); 
@@ -11793,7 +11900,15 @@ class Enemy extends Entity {
         if (this.infected && Game.frameCount % 10 === 0 && !isTouchDevice) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteGreen, 'trail');
         if (this.type === 'crystal') return; 
 
-        if (this.modelParts.armL && this.speed > 0 && this.state !== 'leaping') {
+        if (this.attackSwingTimer > 0) {
+            this.attackSwingTimer -= dt;
+            let swingProg = 1.0 - (this.attackSwingTimer / 0.28);
+            // Fendente violento dall'alto verso il basso + spinta del busto in avanti
+            let swingAngle = -1.6 + Math.sin(swingProg * Math.PI) * 2.8;
+            if (this.modelParts.armR) this.modelParts.armR.rotation.x = swingAngle;
+            if (this.modelParts.armL) this.modelParts.armL.rotation.x = swingAngle * 0.5;
+            this.mesh.rotation.x = Math.sin(swingProg * Math.PI) * 0.35;
+        } else if (this.modelParts.armL && this.speed > 0 && this.state !== 'leaping') {
             this.modelParts.armL.rotation.x = Game.animArm;
             this.modelParts.armR.rotation.x = -Game.animArm;
         }
@@ -12225,6 +12340,7 @@ class Enemy extends Entity {
             this.attackCooldown = 2.0 * cdMult; 
         }
         else if (this.type !== 'leaper' && this.type !== 'dark_prophet') { 
+            this.attackSwingTimer = 0.28; // Innesca il fendente fisico delle braccia/clava
             let dmg = this.isPursuer ? (Game.player.stats.maxHp * 0.3) : actualDmg;
             Game.player.takeDamage(dmg, this); 
             this.push(Math.cos(this.angle), Math.sin(this.angle), this.type === 'golem' ? 3 : 18); 
