@@ -833,62 +833,82 @@ body.colorblind-mode #opt-colorblind-text {
     </div>
 
    <!-- RELIQUIE -->
-   <div id="relicScreen" class="absolute inset-0 bg-black/95 z-[250] flex flex-col items-center justify-center backdrop-blur-xl pointer-events-auto hidden overflow-hidden p-2 sm:p-4">
-        
-        <div class="w-full max-w-[900px] flex flex-col items-center justify-center h-full max-h-[100vh] py-2">
+   <div id="relicScreen" class="absolute inset-0 bg-black/95 z-[250] flex flex-col items-center justify-center backdrop-blur-xl pointer-events-auto hidden overflow-y-auto p-3 sm:p-5">
+        <div class="w-full max-w-[640px] flex flex-col items-center justify-center my-auto py-2 gap-3 sm:gap-4">
             
-            <h2 class="text-2xl sm:text-4xl font-black text-center text-amber-500 drop-shadow-[0_0_10px_rgba(251,191,36,0.6)] mb-1 uppercase tracking-widest shrink-0">Scegli il tuo Destino</h2>
-            <p class="text-[10px] sm:text-xs text-gray-400 mb-3 sm:mb-5 font-bold text-center shrink-0">Una nuova reliquia ti attende...</p>
+            <!-- HEADER -->
+            <div class="text-center shrink-0">
+                <h2 class="text-2xl sm:text-4xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-600 drop-shadow-[0_0_12px_rgba(251,191,36,0.5)] uppercase tracking-widest m-0">Scegli una Reliquia</h2>
+                <p class="text-[10px] sm:text-xs text-gray-400 mt-1 font-bold uppercase tracking-widest">Seleziona un potere da aggiungere al tuo arsenale</p>
+            </div>
             
-            <div id="relicCardsContainer" class="flex flex-row gap-2 sm:gap-4 w-full justify-center items-stretch shrink-0 z-10 h-auto max-h-[35vh]"></div>
+            <!-- 3 CARTE RELIQUIA -->
+            <div id="relicCardsContainer" class="grid grid-cols-3 gap-2.5 sm:gap-4 w-full items-stretch shrink-0 z-10"></div>
             
-           <div id="reforgeSection" class="glass-panel w-full max-w-[500px] flex flex-col items-center p-3 sm:p-4 mt-4 sm:mt-5 shrink-0 z-10 relative h-auto">
-                <h3 class="text-[10px] sm:text-xs font-black text-purple-400 uppercase tracking-widest mb-1"><i class="fa-solid fa-rotate-right"></i> Forgia Cosmica (1 Uso)</h3>
-                <p class="text-[9px] sm:text-[10px] text-gray-400 font-bold text-center mb-2 leading-tight">Sacrifica una reliquia per forgiarne una nuova.</p>
-                
-                <div class="flex items-center gap-3 sm:gap-5 w-full justify-center mt-1">
-                    <button id="btn-select-reforge" onclick="RelicSystem.openReforgeModal()" class="w-[4.5rem] h-[4.5rem] sm:w-[5rem] sm:h-[5rem] border-2 border-dashed border-gray-600 hover:border-purple-400 flex items-center justify-center bg-black transition-all active:scale-95 group relative overflow-hidden shrink-0">
-                        <i id="reforge-icon-default" class="fa-solid fa-gem text-gray-500 group-hover:text-purple-400 text-2xl transition-colors"></i>
-                        <img id="reforge-icon-img" src="" class="absolute inset-0 w-full h-full object-cover hidden">
-                        <div id="reforge-overlay" class="absolute inset-0 bg-black/80 hidden items-center justify-center text-white font-black text-[8px] sm:text-[9px] uppercase text-center leading-none">Riforgia!</div>
-                    </button>
-                    
-                    <i class="fa-solid fa-angles-right text-purple-500/50 text-xl animate-pulse"></i>
-                    
-                    <button id="btn-do-reforge" onclick="RelicSystem.executeReforge()" class="btn-cyber box-glow-purple disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale flex-1 max-w-[140px] text-xs sm:text-sm h-12" disabled>
-                        Riforgia
-                    </button>
+            <!-- BARRA COMPATTE FORGIA COSMICA (REROLL) -->
+            <div id="reforgeSection" class="glass-panel w-full p-3 sm:p-4 border-2 border-purple-500/40 flex flex-col gap-2 shrink-0 z-10 relative">
+                <div class="flex items-center justify-between border-b border-gray-800 pb-1.5">
+                    <span class="text-[10px] sm:text-xs font-black text-purple-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate"></i> Forgia Cosmica
+                    </span>
+                    <span id="reforge-status-badge" class="text-[9px] sm:text-[10px] font-bold text-purple-300 bg-purple-950/60 px-2 py-0.5 border border-purple-500/40 uppercase tracking-wider">1 Uso Disponibile</span>
                 </div>
-                
-                <div class="w-full mt-3 bg-black border-2 border-gray-800 p-2.5 min-h-[55px] flex flex-col items-center justify-center text-center">
-                    <p id="reforge-desc-title" class="text-[9px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-wider leading-none m-0">Nessuna Reliquia Selezionata</p>
-                    <p id="reforge-desc-text" class="text-[8px] sm:text-[10px] text-gray-400 mt-1.5 leading-tight font-bold hidden"></p>
+
+                <div class="flex items-center justify-between gap-3 pt-1">
+                    <!-- Icona Reliquia / Slot -->
+                    <button id="btn-select-reforge" onclick="RelicSystem.openReforgeModal()" class="w-14 h-14 sm:w-16 sm:h-16 border-2 border-dashed border-purple-500/60 hover:border-purple-400 flex items-center justify-center bg-black transition-all active:scale-95 group relative overflow-hidden shrink-0">
+                        <i id="reforge-icon-default" class="fa-solid fa-wand-magic-sparkles text-purple-400/80 group-hover:text-purple-300 text-xl sm:text-2xl transition-colors"></i>
+                        <img id="reforge-icon-img" src="" class="absolute inset-0 w-full h-full object-cover hidden">
+                        <div id="reforge-overlay" class="absolute inset-0 bg-black/80 hidden items-center justify-center text-white font-black text-[8px] uppercase text-center leading-none">Cambia</div>
+                    </button>
+
+                    <!-- Testo descrittivo -->
+                    <div class="flex flex-col flex-1 min-w-0 text-left">
+                        <p id="reforge-desc-title" class="text-xs sm:text-sm text-white font-black uppercase tracking-wide truncate m-0">Cambia una tua Reliquia</p>
+                        <p id="reforge-desc-text" class="text-[10px] sm:text-xs text-gray-400 mt-0.5 leading-snug font-bold">Sacrifica una reliquia dal tuo inventario per ottenerne una nuova casuale.</p>
+                    </div>
+
+                    <!-- Pulsante Azione -->
+                    <button id="btn-do-reforge" onclick="RelicSystem.openReforgeModal()" class="btn-cyber box-glow-purple px-3 sm:px-4 py-3 text-[10px] sm:text-xs text-purple-300 border-purple-500/60 shrink-0">
+                        <i class="fa-solid fa-repeat"></i> Scegli
+                    </button>
                 </div>
             </div>
 
-           <button id="btn-proceed-relic" onclick="RelicSystem.proceedToNextFloor()" class="mt-4 sm:mt-6 btn-cyber glass-panel box-glow-gray w-full max-w-[500px] mx-auto py-3 sm:py-4 px-6 text-[10px] sm:text-xs text-gray-500 shrink-0 cursor-not-allowed" disabled>
+            <!-- TASTO PROCEDI -->
+            <button id="btn-proceed-relic" onclick="RelicSystem.proceedToNextFloor()" class="btn-cyber glass-panel box-glow-gray w-full py-3.5 sm:py-4 px-6 text-xs sm:text-sm text-gray-500 shrink-0 cursor-not-allowed" disabled>
                 Seleziona una Reliquia
             </button>
         </div>
-    </div>
-  <!-- MODALE SELEZIONE SACRIFICIO -->
-    <div id="reforgeSelectModal" class="absolute inset-0 bg-black/95 z-[260] flex flex-col items-center justify-center backdrop-blur-md pointer-events-auto hidden p-4">
-       <div class="glass-panel modal-enter border-purple-500/50 p-5 w-full max-w-[450px] h-[550px] shadow-[0_0_40px_rgba(168,85,247,0.3)] flex flex-col max-h-[85vh]">
-            <h2 class="text-xl sm:text-2xl font-black text-purple-400 mb-4 border-b border-gray-700 pb-2 uppercase tracking-widest text-center"><i class="fa-solid fa-fire"></i> Seleziona Sacrificio</h2>
+    </div>
+
+    <!-- MODALE SELEZIONE SACRIFICIO (FORGIA COSMICA) -->
+    <div id="reforgeSelectModal" class="absolute inset-0 bg-black/90 z-[260] flex flex-col items-center justify-center backdrop-blur-md pointer-events-auto hidden p-3">
+        <div class="glass-panel modal-enter border-purple-500/50 p-4 sm:p-5 w-full max-w-[440px] shadow-[0_0_40px_rgba(168,85,247,0.3)] flex flex-col max-h-[88vh] relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-purple-900/20 to-transparent pointer-events-none"></div>
+
+            <div class="border-b border-gray-700/80 pb-3 mb-3 shrink-0 relative z-10">
+                <h2 class="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-fuchsia-300 uppercase tracking-widest flex items-center gap-2 m-0">
+                    <i class="fa-solid fa-rotate text-purple-400"></i> Forgia Cosmica
+                </h2>
+                <p class="text-[10px] sm:text-xs text-gray-400 font-bold mt-1 m-0">Tocca la reliquia del tuo inventario che vuoi sostituire:</p>
+            </div>
             
-            <div id="reforgeSelectGrid" class="flex flex-wrap gap-3 overflow-y-auto custom-scrollbar p-2 justify-center content-start flex-1 min-h-[120px]">
+            <div id="reforgeSelectGrid" class="flex flex-wrap gap-3 overflow-y-auto custom-scrollbar p-2 justify-center content-start flex-1 min-h-[120px] relative z-10">
             </div>
 
-            <!-- BOX DESCRIZIONE NEL MODALE -->
-            <div class="mt-4 bg-black/80 border border-purple-900/50 rounded-xl p-3 h-[100px] overflow-y-auto custom-scrollbar flex flex-col justify-center items-center text-center shrink-0 shadow-[inset_0_0_15px_rgba(0,0,0,0.8)]">
-                <h3 id="reforge-modal-name" class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">IN ATTESA...</h3>
-                <p id="reforge-modal-desc" class="text-xs text-gray-500 font-bold">Passa il cursore o tocca un'icona per leggerne il potere prima di sacrificarla.</p>
+            <!-- BOX DETTAGLI RELIQUIA SELEZIONATA -->
+            <div class="mt-3 bg-black/80 border-2 border-gray-800 p-3 min-h-[88px] flex flex-col justify-center items-center text-center shrink-0 relative z-10">
+                <h3 id="reforge-modal-name" class="text-xs sm:text-sm font-black text-gray-400 uppercase tracking-widest mb-1">NESSUNA SELEZIONE</h3>
+                <p id="reforge-modal-desc" class="text-[11px] sm:text-xs text-gray-500 font-bold leading-snug m-0">Tocca un'icona qui sopra per visualizzarne l'effetto.</p>
             </div>
 
-            <!-- NUOVI PULSANTI: ANNULLA e SELEZIONA -->
-            <div class="flex gap-3 mt-5 w-full shrink-0 z-10">
+            <!-- PULSANTI ANNULLA / RIFORGIA ORA -->
+            <div class="flex gap-3 mt-4 w-full shrink-0 relative z-10">
                 <button onclick="UIManager.hideModal('reforgeSelectModal')" class="btn-cyber glass-panel box-glow-gray flex-1 py-3.5 text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-widest">Annulla</button>
-                <button id="btn-confirm-sacrifice" onclick="RelicSystem.confirmSacrificeSelection()" class="btn-cyber glass-panel flex-1 py-3.5 text-xs sm:text-sm font-bold text-red-500 uppercase tracking-widest opacity-50 cursor-not-allowed grayscale" disabled>Seleziona</button>
+                <button id="btn-confirm-sacrifice" onclick="RelicSystem.confirmSacrificeSelection()" class="btn-cyber glass-panel flex-1 py-3.5 text-xs sm:text-sm font-bold text-purple-300 uppercase tracking-widest opacity-50 cursor-not-allowed grayscale" disabled>
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Riforgia Ora
+                </button>
             </div>
         </div>
     </div>
@@ -2836,7 +2856,6 @@ const RelicSystem = {
     selectedMainRelic: null, // Memorizza la reliquia scelta
     
     showChoices() {
-        // Reset Stato Riforgiatura e Scelta
         this.hasReforged = false;
         this.selectedForReforge = null;
         this.selectedMainRelic = null;
@@ -2847,253 +2866,200 @@ const RelicSystem = {
         
         const reforgeSection = document.getElementById('reforgeSection');
         const btnProceed = document.getElementById('btn-proceed-relic');
+        const statusBadge = document.getElementById('reforge-status-badge');
         
-        // --- SETUP FORGIA COSMICA (REFORGE) ---
+        // --- SETUP BARRA FORGIA COSMICA ---
         if (Game.player.relics.length > 0) {
             reforgeSection.classList.remove('hidden');
-            reforgeSection.style.display = 'flex'; // Failsafe: Forza il flexbox che Tailwind a volte perde
+            reforgeSection.style.display = 'flex';
             document.getElementById('reforge-icon-default').classList.remove('hidden');
             document.getElementById('reforge-icon-img').classList.add('hidden');
             document.getElementById('reforge-overlay').classList.add('hidden');
             
+            if (statusBadge) {
+                statusBadge.innerText = "1 Uso Disponibile";
+                statusBadge.className = "text-[9px] sm:text-[10px] font-bold text-purple-300 bg-purple-950/60 px-2 py-0.5 border border-purple-500/40 uppercase tracking-wider";
+            }
+
             let btnDo = document.getElementById('btn-do-reforge');
-            btnDo.disabled = true;
-            btnDo.innerText = "RIFORGIA";
+            btnDo.disabled = false;
+            btnDo.className = "btn-cyber box-glow-purple px-3 sm:px-4 py-3 text-[10px] sm:text-xs text-purple-300 border-purple-500/60 shrink-0";
+            btnDo.innerHTML = '<i class="fa-solid fa-repeat"></i> Scegli';
+            btnDo.onclick = () => RelicSystem.openReforgeModal();
             
-            // Setup iniziale descrizioni Forgia
-            document.getElementById('reforge-desc-title').innerHTML = "<span class='text-gray-500 animate-pulse'>IN ATTESA DI UN'OFFERTA...</span>";
-            document.getElementById('reforge-desc-text').innerText = "Tocca il riquadro vuoto per scegliere la reliquia da distruggere.";
-            document.getElementById('reforge-desc-text').className = "text-[9px] sm:text-[10px] text-gray-500 mt-1.5 leading-tight font-bold";
-            document.getElementById('reforge-desc-text').classList.remove('hidden');
+            let descTitle = document.getElementById('reforge-desc-title');
+            let descText = document.getElementById('reforge-desc-text');
+            descTitle.innerText = "Cambia una tua Reliquia";
+            descTitle.className = "text-xs sm:text-sm text-white font-black uppercase tracking-wide truncate m-0";
+            descText.innerText = "Sacrifica una reliquia dal tuo inventario per ottenerne una nuova casuale.";
+            descText.className = "text-[10px] sm:text-xs text-gray-400 mt-0.5 leading-snug font-bold";
+            descText.classList.remove('hidden');
             
             let btnSel = document.getElementById('btn-select-reforge');
-            btnSel.className = "w-[4.5rem] h-[4.5rem] sm:w-[5rem] sm:h-[5rem] rounded-2xl border-2 border-dashed border-gray-600 hover:border-purple-400 flex items-center justify-center bg-black/50 transition-all active:scale-95 group relative overflow-hidden shrink-0 shadow-inner";
+            btnSel.className = "w-14 h-14 sm:w-16 sm:h-16 border-2 border-dashed border-purple-500/60 hover:border-purple-400 flex items-center justify-center bg-black transition-all active:scale-95 group relative overflow-hidden shrink-0";
             btnSel.style.boxShadow = "none";
             btnSel.onclick = () => RelicSystem.openReforgeModal();
-            
         } else {
             reforgeSection.classList.add('hidden');
-            reforgeSection.style.display = 'none'; // Failsafe
+            reforgeSection.style.display = 'none';
         }
 
-        // RESETTA IL TASTO PROCEDI ALLA SITUAZIONE DI PARTENZA
+        // STATO INIZIALE PULSANTE PROCEDI
         if (this.currentChoices.length === 0) {
             if (Game.player.relics.length === 0) {
                 this.proceedToNextFloor(true); 
                 return;
             } else {
                 btnProceed.disabled = false;
-                btnProceed.innerText = "Procedi al prossimo piano";
-                btnProceed.className = "mt-4 sm:mt-6 btn-cyber glass-panel box-glow-blue w-full max-w-[500px] mx-auto py-3 sm:py-4 px-6 text-[10px] sm:text-xs text-blue-300 border-blue-500/50 shrink-0";
+                btnProceed.innerText = "PROCEDI AL PROSSIMO PIANO";
+                btnProceed.className = "btn-cyber glass-panel box-glow-blue w-full py-3.5 sm:py-4 px-6 text-xs sm:text-sm text-blue-300 border-blue-500/50 shrink-0";
             }
         } else {
             btnProceed.disabled = true;
-            btnProceed.innerText = "Seleziona una reliquia";
-            btnProceed.className = "mt-4 sm:mt-6 btn-cyber glass-panel box-glow-gray w-full max-w-[500px] mx-auto py-3 sm:py-4 px-6 text-[10px] sm:text-xs text-gray-500 shrink-0 cursor-not-allowed";
+            btnProceed.innerText = "SELEZIONA UNA RELIQUIA";
+            btnProceed.className = "btn-cyber glass-panel box-glow-gray w-full py-3.5 sm:py-4 px-6 text-xs sm:text-sm text-gray-500 shrink-0 cursor-not-allowed";
         }
         
-        // CREAZIONE CARTE SCELTA ADATTIVE
+        // CREAZIONE DELLE 3 CARTE RELIQUIA
         for(let i=0; i<this.currentChoices.length; i++) {
             let relic = this.currentChoices[i];
             
-            // Assegnazione colori di Sfondo e Bordo iniziali
-            let bgClass = "bg-green-900/40 text-green-300 border-green-600/50"; 
+            let borderClass = "border-green-500/60";
+            let badgeClass = "bg-green-950/80 text-green-400 border-green-500/40";
             let fallbackIcon = "fa-gem"; let rarityLabel = "COMUNE";
             
-            if (relic.rarity === 'rare') { bgClass = "bg-blue-900/40 text-blue-300 border-blue-600/50"; fallbackIcon = "fa-shield-halved"; rarityLabel = "RARA"; }
-            if (relic.rarity === 'epic') { bgClass = "bg-purple-900/40 text-purple-300 border-purple-600/50"; fallbackIcon = "fa-eye"; rarityLabel = "EPICA"; }
-            if (relic.rarity === 'legendary') { bgClass = "bg-amber-900/40 text-amber-400 border-amber-600/50"; fallbackIcon = "fa-crown"; rarityLabel = "LEGGENDA"; }
+            if (relic.rarity === 'rare') { borderClass = "border-blue-500/60"; badgeClass = "bg-blue-950/80 text-blue-400 border-blue-500/40"; fallbackIcon = "fa-shield-halved"; rarityLabel = "RARA"; }
+            if (relic.rarity === 'epic') { borderClass = "border-purple-500/60"; badgeClass = "bg-purple-950/80 text-purple-300 border-purple-500/40"; fallbackIcon = "fa-eye"; rarityLabel = "EPICA"; }
+            if (relic.rarity === 'legendary') { borderClass = "border-amber-500/70"; badgeClass = "bg-amber-950/80 text-amber-400 border-amber-500/50"; fallbackIcon = "fa-crown"; rarityLabel = "LEGGENDARIA"; }
             
             let iconClass = relic.icon || fallbackIcon;
             
-            let visualElement = `
-                <div class="relative flex justify-center items-center my-1.5 w-[4.5rem] h-[4.5rem] sm:w-[5rem] sm:h-[5rem] shrink-0 bg-black border-2 border-gray-800">
-                    <img src="${relic.image}" alt="${relic.name}" onload="this.nextElementSibling.style.display='none';" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" class="w-full h-full object-cover">
-                    <i class="fa-solid ${iconClass} text-4xl sm:text-5xl opacity-90 drop-shadow-md" style="display:none;"></i>
-                </div>
-            `;
-
             let card = document.createElement('div'); 
             card.id = `main-relic-card-${i}`;
-            // Aggiunto il background colorato e le transizioni fluide per l'ingrandimento
-            card.className = `relic-card stagger-enter flex flex-col items-center justify-start p-2 sm:p-3 w-[32%] sm:flex-1 max-w-[190px] ${bgClass} border-2 min-h-[170px] sm:min-h-[190px] transition-all duration-300 cursor-pointer hover:brightness-125`;
-            
-            card.style.animationDelay = `${i * 150}ms`;
+            card.className = `relic-card stagger-enter flex flex-col items-center justify-between p-2.5 sm:p-4 ${borderClass} border-2 min-h-[190px] sm:min-h-[230px] transition-all duration-200 cursor-pointer`;
+            card.style.animationDelay = `${i * 100}ms`;
 
             card.innerHTML = `
-                <div class="text-center w-full shrink-0 pointer-events-none"><span class="text-[7px] sm:text-[9px] font-black uppercase tracking-widest opacity-80 leading-none">${rarityLabel}</span><h3 class="text-[10px] sm:text-[13px] font-black mt-1 mb-0 tracking-wide leading-tight flex items-center justify-center h-6 sm:h-8">${relic.name}</h3></div>
-                ${visualElement}
-                <p class="text-[8px] sm:text-[10px] font-bold text-center leading-tight text-white/90 mt-1 w-full pointer-events-none">${relic.desc}</p>
+                <div class="w-full flex flex-col items-center pointer-events-none">
+                    <span class="text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-2 py-0.5 border ${badgeClass}">${rarityLabel}</span>
+                    <div class="relative flex justify-center items-center my-2.5 w-14 h-14 sm:w-20 sm:h-20 shrink-0 bg-black border-2 border-gray-800">
+                        <img src="${relic.image}" alt="${relic.name}" onload="this.nextElementSibling.style.display='none';" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" class="w-full h-full object-cover">
+                        <i class="fa-solid ${iconClass} text-3xl sm:text-4xl opacity-90" style="display:none;"></i>
+                    </div>
+                    <h3 class="text-[11px] sm:text-sm font-black text-white text-center uppercase tracking-wide leading-tight m-0">${relic.name}</h3>
+                </div>
+                <p class="text-[9px] sm:text-xs font-bold text-center leading-snug text-gray-300 mt-2 mb-0 w-full pointer-events-none">${relic.desc}</p>
             `;
 
-            // EFFETTO SELEZIONE (Glow + Scale)
             card.onclick = () => { 
                 AudioEngine.playHover(); 
                 this.selectedMainRelic = relic;
 
-                // Spegne e rimpicciolisce tutte le altre carte
                 for(let j=0; j<this.currentChoices.length; j++) {
                     let c = document.getElementById(`main-relic-card-${j}`);
                     let r = this.currentChoices[j];
-                    
-                    c.classList.add('opacity-40', 'grayscale', 'scale-95');
-                    c.classList.remove('scale-105', 'z-10');
+                    c.classList.add('opacity-45', 'grayscale');
                     c.style.transform = '';
-                    
-                    // Riporta i bordi allo stato spento
-                    if (r.rarity === 'legendary') { c.style.borderColor = 'rgba(217, 119, 6, 0.5)'; c.style.boxShadow = 'none'; }
-                    else if (r.rarity === 'epic') { c.style.borderColor = 'rgba(147, 51, 234, 0.5)'; c.style.boxShadow = 'none'; }
-                    else if (r.rarity === 'rare') { c.style.borderColor = 'rgba(37, 99, 235, 0.5)'; c.style.boxShadow = 'none'; }
-                    else { c.style.borderColor = 'rgba(22, 163, 74, 0.5)'; c.style.boxShadow = 'none'; }
+                    c.style.borderColor = '';
+                    c.style.boxShadow = 'none';
                 }
 
-                // Estrae il colore corretto per il neon della carta SELEZIONATA
                 let glowCol = relic.rarity === 'legendary' ? '#fbbf24' : 
                               relic.rarity === 'epic' ? '#a855f7' : 
                               relic.rarity === 'rare' ? '#3b82f6' : '#22c55e';
 
-                // Accende e ingrandisce la carta cliccata
-                card.classList.remove('opacity-40', 'grayscale', 'scale-95');
-                card.classList.add('scale-105', 'z-10');
-                card.style.transform = 'translateY(-8px)';
+                card.classList.remove('opacity-45', 'grayscale');
+                card.style.transform = 'translateY(-6px)';
                 card.style.borderColor = '#ffffff'; 
-                card.style.boxShadow = `0px 0px 35px ${glowCol}, inset 0px 0px 15px ${glowCol}`;
+                card.style.boxShadow = `0px 0px 25px ${glowCol}, 4px 4px 0px ${glowCol}`;
 
                 btnProceed.disabled = false;
-                btnProceed.innerText = "PROCEDI AL PROSSIMO PIANO";
-                btnProceed.className = "mt-4 sm:mt-6 btn-cyber glass-panel box-glow-blue w-full max-w-[500px] mx-auto py-3 sm:py-4 px-6 text-[10px] sm:text-xs text-blue-300 border-blue-500/50 shrink-0";
+                btnProceed.innerText = "CONFERMA E PROCEDI";
+                btnProceed.className = "btn-cyber glass-panel box-glow-blue w-full py-3.5 sm:py-4 px-6 text-xs sm:text-sm text-blue-300 border-blue-500/60 shrink-0";
             };
             container.appendChild(card);
-        }
-        
-        // Reset Box Descrizione Reforge
-        let descTitle = document.getElementById('reforge-desc-title');
-        let descText = document.getElementById('reforge-desc-text');
-        if (descTitle && descText) {
-            descTitle.innerHTML = "Nessuna Reliquia Selezionata";
-            descTitle.className = "text-[9px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-wider leading-none m-0";
-            descText.classList.add('hidden');
         }
 
         document.getElementById('relicScreen').classList.remove('hidden');
     },
 
-   openReforgeModal() {
+    openReforgeModal() {
         if (this.hasReforged) return;
         AudioEngine.playClick();
         const grid = document.getElementById('reforgeSelectGrid');
         grid.innerHTML = '';
         
-        // Resetta lo stato di selezione temporanea
         this.tempSelectedForReforge = null;
         
-        // Resetta il tasto Conferma
         const btnConfirm = document.getElementById('btn-confirm-sacrifice');
         btnConfirm.disabled = true;
-        btnConfirm.className = "btn-cyber glass-panel flex-1 py-3.5 text-xs sm:text-sm font-bold text-red-500 uppercase tracking-widest opacity-50 cursor-not-allowed grayscale";
+        btnConfirm.className = "btn-cyber glass-panel flex-1 py-3.5 text-xs sm:text-sm font-bold text-purple-300 uppercase tracking-widest opacity-50 cursor-not-allowed grayscale";
         
-        // Resetta il box testo nel modale
         const modalName = document.getElementById('reforge-modal-name');
         const modalDesc = document.getElementById('reforge-modal-desc');
-        modalName.innerHTML = "IN ATTESA...";
-        modalName.className = "text-sm font-black text-gray-400 uppercase tracking-widest mb-1";
-        modalDesc.innerText = "Tocca un'icona per leggerne il potere. Tocca 'SELEZIONA' per confermare.";
-        modalDesc.className = "text-xs text-gray-500 font-bold";
+        modalName.innerText = "NESSUNA SELEZIONE";
+        modalName.className = "text-xs sm:text-sm font-black text-gray-400 uppercase tracking-widest mb-1";
+        modalDesc.innerText = "Tocca un'icona qui sopra per visualizzarne l'effetto.";
+        modalDesc.className = "text-[11px] sm:text-xs text-gray-500 font-bold leading-snug m-0";
         
         Game.player.relics.forEach((relic, index) => {
-           let colorClass = relic.rarity === 'legendary' ? 'border-amber-400 shadow-[4px_4px_0px_rgba(251,191,36,1)]' : 
-                             relic.rarity === 'epic' ? 'border-purple-400 shadow-[4px_4px_0px_rgba(168,85,247,1)]' : 
-                             relic.rarity === 'rare' ? 'border-blue-400 shadow-[4px_4px_0px_rgba(59,130,246,1)]' : 'border-green-400 shadow-[4px_4px_0px_rgba(34,197,94,1)]';
+            let colorClass = relic.rarity === 'legendary' ? 'border-amber-400 shadow-[3px_3px_0px_#78350f]' : 
+                             relic.rarity === 'epic' ? 'border-purple-400 shadow-[3px_3px_0px_#581c87]' : 
+                             relic.rarity === 'rare' ? 'border-blue-400 shadow-[3px_3px_0px_#1e3a8a]' : 'border-green-400 shadow-[3px_3px_0px_#14532d]';
                              
             let textColor = relic.rarity === 'legendary' ? 'text-amber-400' : 
                             relic.rarity === 'epic' ? 'text-purple-400' : 
                             relic.rarity === 'rare' ? 'text-blue-400' : 'text-green-400';
 
             let imgBox = document.createElement('div');
-            imgBox.id = `reforge-choice-${index}`; // ID univoco per manipolare la UI in seguito
-            imgBox.className = `w-14 h-14 sm:w-16 sm:h-16 border-2 bg-black ${colorClass} overflow-hidden cursor-pointer hover:-translate-x-1 hover:-translate-y-1 transition-transform relative group flex shrink-0`;
-            imgBox.innerHTML = `
-                <img src="${relic.image}" class="w-full h-full object-cover">
-                <div class="absolute inset-0 bg-red-900/80 hidden group-hover:flex items-center justify-center text-white"><i class="fa-solid fa-fire text-xl"></i></div>
-            `;
+            imgBox.id = `reforge-choice-${index}`;
+            imgBox.className = `w-14 h-14 sm:w-16 sm:h-16 border-2 bg-black ${colorClass} overflow-hidden cursor-pointer transition-all relative flex items-center justify-center shrink-0`;
+            imgBox.innerHTML = `<img src="${relic.image}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><i class="fa-solid ${relic.icon || 'fa-gem'} text-2xl ${textColor}" style="display:none;"></i>`;
             
-            // LOGICA HOVER/TOUCH PER LEGGERE LA DESCRIZIONE
             const showDetails = () => {
-                if (!this.tempSelectedForReforge || this.tempSelectedForReforge.index !== index) AudioEngine.playHover();
                 modalName.innerText = relic.name;
-                modalName.className = `text-sm font-black uppercase tracking-widest mb-1 ${textColor}`;
+                modalName.className = `text-xs sm:text-sm font-black uppercase tracking-widest mb-1 ${textColor}`;
                 modalDesc.innerText = relic.desc;
-                modalDesc.className = "text-xs text-white font-bold leading-snug";
+                modalDesc.className = "text-[11px] sm:text-xs text-white font-bold leading-snug m-0";
             };
 
             imgBox.onmouseenter = showDetails;
             
-            // Il Click ora SELEZIONA VISIVAMENTE la reliquia, ma NON chiude il modale!
             imgBox.onclick = () => {
                 AudioEngine.playClick();
                 this.tempSelectedForReforge = { relic, index };
+                showDetails();
                 
-                showDetails(); // Forza l'aggiornamento del testo su mobile
-                
-                // Aggiorna l'estetica di tutte le icone per mostrare quale è selezionata
                 Game.player.relics.forEach((_, j) => {
                     let box = document.getElementById(`reforge-choice-${j}`);
                     if (box) {
                         if (j === index) {
-                            // Selezionata: si ingrandisce, bordo rosso fuoco
                             box.classList.remove('opacity-40', 'scale-95');
-                            box.classList.add('scale-105', 'border-red-500', 'shadow-[0_0_15px_rgba(239,68,68,0.8)]');
+                            box.classList.add('scale-105', 'border-white', 'shadow-[0_0_15px_rgba(168,85,247,0.9)]');
                         } else {
-                            // Altre: si spengono
-                            box.classList.remove('scale-105', 'border-red-500', 'shadow-[0_0_15px_rgba(239,68,68,0.8)]');
+                            box.classList.remove('scale-105', 'border-white', 'shadow-[0_0_15px_rgba(168,85,247,0.9)]');
                             box.classList.add('opacity-40', 'scale-95');
                         }
                     }
                 });
                 
-                // Abilita il pulsante di Conferma
                 btnConfirm.disabled = false;
-                btnConfirm.className = "btn-cyber glass-panel box-glow-red flex-1 py-3.5 text-xs sm:text-sm font-bold text-red-500 uppercase tracking-widest";
+                btnConfirm.className = "btn-cyber glass-panel box-glow-purple flex-1 py-3.5 text-xs sm:text-sm font-bold text-purple-300 border-purple-500/60 uppercase tracking-widest";
             };
             
             grid.appendChild(imgBox);
         });
         UIManager.showModal('reforgeSelectModal');
     },
-confirmSacrificeSelection() {
+
+    confirmSacrificeSelection() {
         if (!this.tempSelectedForReforge) return;
-        AudioEngine.playClick();
-        
-        // Trasferisce la selezione temporanea in quella definitiva
-        let relic = this.tempSelectedForReforge.relic;
         this.selectedForReforge = this.tempSelectedForReforge;
-        
-        // Aggiorna l'icona nel menu principale
-        document.getElementById('reforge-icon-default').classList.add('hidden');
-        let imgEl = document.getElementById('reforge-icon-img');
-        imgEl.src = relic.image;
-        imgEl.classList.remove('hidden');
-        
-        let btnSel = document.getElementById('btn-select-reforge');
-        btnSel.classList.remove('border-dashed', 'border-gray-600');
-        btnSel.classList.add('border-solid', 'border-red-500'); // Diventa rosso per indicare il pericolo
-        btnSel.style.boxShadow = '6px 6px 0px #ef4444';
-        document.getElementById('reforge-overlay').classList.remove('hidden');
-        
-        document.getElementById('btn-do-reforge').disabled = false;
-        
-        // POPOLA LA DESCRIZIONE DEL SACRIFICIO NEL PANNELLO BASSO
-        let descTitle = document.getElementById('reforge-desc-title');
-        let descText = document.getElementById('reforge-desc-text');
-        
-        descTitle.innerHTML = `<span class="text-red-500 animate-pulse"><i class="fa-solid fa-fire"></i> IN CENERI:</span> <span class="text-white line-through opacity-70">${relic.name.toUpperCase()}</span>`;
-        descTitle.className = "text-[9px] sm:text-[10px] font-black uppercase tracking-wider leading-none m-0";
-        
-        descText.innerText = relic.desc;
-        descText.className = "text-[8px] sm:text-[10px] text-red-300/60 mt-1.5 leading-tight font-semibold italic"; 
-        
         UIManager.hideModal('reforgeSelectModal');
+        // Esegue direttamente la riforgiatura senza richiedere un secondo click esterno
+        this.executeReforge();
     },
+
     executeReforge() {
         if (this.hasReforged || !this.selectedForReforge) return;
         this.hasReforged = true;
@@ -3101,20 +3067,27 @@ confirmSacrificeSelection() {
         AudioEngine.playShoot('explosive_arrow');
         Game.addTrauma(0.5);
         
+        const statusBadge = document.getElementById('reforge-status-badge');
+        if (statusBadge) {
+            statusBadge.innerText = "Completata";
+            statusBadge.className = "text-[9px] sm:text-[10px] font-bold text-green-400 bg-green-950/60 px-2 py-0.5 border border-green-500/40 uppercase tracking-wider";
+        }
+
         let btnDo = document.getElementById('btn-do-reforge');
         btnDo.disabled = true;
-        btnDo.innerText = "RIFORGIATA";
-        document.getElementById('btn-select-reforge').onclick = null;
+        btnDo.onclick = null;
+        btnDo.className = "btn-cyber px-3 py-2.5 text-[10px] sm:text-xs text-gray-500 border-gray-700 opacity-50 cursor-not-allowed shrink-0";
+        btnDo.innerHTML = '<i class="fa-solid fa-check"></i> Fatto';
+
+        let btnSel = document.getElementById('btn-select-reforge');
+        btnSel.onclick = null;
         document.getElementById('reforge-overlay').classList.add('hidden');
         
-        // Salviamo l'ID della reliquia sacrificata prima di rimuoverla
         let sacrificedRelicId = this.selectedForReforge.relic.id;
         
         Game.player.relics.splice(this.selectedForReforge.index, 1);
         Game.player.recalculateModifiers();
         
-        // Filtriamo il pool per impedire che la reliquia sacrificata venga estratta ORA.
-        // Essendo stata tolta da Game.player.relics, tornerà droppabile nei piani successivi.
         let availablePool = this.allRelics.filter(r => 
             !Game.player.relics.some(pr => pr.id === r.id) && 
             !this.currentChoices.some(c => c.id === r.id) &&
@@ -3131,48 +3104,44 @@ confirmSacrificeSelection() {
             newRelic.apply(Game.player);
             Game.player.relics.push(newRelic);
             
+            document.getElementById('reforge-icon-default').classList.add('hidden');
             let imgEl = document.getElementById('reforge-icon-img');
-            let btnSel = document.getElementById('btn-select-reforge');
+            imgEl.src = newRelic.image;
+            imgEl.classList.remove('hidden');
             
             btnSel.classList.add('anim-reforge');
             
             setTimeout(() => {
-                imgEl.src = newRelic.image;
-                
                 let colorGlow = newRelic.rarity === 'legendary' ? '#fbbf24' : 
                                 newRelic.rarity === 'epic' ? '#a855f7' : 
                                 newRelic.rarity === 'rare' ? '#3b82f6' : '#22c55e';
-                                 
+                                
                 let borderColor = newRelic.rarity === 'legendary' ? 'border-amber-400' : 
                                   newRelic.rarity === 'epic' ? 'border-purple-400' : 
                                   newRelic.rarity === 'rare' ? 'border-blue-400' : 'border-green-400';
                                   
-                btnSel.className = `w-[4.5rem] h-[4.5rem] sm:w-[5rem] sm:h-[5rem] border-2 border-solid ${borderColor} flex items-center justify-center bg-black shrink-0 relative overflow-hidden anim-reforge`;
-                btnSel.style.boxShadow = `6px 6px 0px ${colorGlow}`;
+                btnSel.className = `w-14 h-14 sm:w-16 sm:h-16 border-2 border-solid ${borderColor} flex items-center justify-center bg-black shrink-0 relative overflow-hidden`;
+                btnSel.style.boxShadow = `4px 4px 0px ${colorGlow}`;
                 
-                // POPOLA LA DESCRIZIONE DELLA RELIQUIA RIFORGIATA
                 let descTitle = document.getElementById('reforge-desc-title');
                 let descText = document.getElementById('reforge-desc-text');
                 
-                // Testo del titolo verde e luminoso
-                descTitle.innerHTML = `<span class="text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.8)]"><i class="fa-solid fa-wand-magic-sparkles"></i> OTTENUTA:</span> <span class="text-white font-black drop-shadow-md">${newRelic.name.toUpperCase()}</span>`;
+                let titleColor = newRelic.rarity === 'legendary' ? 'text-amber-400' : 
+                                 newRelic.rarity === 'epic' ? 'text-purple-400' : 
+                                 newRelic.rarity === 'rare' ? 'text-blue-400' : 'text-green-400';
+
+                descTitle.innerHTML = `<span class="text-white/70 text-[10px]">OTTENUTA:</span> <span class="${titleColor}">${newRelic.name.toUpperCase()}</span>`;
+                descTitle.className = "text-xs sm:text-sm font-black uppercase tracking-wide truncate m-0";
                 descText.innerText = newRelic.desc;
-                
-                // Colore brillante per far risaltare il potere appena acquisito
-                let descColor = newRelic.rarity === 'legendary' ? 'text-amber-300' : 
-                                newRelic.rarity === 'epic' ? 'text-purple-300' : 
-                                newRelic.rarity === 'rare' ? 'text-blue-300' : 'text-green-300';
-                                
-                descText.className = `text-[8px] sm:text-[10px] mt-1.5 leading-tight font-black ${descColor} drop-shadow-md`;
+                descText.className = "text-[10px] sm:text-xs text-gray-200 mt-0.5 leading-snug font-bold";
                 
                 AudioEngine.playRelicDrop();
                 for(let i=0; i<20; i++) Game.getParticle().spawn(Game.player.x, 20, Game.player.y, SharedMat.spriteLevel, 'spark');
-            }, 300);
+            }, 250);
             
             setTimeout(() => {
                 btnSel.classList.remove('anim-reforge');
             }, 600);
-            
         }
     },
 
@@ -3210,7 +3179,6 @@ confirmSacrificeSelection() {
 const BLOB_SHADOW_TEX = createBlobShadowTexture();
 const BLOOD_TEX = createPatternTexture('blood'); const GLOW_TEX = createGlowTexture();
 
-// --- TEXTURE PROCEDURALE PERSONAGGI (Stile Miniatura/Materico) ---
 // --- TEXTURE PROCEDURALE PERSONAGGI (Stile Miniatura/Materico) ---
 function createCharacterTexture() {
     const canvas = document.createElement('canvas'); 
@@ -7118,9 +7086,10 @@ startGame(diffMult) {
 
        for (let i = 0, len = this.enemies.length; i < len; i++) {
             let e = this.enemies[i];
+            if (e.type === 'crystal') continue; // I cristalli viola non mostrano mai icone obelisco o barre HP
             
             // Culling preventivo: usa _lastAuraType già calcolato in update()
-            let isDamaged = (e.stats.hp < e.stats.maxHp && e.type !== 'crystal');
+            let isDamaged = (e.stats.hp < e.stats.maxHp);
             let auraType = e._lastAuraType;
             if (!isDamaged && !auraType) continue;
 
@@ -7149,6 +7118,31 @@ startGame(diffMult) {
                 }
             }
         }
+        
+        // 3. Logica Icona Potere Obelisco sul Giocatore (visibile finché il potere ottenuto dall'obelisco distrutto è attivo)
+        if (this.player && !this.player.dead) {
+            let pBuff = null;
+            let remTime = 0;
+            if (this.player.obeliskBurnTimer > 0) { pBuff = 'red'; remTime = this.player.obeliskBurnTimer; }
+            else if (this.player.obeliskSlowTimer > 0) { pBuff = 'blue'; remTime = this.player.obeliskSlowTimer; }
+            else if (this.player.obeliskHealTimer > 0) { pBuff = 'green'; remTime = this.player.obeliskHealTimer; }
+            else if (this.player.obeliskDmgTimer > 0) { pBuff = 'corrupted'; remTime = this.player.obeliskDmgTimer; }
+
+            if (pBuff) {
+                // Lampeggia negli ultimi 1.5 secondi prima dello scadere del potere
+                let showIcon = remTime > 1.5 || (Math.floor(remTime * 8) % 2 === 0);
+                if (showIcon) {
+                    let pPos = this.toScreenPosition(this.player.x, 80, this.player.y);
+                    if (pPos.z < 1) {
+                        let pIconTex = pBuff === 'blue' ? SharedMat.iconTime.map : (pBuff === 'green' ? SharedMat.iconMountain.map : SharedMat.iconHysteria.map);
+                        if (pIconTex && pIconTex.image) {
+                            this.uiCtx.drawImage(pIconTex.image, pPos.x - 16, pPos.y - 40, 32, 32);
+                        }
+                    }
+                }
+            }
+        }
+        
         
         // 3. Logica Icona Aura sul Giocatore
         if (this.player && !this.player.dead) {
@@ -11418,6 +11412,8 @@ class Enemy extends Entity {
         this.slowedTimer = 0;
         this.infected = false;
         this.isBerserk = false;
+        this._lastAuraType = null;
+        this.hideAuras();
         
        let hpMod = 1, dmgMod = 1, spdMod = 1, color = 0x666666, size = 12;
         this.isFlying = false; // Reset di base
