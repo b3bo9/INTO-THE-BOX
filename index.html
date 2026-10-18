@@ -824,11 +824,22 @@ body.colorblind-mode #opt-colorblind-text {
     </div>
 
     <!-- PUNTEGGI -->
-    <div id="highScoreScreen" class="absolute inset-0 bg-black/95 z-[250] flex items-center justify-center backdrop-blur-xl pointer-events-auto hidden">
-        <div class="bg-red-950/20 border border-red-900/50 p-6 sm:p-8 w-[90%] max-w-[500px] landscape:max-w-[700px] flex flex-col gap-4 rounded-2xl shadow-[0_0_50px_rgba(220,38,38,0.2)]">
-            <h2 class="text-3xl sm:text-4xl font-black text-center text-transparent bg-clip-text bg-gradient-to-br from-amber-200 via-amber-500 to-red-600 drop-shadow-[0_0_10px_rgba(255,170,0,0.5)] mb-2">ONORE AI CADUTI</h2>
-            <div id="highScoresList" class="flex flex-col gap-3 min-h-[200px] max-h-[50vh] landscape:max-h-[55vh] overflow-y-auto pr-2"></div>
-           <button onclick="hideHighScores()" class="mt-4 btn-cyber glass-panel box-glow-gray w-full py-3.5 text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-widest shrink-0 z-10">Torna al menu</button>
+    <div id="highScoreScreen" class="absolute inset-0 bg-black/90 z-[250] flex items-center justify-center backdrop-blur-md pointer-events-auto hidden p-3">
+        <div class="glass-panel modal-enter border-amber-500/50 p-4 sm:p-5 w-full max-w-[460px] flex flex-col max-h-[88vh] shadow-[0_0_40px_rgba(251,191,36,0.25)] relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-amber-900/20 to-transparent pointer-events-none"></div>
+
+            <div class="flex items-center justify-between border-b border-gray-700/80 pb-3 mb-3 shrink-0 relative z-10">
+                <h2 class="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-red-500 uppercase tracking-widest flex items-center gap-2.5 m-0 drop-shadow-[0_0_10px_rgba(251,191,36,0.4)]">
+                    <i class="fa-solid fa-trophy text-amber-400"></i> Onore ai Caduti
+                </h2>
+                <span class="text-[9px] sm:text-[10px] font-black text-amber-300/90 bg-amber-950/60 px-2 py-1 border border-amber-500/40 uppercase tracking-widest">Top 5</span>
+            </div>
+
+            <div id="highScoresList" class="flex flex-col gap-2.5 min-h-[200px] overflow-y-auto custom-scrollbar pr-1 flex-1 relative z-10"></div>
+
+            <button onclick="hideHighScores()" class="mt-4 btn-cyber glass-panel box-glow-gray w-full py-3.5 text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-widest shrink-0 z-10">
+                Torna al menu
+            </button>
         </div>
     </div>
 
@@ -1162,9 +1173,12 @@ const AppSettings = {
         SharedMat.spriteGreen.color.setHex(ESSENCE_COLORS.green);
         
         // 2. Aggiorna i proiettili 3D
-        if (SharedMat.explosiveArrow) SharedMat.explosiveArrow.emissive.setHex(ESSENCE_COLORS.red);
-        if (SharedMat.chainLightning) SharedMat.chainLightning.emissive.setHex(ESSENCE_COLORS.blue);
-       if (SharedMat.homingArrow) SharedMat.homingArrow.emissive.setHex(ESSENCE_COLORS.green);
+        if (SharedMat.explosiveArrow) SharedMat.explosiveArrow.color.setHex(ESSENCE_COLORS.red);
+        if (SharedMat.chainLightning) SharedMat.chainLightning.color.setHex(ESSENCE_COLORS.blue);
+        if (SharedMat.homingArrow) {
+            if (SharedMat.homingArrow.emissive) SharedMat.homingArrow.emissive.setHex(ESSENCE_COLORS.green);
+            else SharedMat.homingArrow.color.setHex(ESSENCE_COLORS.green);
+        }
         
         if(Game.player) Game.player.updateAppearance();
     },
@@ -1856,7 +1870,8 @@ const ScoreManager = {
     init() { let saved = localStorage.getItem('intoTheBoxScores'); if (saved) { try { this.scores = JSON.parse(saved); } catch(e) { this.scores = []; } } },
     save(name, floor, kills, time, diff) {
         let finalName = name.trim().toUpperCase() || 'IGNOTO';
-        this.scores.push({ name: finalName, floor: floor, kills: kills, time: time, diff: diff || 0.6, date: Date.now() });
+        let currentSkinId = (typeof SkinSystem !== 'undefined' && SkinSystem.selectedId) ? SkinSystem.selectedId : 'dark_mage';
+        this.scores.push({ name: finalName, floor: floor, kills: kills, time: time, diff: diff || 0.6, skinId: currentSkinId, date: Date.now() });
         this.scores.sort((a, b) => { if (b.floor !== a.floor) return b.floor - a.floor; if (b.kills !== a.kills) return b.kills - a.kills; return a.time - b.time; });
         this.scores = this.scores.slice(0, 5); localStorage.setItem('intoTheBoxScores', JSON.stringify(this.scores));
     },
@@ -3220,18 +3235,136 @@ const CHAR_GRUNGE_TEX = createCharacterTexture();
 
 // --- ICONE AUREE E MODELLO OBELISCO ---
 function createAuraIcon(type) {
-    const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64; const ctx = canvas.getContext('2d');
-    ctx.shadowBlur = 12; ctx.shadowColor = type === 'blue' ? '#00aaff' : (type === 'green' ? '#66ff33' : '#ff3333'); 
-    ctx.fillStyle = '#ffffff'; ctx.beginPath();
-    if (type === 'blue') { // Clessidra
-        ctx.moveTo(16, 12); ctx.lineTo(48, 12); ctx.lineTo(36, 32); ctx.lineTo(48, 52); ctx.lineTo(16, 52); ctx.lineTo(28, 32);
-    } else if (type === 'green') { // Scudo
-        ctx.moveTo(32, 10); ctx.lineTo(52, 18); ctx.lineTo(50, 40); ctx.arcTo(32, 60, 14, 40, 24); ctx.lineTo(12, 18);
-    } else if (type === 'red') { // Pugnale
-        ctx.moveTo(32, 6); ctx.lineTo(38, 24); ctx.lineTo(35, 24); ctx.lineTo(35, 42); ctx.lineTo(42, 42); ctx.lineTo(42, 46); ctx.lineTo(22, 46); ctx.lineTo(22, 42); ctx.lineTo(29, 42); ctx.lineTo(29, 24); ctx.lineTo(26, 24);
+    const canvas = document.createElement('canvas');
+    canvas.width = 96; canvas.height = 96;
+    const ctx = canvas.getContext('2d');
+
+    const palette = {
+        blue:      { main: '#00ddff', glow: '#0088ff', dark: '#041e2e' },
+        green:     { main: '#33ff00', glow: '#15803d', dark: '#07240c' },
+        red:       { main: '#ff1133', glow: '#b91c1c', dark: '#2a060b' },
+        corrupted: { main: '#e879f9', glow: '#9333ea', dark: '#240730' }
+    }[type] || { main: '#ff1133', glow: '#b91c1c', dark: '#2a060b' };
+
+    // 1. Piastra ottagonale brutalista di fondo (garantisce contrasto su ogni pavimento)
+    const cut = 14, m = 10, s = 96 - m * 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(m + cut, m);
+    ctx.lineTo(m + s - cut, m);
+    ctx.lineTo(m + s, m + cut);
+    ctx.lineTo(m + s, m + s - cut);
+    ctx.lineTo(m + s - cut, m + s);
+    ctx.lineTo(m + cut, m + s);
+    ctx.lineTo(m, m + s - cut);
+    ctx.lineTo(m, m + cut);
+    ctx.closePath();
+
+    const bgGrad = ctx.createRadialGradient(48, 48, 6, 48, 48, 44);
+    bgGrad.addColorStop(0, palette.dark);
+    bgGrad.addColorStop(1, 'rgba(5, 5, 8, 0.94)');
+    ctx.fillStyle = bgGrad;
+    ctx.fill();
+
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = palette.main;
+    ctx.strokeStyle = palette.main;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.restore();
+
+    // 2. Rinforzi d'angolo bianchi in stile .glass-panel
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(m, m + cut + 6); ctx.lineTo(m, m + cut); ctx.lineTo(m + cut, m); ctx.lineTo(m + cut + 6, m);
+    ctx.moveTo(m + s, m + s - cut - 6); ctx.lineTo(m + s, m + s - cut); ctx.lineTo(m + s - cut, m + s); ctx.lineTo(m + s - cut - 6, m + s);
+    ctx.stroke();
+
+    // 3. Glifo Centrale Luminoso
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = palette.main;
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = palette.main;
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'miter';
+
+    if (type === 'blue') {
+        // Clessidra Cyber-Arcana con cristalli interni
+        ctx.fillRect(28, 22, 40, 5);
+        ctx.fillRect(28, 69, 40, 5);
+        ctx.beginPath();
+        ctx.moveTo(32, 27); ctx.lineTo(64, 27); ctx.lineTo(52, 48);
+        ctx.lineTo(64, 69); ctx.lineTo(32, 69); ctx.lineTo(44, 48);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.fillStyle = palette.main;
+        ctx.beginPath();
+        ctx.moveTo(38, 32); ctx.lineTo(58, 32); ctx.lineTo(48, 45); ctx.closePath();
+        ctx.moveTo(48, 52); ctx.lineTo(59, 65); ctx.lineTo(37, 65); ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(48, 48, 3, 0, Math.PI * 2); ctx.fill();
+    } else if (type === 'green') {
+        // Egida Brutalista con Croce Vitale
+        ctx.beginPath();
+        ctx.moveTo(48, 20);
+        ctx.lineTo(68, 27);
+        ctx.lineTo(65, 52);
+        ctx.lineTo(48, 74);
+        ctx.lineTo(31, 52);
+        ctx.lineTo(28, 27);
+        ctx.closePath();
+        ctx.fillStyle = palette.main;
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(45, 33, 6, 24);
+        ctx.fillRect(36, 42, 24, 6);
+    } else if (type === 'red') {
+        // Lama Cremisi / Spada Runica
+        ctx.beginPath();
+        ctx.moveTo(48, 17);
+        ctx.lineTo(56, 34);
+        ctx.lineTo(53, 54);
+        ctx.lineTo(43, 54);
+        ctx.lineTo(40, 34);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        // Elsa e pomolo
+        ctx.fillStyle = palette.main;
+        ctx.fillRect(32, 54, 32, 5);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(45, 59, 6, 11);
+        ctx.beginPath();
+        ctx.moveTo(48, 76); ctx.lineTo(54, 70); ctx.lineTo(48, 66); ctx.lineTo(42, 70);
+        ctx.closePath();
+        ctx.fill();
+    } else if (type === 'corrupted') {
+        // Stella del Vuoto / Cristallo Corrotto
+        ctx.fillStyle = palette.main;
+        ctx.beginPath();
+        ctx.moveTo(48, 18); ctx.lineTo(56, 40); ctx.lineTo(78, 48); ctx.lineTo(56, 56);
+        ctx.lineTo(48, 78); ctx.lineTo(40, 56); ctx.lineTo(18, 48); ctx.lineTo(40, 40);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(48, 34); ctx.lineTo(56, 48); ctx.lineTo(48, 62); ctx.lineTo(40, 48);
+        ctx.closePath();
+        ctx.fill();
     }
-    ctx.closePath(); ctx.fill();
-    let tex = new THREE.CanvasTexture(canvas); tex.encoding = THREE.sRGBEncoding; return tex;
+    ctx.restore();
+
+    let tex = new THREE.CanvasTexture(canvas);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
 }
 function createObeliskGeometry() {
     let base = new THREE.BoxGeometry(22, 10, 22); base.translate(0, 5, 0);
@@ -3246,7 +3379,23 @@ const SharedGeo = {
     cone: new THREE.ConeGeometry(1, 1, 8), icosahedron: new THREE.IcosahedronGeometry(1, 0), torus: new THREE.TorusGeometry(1, 0.1, 8, 24),
     tetrahedron: new THREE.TetrahedronGeometry(1, 0), bloodPlane: new THREE.PlaneGeometry(40, 40), rockDebris: new THREE.DodecahedronGeometry(1.5, 0),
     heart: (function(){ const shape = new THREE.Shape(); shape.moveTo(0, 1.5); shape.bezierCurveTo(2, 3.5, 4, 1.5, 0, -2.5); shape.bezierCurveTo(-4, 1.5, -2, 3.5, 0, 1.5); const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.5, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.2, bevelThickness: 0.2 }); geo.center(); return geo; })(),
-    coin: new THREE.CylinderGeometry(10, 10, 2, 16)
+    coin: new THREE.CylinderGeometry(10, 10, 2, 16),
+    energyOrb: (function() {
+        const parts = [
+            new THREE.IcosahedronGeometry(0.75, 1),
+            new THREE.IcosahedronGeometry(0.95, 0),
+            new THREE.TorusGeometry(0.92, 0.07, 5, 14).rotateX(Math.PI / 4),
+            new THREE.TorusGeometry(0.92, 0.07, 5, 14).rotateX(-Math.PI / 4).rotateY(Math.PI / 2)
+        ].map(g => {
+            let nonIdx = g.index ? g.toNonIndexed() : g;
+            nonIdx.clearGroups();
+            return nonIdx;
+        });
+        const merged = THREE.BufferGeometryUtils.mergeBufferGeometries(parts, false);
+        merged.computeVertexNormals();
+        parts.forEach(p => p.dispose());
+        return merged;
+    })()
 };
 
 // Crea la geometria dell'ombra a terra come variabile globale (così la troviamo sempre)
@@ -3255,7 +3404,9 @@ window.GLOBAL_SCORCH_GEO = new THREE.PlaneGeometry(90, 90);
 
 class Coin {
     constructor() {
-        this.active = false; this.group = new THREE.Group();
+        this.active = false; this.collecting = false; this.collectTimer = 0;
+        this.startX = 0; this.startY = 0; this.startZ = 15;
+        this.group = new THREE.Group();
         let core = new THREE.Mesh(SharedGeo.coin, SharedMat.coin);
         core.rotation.x = Math.PI / 2;
         this.group.matrixAutoUpdate = false; 
@@ -3266,7 +3417,8 @@ class Coin {
         this.isHealingFromShield = false;
     }
     spawn(x, y, isVolcano = false) { 
-        this.active = true; this.x = x; this.y = y; this.life = 15.0; 
+        this.active = true; this.collecting = false; this.collectTimer = 0;
+        this.x = x; this.y = y; this.life = 15.0; 
         this.isMagnetized = false; 
         if (isVolcano) {
             this.z = 60;
@@ -3279,12 +3431,24 @@ class Coin {
             this.z = 15;
             this.vx = 0; this.vy = 0; this.vz = 0;
         }
+        this.group.scale.set(1, 1, 1);
         this.group.position.set(x, this.z, y); this.group.updateMatrix(); this.group.visible = true; 
         if (isTouchDevice) { this.groundGlow.position.set(x, 0.2, y); this.groundGlow.visible = true; }
     }
+    startCollect() {
+        this.collecting = true;
+        this.collectTimer = 0;
+        this.startX = this.x;
+        this.startY = this.y;
+        this.startZ = this.z;
+        this.groundGlow.visible = false;
+        this.group.visible = true;
+    }
     destroy() { 
         this.active = false; 
+        this.collecting = false;
         this.group.visible = false; 
+        this.group.scale.set(1, 1, 1);
         this.groundGlow.visible = false; 
         if (Game.particlesThisFrame < 40) {
             let sparkCount = isTouchDevice ? 1 : 3;
@@ -3428,10 +3592,52 @@ const RUNE_TEX = createRuneTexture();
 // OTTIMIZZAZIONE 1: Cache Globale delle texture del pavimento per evitare VRAM Leaks
 const GLOBAL_WALL_TEX = createPatternTexture('wall'); 
 const GLOBAL_ALPHA_TEX = createOrganicAlphaMap();
-// OTTIMIZZAZIONE GPU MOBILE: I materiali "luminosi" non calcolano la luce ambientale/direzionale su smartphone
-    const ProjMatClass = isTouchDevice ? THREE.MeshBasicMaterial : THREE.MeshPhongMaterial;
-    const enemyDmgColor = isTouchDevice ? { color: 0xff3300 } : { color: 0x220000, emissive: 0xff3300, emissiveIntensity: 2.0 };
-    const boltColor = isTouchDevice ? { color: 0xaa00ff } : { color: 0x220022, emissive: 0xaa00ff, emissiveIntensity: 2.0 };
+// SHADER PROIETTILI SFERICI 3D (Zero Luci, compatibile Mobile/PC, Nucleo Caldo + Anelli + Rim 3D)
+   const ProjMatClass = isTouchDevice ? THREE.MeshBasicMaterial : THREE.MeshPhongMaterial;
+    function createOrbMaterial(hexColor) {
+        const mat = new THREE.MeshBasicMaterial({ color: hexColor });
+        mat.onBeforeCompile = (shader) => {
+            shader.vertexShader = `
+                varying float vOrbRim;
+                varying float vOrbRad;
+                varying vec3 vOrbPos;
+            ` + shader.vertexShader.replace(
+                '#include <project_vertex>',
+                `
+                #include <project_vertex>
+                vOrbPos = position;
+                vOrbRad = length(position);
+                vec3 orbN = normalize(normalMatrix * normal);
+                vec3 orbV = normalize(-mvPosition.xyz);
+                vOrbRim = abs(dot(orbN, orbV));
+                `
+            );
+            shader.fragmentShader = `
+                varying float vOrbRim;
+                varying float vOrbRad;
+                varying vec3 vOrbPos;
+            ` + shader.fragmentShader.replace(
+                '#include <color_fragment>',
+                `
+                #include <color_fragment>
+                vec3 baseCol = diffuseColor.rgb;
+                // Venature di plasma più marcate che mantengono la tinta originale
+                float plasma = 0.72 + 0.38 * sin(vOrbPos.x * 6.0) * cos(vOrbPos.y * 6.0) * sin(vOrbPos.z * 6.0);
+                // Bordo esterno scuro e profondo per staccare dal terreno, corpo centrale saturo
+                float depthGrad = smoothstep(0.08, 0.65, vOrbRim);
+                vec3 shaded = baseCol * plasma * mix(0.28, 1.25, depthGrad);
+                // Piccolo nucleo energetico concentrato (colorato e non bianco piatto)
+                float hotCore = smoothstep(0.80, 0.98, vOrbRim);
+                vec3 coreColor = mix(baseCol * 1.4, vec3(1.0), 0.30);
+                shaded = mix(shaded, coreColor, hotCore * 0.65);
+                // Anelli energetici e alone esterno con il colore puro dell'elemento
+                float outerRing = step(0.85, vOrbRad) * 0.45 + (1.0 - smoothstep(0.0, 0.25, vOrbRim)) * 0.40;
+                diffuseColor.rgb = shaded + baseCol * outerRing;
+                `
+            );
+        };
+        return mat;
+    }
 
     const SharedMat = {
         hazardNovaRing: new THREE.MeshBasicMaterial({color: 0x99ff00, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending}),
@@ -3448,14 +3654,14 @@ const GLOBAL_ALPHA_TEX = createOrganicAlphaMap();
         spriteDust: new THREE.SpriteMaterial({color: 0x2a1e16, map: GLOW_TEX, transparent: true, opacity: 0.6, depthWrite: false, alphaTest: 0.02}),
         spriteBlackSmoke: new THREE.SpriteMaterial({color: 0x050505, map: GLOW_TEX, transparent: true, opacity: 0.95, blending: THREE.NormalBlending, depthWrite: false, alphaTest: 0.05}),
         arrow: new THREE.MeshPhongMaterial({color: 0x888888, emissive: 0x444444}),
-        playerArrow: new ProjMatClass(isTouchDevice ? { color: 0xffff00 } : { color: 0x000000, emissive: 0xffff00, emissiveIntensity: 2.0 }),
+        playerArrow: createOrbMaterial(0xffff00),
         spriteYellow: new THREE.SpriteMaterial({color: 0xffff00, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
         homingArrow: new ProjMatClass(isTouchDevice ? { color: ESSENCE_COLORS.green } : { color: 0x000000, emissive: ESSENCE_COLORS.green, emissiveIntensity: 2.0 }),
-        explosiveArrow: new ProjMatClass(isTouchDevice ? { color: ESSENCE_COLORS.red } : { color: 0x000000, emissive: ESSENCE_COLORS.red, emissiveIntensity: 2.0 }),
-        chainLightning: new ProjMatClass(isTouchDevice ? { color: ESSENCE_COLORS.blue } : { color: 0x000000, emissive: ESSENCE_COLORS.blue, emissiveIntensity: 2.0 }),
-        enemyFireball: new ProjMatClass(enemyDmgColor), 
-        enemyBolt: new ProjMatClass(boltColor), 
-        fireShape: new ProjMatClass(enemyDmgColor),
+        explosiveArrow: createOrbMaterial(ESSENCE_COLORS.red),
+        chainLightning: createOrbMaterial(ESSENCE_COLORS.blue),
+        enemyFireball: createOrbMaterial(0xff3300), 
+        enemyBolt: createOrbMaterial(0xaa00ff), 
+        fireShape: createOrbMaterial(0xff5500),
     blobShadow: new THREE.MeshBasicMaterial({map: BLOB_SHADOW_TEX, transparent: true, depthWrite: false}),
    telegraph: new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }),
     hazardFirePlane: new THREE.MeshBasicMaterial({color: 0x33ff00, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false}), // GIOCATORE: VERDE
@@ -3495,9 +3701,10 @@ const GLOBAL_ALPHA_TEX = createOrganicAlphaMap();
     golemHead: new THREE.MeshPhongMaterial({color: 0x002244, emissive: 0x00ffff, emissiveIntensity: 1.5}),
     golemShield: new THREE.MeshPhongMaterial({color: 0x00ffff, transparent: true, opacity: 0.4, emissive: 0x0088ff}),
     golemShieldGlow: new THREE.SpriteMaterial({color: 0x00ffff, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}),
-    iconTime: new THREE.SpriteMaterial({map: createAuraIcon('blue'), color: 0xa8a8a8, transparent: true, depthWrite: false}),
-    iconMountain: new THREE.SpriteMaterial({map: createAuraIcon('green'), color: 0xa8a8a8, transparent: true, depthWrite: false}),
-    iconHysteria: new THREE.SpriteMaterial({map: createAuraIcon('red'), color: 0xa8a8a8, transparent: true, depthWrite: false}),
+    iconTime: new THREE.SpriteMaterial({map: createAuraIcon('blue'), color: 0xffffff, transparent: true, depthWrite: false}),
+    iconMountain: new THREE.SpriteMaterial({map: createAuraIcon('green'), color: 0xffffff, transparent: true, depthWrite: false}),
+    iconHysteria: new THREE.SpriteMaterial({map: createAuraIcon('red'), color: 0xffffff, transparent: true, depthWrite: false}),
+    iconCorrupted: new THREE.SpriteMaterial({map: createAuraIcon('corrupted'), color: 0xffffff, transparent: true, depthWrite: false}),
     
     // Obelisco distrutto: Coerente con la versione viva, ma completamente spento
     deadObelisk: new THREE.MeshStandardMaterial({
@@ -3858,27 +4065,30 @@ class DashLine {
 }
 
 class Essence {
-    constructor() {
-        this.active = false; this.type = 'red'; this.group = new THREE.Group();
-        // Usiamo un materiale emissivo: sarà il vero Bloom a farlo brillare nello spazio 3D!
-        this.coreMat = new THREE.MeshPhongMaterial({color: 0x000000, emissiveIntensity: 2.0});
-        let core = new THREE.Mesh(SharedGeo.icosahedron, this.coreMat); core.scale.setScalar(9);
-        this.haloMat = new THREE.MeshBasicMaterial({wireframe: true, transparent: true, opacity: 0.9});
-        let halo = new THREE.Mesh(SharedGeo.icosahedron, this.haloMat); halo.scale.setScalar(10.5); 
-        this.group.matrixAutoUpdate = false; 
-        core.matrixAutoUpdate = false; core.updateMatrix();
-        halo.matrixAutoUpdate = false; halo.updateMatrix();
-        this.group.add(core); this.group.add(halo); this.group.visible = false; Game.scene.add(this.group);
+    constructor() {
+        this.active = false; this.collecting = false; this.collectTimer = 0;
+        this.collectAngle = 0; this.startDist = 0;
+        this.type = 'red'; this.group = new THREE.Group();
+        this.coreMat = createOrbMaterial(0xff1133);
+        let core = new THREE.Mesh(SharedGeo.icosahedron, this.coreMat); core.scale.setScalar(8.5);
+        this.haloMat = new THREE.MeshBasicMaterial({wireframe: true, transparent: true, opacity: 0.9});
+        let halo = new THREE.Mesh(SharedGeo.icosahedron, this.haloMat); halo.scale.setScalar(11.0); 
+        this.group.matrixAutoUpdate = false; 
+        core.matrixAutoUpdate = false; core.updateMatrix();
+        halo.matrixAutoUpdate = false; halo.updateMatrix();
+        this.group.add(core); this.group.add(halo); this.group.visible = false; Game.scene.add(this.group);
         this.groundGlow = new THREE.Mesh(new THREE.PlaneGeometry(35, 35), new THREE.MeshBasicMaterial({map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}));
         this.groundGlow.rotation.x = -Math.PI / 2;
         this.groundGlow.visible = false;
         Game.scene.add(this.groundGlow);
     }
-    spawn(x, y, type) {
-       this.active = true; this.x = x; this.y = y; this.type = type; let color = ESSENCE_COLORS[type]; 
-       this.life = 15.0;
-        // Assegniamo il colore direttamente all'emissione luminosa
-        this.coreMat.emissive.setHex(color); this.haloMat.color.setHex(color);
+    spawn(x, y, type) {
+        this.active = true; this.collecting = false; this.collectTimer = 0;
+        this.x = x; this.y = y; this.type = type; let color = ESSENCE_COLORS[type]; 
+        this.life = 15.0;
+        this.coreMat.color.setHex(color); this.haloMat.color.setHex(color);
+        this.group.scale.set(1, 1, 1);
+        this.group.rotation.set(0, 0, 0);
         this.group.position.set(x, 12, y); this.group.updateMatrix(); this.group.visible = true;
         if (isTouchDevice) {
             this.groundGlow.material.color.setHex(color);
@@ -3886,7 +4096,22 @@ class Essence {
             this.groundGlow.visible = true;
         }
     }
-    destroy() { this.active = false; this.group.visible = false; this.groundGlow.visible = false; }
+    startCollect(player) {
+        this.collecting = true;
+        this.collectTimer = 0;
+        this.startX = this.x;
+        this.startY = this.y;
+        this.groundGlow.visible = false;
+        this.group.visible = true;
+    }
+    destroy() {
+        this.active = false;
+        this.collecting = false;
+        this.group.visible = false;
+        this.group.scale.set(1, 1, 1);
+        this.group.rotation.set(0, 0, 0);
+        this.groundGlow.visible = false;
+    }
 }
 class ExtraLife {
     constructor() {
@@ -6886,15 +7111,42 @@ startGame(diffMult) {
        for (let i = 0, len = this.essences.length; i < len; i++) {
             let e = this.essences[i];
             if (e.active) {
+                // FASE 2: Assorbimento rapido e diretto nel corpo del giocatore (Costo 0)
+                if (e.collecting) {
+                    e.collectTimer += safeVisualDt;
+                    let t = e.collectTimer / 0.18;
+                    if (t >= 1.0) {
+                        e.destroy();
+                        continue;
+                    }
+                    let ease = t * t; // Accelerazione magnetica verso il centro del player
+                    let curX = e.startX + (this.player.x - e.startX) * ease;
+                    let curY = e.startY + (this.player.y - e.startY) * ease;
+                    let curZ = 12 + (16 - 12) * ease;
+
+                    // Rimpicciolimento progressivo fino a scomparire dentro il giocatore
+                    let s = Math.max(0.05, 1.0 - ease * 0.95);
+                    e.group.rotation.y += safeVisualDt * 12;
+                    e.group.scale.set(s, s, s);
+                    e.group.position.set(curX, curZ, curY);
+                    e.group.updateMatrix();
+                    continue;
+                }
+
                 e.life -= combatDt;
                 if (e.life <= 0) { e.destroy(); continue; }
                 let distSq = MathUtils.distanceSq(this.player, e);
-                if (distSq < pRadiusSq) { this.player.collectEssence(e.type); e.destroy(); continue; }
+                if (distSq < pRadiusSq) {
+                    this.player.collectEssence(e.type);
+                    e.startCollect(this.player);
+                    continue;
+                }
                 
                 // Culling visivo: anima e aggiorna la matrice solo se vicino allo schermo
                 if (distSq < 1200000) {
                     e.group.visible = (e.life < 3.0) ? (Math.floor(e.life * 8) % 2 === 0) : true;
-                    e.group.rotation.y += combatDt;
+                    e.group.rotation.y += combatDt * 1.8;
+                    e.group.rotation.x += combatDt * 0.8;
                     e.group.position.y = 12 + this.animFloat; 
                     e.group.updateMatrix();
                 } else {
@@ -6935,6 +7187,29 @@ startGame(diffMult) {
      for(let i = 0, len = this.coinDrops.length; i < len; i++) {
             let c = this.coinDrops[i];
             if(c.active) {
+                // FASE 2: Animazione magnetica a spirale verso il petto del giocatore (Costo 0)
+                if (c.collecting) {
+                    c.collectTimer += safeVisualDt;
+                    let t = c.collectTimer / 0.22;
+                    if (t >= 1.0) {
+                        c.x = this.player.x; c.y = this.player.y; c.z = 24;
+                        c.destroy();
+                        continue;
+                    }
+                    let ease = t * t;
+                    c.x = c.startX + (this.player.x - c.startX) * ease;
+                    c.y = c.startY + (this.player.y - c.startY) * ease;
+                    c.z = c.startZ + (24 - c.startZ) * t + Math.sin(t * Math.PI) * 28;
+
+                    // Pop di scala iniziale (1.35x) seguito da restringimento nel giocatore
+                    let s = t < 0.35 ? (1.0 + (t / 0.35) * 0.35) : (1.35 * (1.0 - (t - 0.35) / 0.65));
+                    c.group.rotation.y += safeVisualDt * 28;
+                    c.group.scale.set(s, s, s);
+                    c.group.position.set(c.x, c.z, c.y);
+                    c.group.updateMatrix();
+                    continue;
+                }
+
                 if (!this.player.modifiers.miserPact) c.life -= combatDt;
                 if (c.life <= 0) { c.destroy(); continue; }
                 if (!this.player.modifiers.miserPact && c.life < 3.0) c.group.visible = Math.floor(c.life * 8) % 2 === 0;
@@ -6948,8 +7223,8 @@ startGame(diffMult) {
                     c.z += c.vy * combatDt;
                     if (c.z <= 15) {
                         c.z = 15;
-                        c.vy *= -0.5; // Rimbalzo
-                        c.vx *= 0.6; // Attrito
+                        c.vy *= -0.5;
+                        c.vx *= 0.6;
                         c.vz *= 0.6;
                         if (Math.abs(c.vy) < 30) { c.vy = 0; c.vx = 0; c.vz = 0; }
                     }
@@ -6959,7 +7234,7 @@ startGame(diffMult) {
                 let dy = this.player.y - c.y;
                 let dist = Math.sqrt(dx*dx + dy*dy);
 
-              if (this.player.modifiers.coinMagnet) {
+                if (this.player.modifiers.coinMagnet) {
                     if (dist < 150) c.isMagnetized = true;
                     if (dist > 300) c.isMagnetized = false;
 
@@ -6980,7 +7255,8 @@ startGame(diffMult) {
                 }
 
                 if (MathUtils.distanceSq(this.player, c) < pRadiusSq) { 
-                    c.destroy(); AudioEngine.playCoin();
+                    c.startCollect();
+                    AudioEngine.playCoin();
                     Game.coins++; 
                     if(UI.els.coins) UI.els.coins.innerText = Game.coins;
                     let shopCoinsEl = document.getElementById('shop-coins');
@@ -7149,16 +7425,16 @@ startGame(diffMult) {
                     }
 
                     if (auraType) {
-                        let iconTex = auraType === 'blue' ? SharedMat.iconTime.map : (auraType === 'green' ? SharedMat.iconMountain.map : SharedMat.iconHysteria.map);
+                        let iconTex = auraType === 'blue' ? SharedMat.iconTime.map : (auraType === 'green' ? SharedMat.iconMountain.map : (auraType === 'corrupted' ? SharedMat.iconCorrupted.map : SharedMat.iconHysteria.map));
                         if (iconTex && iconTex.image) {
-                            this.uiCtx.drawImage(iconTex.image, pos.x - 12, pos.y - 30, 24, 24);
+                            this.uiCtx.drawImage(iconTex.image, pos.x - 13, pos.y - 32, 26, 26);
                         }
                     }
                 }
             }
         }
         
-        // 3. Logica Icona Potere Obelisco sul Giocatore (visibile finché il potere ottenuto dall'obelisco distrutto è attivo)
+        // 3. Logica Icona Buff / Aura Obelisco sul Giocatore (unificata con indicatore durata radiale)
         if (this.player && !this.player.dead) {
             let pBuff = null;
             let remTime = 0;
@@ -7167,31 +7443,25 @@ startGame(diffMult) {
             else if (this.player.obeliskHealTimer > 0) { pBuff = 'green'; remTime = this.player.obeliskHealTimer; }
             else if (this.player.obeliskDmgTimer > 0) { pBuff = 'corrupted'; remTime = this.player.obeliskDmgTimer; }
 
-            if (pBuff) {
-                // Lampeggia negli ultimi 1.5 secondi prima dello scadere del potere
-                let showIcon = remTime > 1.5 || (Math.floor(remTime * 8) % 2 === 0);
+            let activeIconType = pBuff || this.player._lastAuraType;
+            if (activeIconType) {
+                let showIcon = !pBuff || remTime > 1.5 || (Math.floor(remTime * 8) % 2 === 0);
                 if (showIcon) {
-                    let pPos = this.toScreenPosition(this.player.x, 80, this.player.y);
+                    let pPos = this.toScreenPosition(this.player.x, 82, this.player.y);
                     if (pPos.z < 1) {
-                        let pIconTex = pBuff === 'blue' ? SharedMat.iconTime.map : (pBuff === 'green' ? SharedMat.iconMountain.map : SharedMat.iconHysteria.map);
+                        let pIconTex = activeIconType === 'blue' ? SharedMat.iconTime.map : (activeIconType === 'green' ? SharedMat.iconMountain.map : (activeIconType === 'corrupted' ? SharedMat.iconCorrupted.map : SharedMat.iconHysteria.map));
                         if (pIconTex && pIconTex.image) {
-                            this.uiCtx.drawImage(pIconTex.image, pPos.x - 16, pPos.y - 40, 32, 32);
+                            this.uiCtx.drawImage(pIconTex.image, pPos.x - 18, pPos.y - 42, 36, 36);
+                            if (pBuff) {
+                                let maxDur = (SkinSystem.selectedId === 'emerald_warden') ? 11.0 : 8.0;
+                                let pct = Math.max(0, Math.min(1, remTime / maxDur));
+                                this.uiCtx.beginPath();
+                                this.uiCtx.arc(pPos.x, pPos.y - 24, 20, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * pct));
+                                this.uiCtx.strokeStyle = activeIconType === 'blue' ? '#00ddff' : (activeIconType === 'green' ? '#33ff00' : (activeIconType === 'corrupted' ? '#e879f9' : '#ff1133'));
+                                this.uiCtx.lineWidth = 2.5;
+                                this.uiCtx.stroke();
+                            }
                         }
-                    }
-                }
-            }
-        }
-        
-        
-        // 3. Logica Icona Aura sul Giocatore
-        if (this.player && !this.player.dead) {
-            let pAura = this.player._lastAuraType;
-            if (pAura) {
-                let pPos = this.toScreenPosition(this.player.x, 80, this.player.y);
-                if (pPos.z < 1) {
-                    let pIconTex = pAura === 'blue' ? SharedMat.iconTime.map : (pAura === 'green' ? SharedMat.iconMountain.map : SharedMat.iconHysteria.map);
-                    if (pIconTex && pIconTex.image) {
-                        this.uiCtx.drawImage(pIconTex.image, pPos.x - 16, pPos.y - 40, 32, 32);
                     }
                 }
             }
@@ -8727,10 +8997,10 @@ if (!AppSettings.isLow) {
 }
 
 // Icona Fluttuante
-let iconMat = aType === 'blue' ? SharedMat.iconTime : (aType === 'green' ? SharedMat.iconMountain : SharedMat.iconHysteria);
+let iconMat = aType === 'blue' ? SharedMat.iconTime : (aType === 'green' ? SharedMat.iconMountain : (aType === 'corrupted' ? SharedMat.iconCorrupted : SharedMat.iconHysteria));
 let iconSprite = new THREE.Sprite(iconMat);
 iconSprite.position.set(px, 95, pz);
-iconSprite.scale.set(20, 20, 1);
+iconSprite.scale.set(26, 26, 1);
 this.mapGroup.add(iconSprite);
 Game.auraIcons.push(iconSprite);
 
@@ -13128,14 +13398,13 @@ class Projectile {
         this.radius = 6; let mat = SharedMat.arrow; let geo = SharedGeo.sphere;
 
         if (type === 'arrow') { mat = SharedMat.arrow; geo = SharedGeo.cone; } 
-        // Modificato: Ora usa l'icosaedro (sfera) e un raggio piccolo
-        if (type === 'player_arrow') { mat = SharedMat.playerArrow; geo = SharedGeo.icosahedron; this.radius = 6; } 
-        if (type === 'explosive_arrow') { mat = SharedMat.explosiveArrow; this.radius = 16; geo = SharedGeo.icosahedron; }
-        if (type === 'chain_lightning') { mat = SharedMat.chainLightning; this.radius = 10; geo = SharedGeo.icosahedron; }
+        if (type === 'player_arrow') { mat = SharedMat.playerArrow; geo = SharedGeo.energyOrb; this.radius = 6.5; } 
+        if (type === 'explosive_arrow') { mat = SharedMat.explosiveArrow; this.radius = 16; geo = SharedGeo.energyOrb; }
+        if (type === 'chain_lightning') { mat = SharedMat.chainLightning; this.radius = 11; geo = SharedGeo.energyOrb; }
         if (type === 'homing_arrow') { mat = SharedMat.homingArrow; this.radius = 8; geo = SharedGeo.cone; }
-        if (type === 'enemy_fireball') { mat = SharedMat.enemyFireball; this.radius = 25; geo = SharedGeo.icosahedron; } 
-        if (type === 'enemy_bolt') { mat = SharedMat.enemyBolt; this.radius = 16; geo = SharedGeo.icosahedron; }
-        if (type === 'fire_shape') { mat = SharedMat.fireShape; this.radius = 20; geo = SharedGeo.icosahedron; }
+        if (type === 'enemy_fireball') { mat = SharedMat.enemyFireball; this.radius = 25; geo = SharedGeo.energyOrb; } 
+        if (type === 'enemy_bolt') { mat = SharedMat.enemyBolt; this.radius = 16; geo = SharedGeo.energyOrb; }
+        if (type === 'fire_shape') { mat = SharedMat.fireShape; this.radius = 20; geo = SharedGeo.energyOrb; }
 
         // --- SCALATURA MASSA CRITICA PER PROIETTILI PLAYER ---
 let projScale = 1.0;
@@ -13255,8 +13524,11 @@ if (type === 'arrow' || type === 'homing_arrow') {
             this.groundGlow.visible = false;
         }
 
-       if (this.type !== 'arrow' && this.type !== 'player_arrow' && this.type !== 'homing_arrow') {
-            this.mesh.rotation.x += dt * 5; this.mesh.rotation.y += dt * 5;
+      if (this.type !== 'arrow' && this.type !== 'homing_arrow') {
+            this.mesh.rotation.x += dt * 7;
+            this.mesh.rotation.y += dt * 5;
+            let pulse = this.radius * (1.0 + Math.sin(this.life * 22) * 0.08);
+            this.mesh.scale.setScalar(pulse);
             this.mesh.updateMatrix(); 
         }
         
@@ -14092,22 +14364,56 @@ function submitScore() {
 }
 
 function showHighScores() {
-    AudioEngine.playClick(); const container = document.getElementById('highScoresList'); container.innerHTML = '';
+    AudioEngine.playClick();
+    const container = document.getElementById('highScoresList');
+    container.innerHTML = '';
+
     if (ScoreManager.scores.length === 0) {
-        container.innerHTML = `<p class="text-center text-gray-500 italic mt-10">Nessun eroe ha ancora lasciato il segno.</p>`;
+        container.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-gray-800 bg-black/40">
+                <i class="fa-solid fa-skull text-gray-600 text-3xl mb-2"></i>
+                <p class="text-xs sm:text-sm text-gray-400 font-bold uppercase tracking-widest m-0">Nessun caduto registrato</p>
+                <p class="text-[10px] text-gray-600 font-bold mt-1 m-0">Scendi nella scatola e lascia il tuo segno.</p>
+            </div>`;
     } else {
-       ScoreManager.scores.forEach((score, index) => {
-            let rankColor = index === 0 ? 'text-yellow-400 drop-shadow-[0_0_5px_rgba(250,204,21,0.8)]' : (index === 1 ? 'text-gray-300' : (index === 2 ? 'text-amber-600' : 'text-gray-500'));
+        ScoreManager.scores.forEach((score, index) => {
+            let isFirst = index === 0;
+            let rankColor = isFirst ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]' : (index === 1 ? 'text-gray-200' : (index === 2 ? 'text-amber-600' : 'text-gray-500'));
+            let rowBorder = isFirst ? 'border-amber-500/70 bg-amber-950/20 shadow-[3px_3px_0px_#78350f]' : 'border-gray-800 bg-black/70 shadow-[3px_3px_0px_rgba(0,0,0,0.6)]';
+
+            let skinObj = (typeof SkinSystem !== 'undefined' && SkinSystem.skins)
+                ? (SkinSystem.skins.find(s => s.id === score.skinId) || SkinSystem.skins[0])
+                : { name: 'Mago Oscuro', rarity: 'common', svg: '<polygon points="20,10 30,34 10,34" fill="#555"/><circle cx="20" cy="11" r="4.5" fill="#ddd"/><rect x="13" y="14" width="14" height="3" rx="1.5" fill="#880000"/>' };
+
+            let skinBorder = skinObj.rarity === 'legendary' ? 'border-amber-400' :
+                             skinObj.rarity === 'epic' ? 'border-purple-400' :
+                             skinObj.rarity === 'rare' ? 'border-blue-400' : 'border-gray-600';
+
             container.innerHTML += `
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-black/50 border border-gray-800 p-3 rounded-lg">
-                    <div class="flex items-center gap-3">
-                        <span class="font-black text-xl w-6 text-center ${rankColor}">#${index + 1}</span>
-                        <span class="font-black text-white text-lg tracking-wider">${score.name}</span>
+                <div class="stagger-enter flex items-center justify-between gap-2.5 p-2.5 sm:p-3 border-2 ${rowBorder} transition-all" style="animation-delay: ${index * 60}ms;">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="font-display font-black text-base sm:text-lg w-7 text-center shrink-0 ${rankColor}">#${index + 1}</span>
+                        <div class="w-10 h-10 shrink-0 border-2 ${skinBorder} bg-black flex items-center justify-center relative overflow-hidden" title="${skinObj.name}">
+                            <svg viewBox="0 0 40 40" class="w-8 h-8">${skinObj.svg}</svg>
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                            <span class="font-black text-white text-xs sm:text-sm tracking-wider uppercase truncate">${score.name}</span>
+                            <span class="text-[9px] text-gray-400 font-bold uppercase tracking-widest truncate">${skinObj.name}</span>
+                        </div>
                     </div>
-                    <div class="flex flex-wrap gap-x-3 gap-y-1 mt-2 sm:mt-0 text-[10px] sm:text-xs font-bold text-gray-400 w-full sm:w-auto justify-between sm:justify-end">
-                        <span>PIANO <span class="text-red-400">${score.floor}</span></span>
-                        <span>KILL <span class="text-red-400">${score.kills}</span></span>
-                        <span><i class="fa-regular fa-clock text-gray-500"></i> ${ScoreManager.formatTime(score.time)}</span>
+                    <div class="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs font-bold shrink-0">
+                        <div class="flex flex-col items-end bg-black/60 px-2 py-1 border border-gray-800">
+                            <span class="text-[8px] text-gray-500 uppercase tracking-widest">Piano</span>
+                            <span class="text-amber-400 font-black leading-none mt-0.5">${score.floor}</span>
+                        </div>
+                        <div class="flex flex-col items-end bg-black/60 px-2 py-1 border border-gray-800">
+                            <span class="text-[8px] text-gray-500 uppercase tracking-widest">Kill</span>
+                            <span class="text-red-400 font-black leading-none mt-0.5">${score.kills}</span>
+                        </div>
+                        <div class="flex flex-col items-end bg-black/60 px-2 py-1 border border-gray-800 min-w-[44px]">
+                            <span class="text-[8px] text-gray-500 uppercase tracking-widest">Tempo</span>
+                            <span class="text-gray-300 font-black leading-none mt-0.5">${ScoreManager.formatTime(score.time)}</span>
+                        </div>
                     </div>
                 </div>
             `;
