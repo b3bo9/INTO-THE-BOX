@@ -3934,10 +3934,17 @@ const ModelFactory = {
             let head = new THREE.Mesh(SharedGeo.box, darkMat); head.scale.set(size*0.8, size*0.8, size*0.8); head.position.set(0, size*2.5, size*0.2);
             let jaw = new THREE.Mesh(SharedGeo.box, mat); jaw.scale.set(size*0.9, size*0.3, size*0.9); jaw.position.set(0, size*2.1, size*0.3);
             let armL = new THREE.Mesh(SharedGeo.box, mat); armL.scale.set(size*0.6, size*1.6, size*0.6); armL.position.set(-size*1.2, size*1.4, 0);
-            let armR = new THREE.Mesh(SharedGeo.box, mat); armR.scale.set(size*0.6, size*1.6, size*0.6); armR.position.set(size*1.2, size*1.4, 0);
-            let club = new THREE.Mesh(SharedGeo.cylinder, darkMat); club.scale.set(size*0.3, size*2.5, size*0.3); club.position.set(0, -size, size); club.rotation.x = Math.PI/2;
-            let clubHead = new THREE.Mesh(SharedGeo.box, mat); clubHead.scale.set(size, size, size); clubHead.position.set(0, size, 0); club.add(clubHead);
-            armR.add(club); group.add(torso); group.add(head); group.add(jaw); group.add(armL); group.add(armR); parts.armL = armL; parts.armR = armR;
+            
+            // FIX SCALA GERARCHICA: Usiamo Group non scalati per non moltiplicare size^3 sulla clava
+            let armR = new THREE.Group(); armR.position.set(size*1.2, size*1.4, 0);
+            let armRMesh = new THREE.Mesh(SharedGeo.box, mat); armRMesh.scale.set(size*0.6, size*1.6, size*0.6);
+            let clubGroup = new THREE.Group(); clubGroup.position.set(0, -size*0.6, size*0.6); clubGroup.rotation.x = Math.PI/2;
+            let club = new THREE.Mesh(SharedGeo.cylinder, darkMat); club.scale.set(size*0.25, size*1.8, size*0.25);
+            let clubHead = new THREE.Mesh(SharedGeo.box, mat); clubHead.scale.set(size*0.75, size*0.75, size*0.75); clubHead.position.set(0, size*0.9, 0);
+            clubGroup.add(club, clubHead);
+            armR.add(armRMesh, clubGroup);
+            group.add(torso, head, jaw, armL, armR);
+            parts.armL = armL; parts.armR = armR; parts.club = clubGroup;
         } else if (type === 'skeleton_archer') {
             let spine = new THREE.Mesh(SharedGeo.cylinder, mat); spine.scale.set(size*0.3, size*2, size*0.3); spine.position.y = size*1.5;
             let ribs = new THREE.Mesh(SharedGeo.box, mat); ribs.scale.set(size*1.2, size*0.8, size*0.5); ribs.position.y = size*1.8;
@@ -4020,15 +4027,19 @@ let hornR = new THREE.Mesh(SharedGeo.cone, mat); hornR.scale.set(size*0.3, size*
             
             group.add(torso); group.add(head); group.add(armL); group.add(armR); group.add(shield); group.add(shieldGlow);
             parts.armL = armL; parts.armR = armR; parts.shield = shield;
-        } else if (type === 'boss') {
+       } else if (type === 'boss') {
             let torso = new THREE.Mesh(SharedGeo.box, darkMat); torso.scale.set(size*1.5, size*1.5, size); torso.position.y = size*1.5;
             let core = new THREE.Mesh(SharedGeo.icosahedron, mat); core.scale.set(size, size, size); core.position.set(0, size*1.5, size*0.5);
             let head = new THREE.Mesh(SharedGeo.box, darkMat); head.scale.set(size*0.5, size*0.5, size*0.5); head.position.set(0, size*2.8, size*0.2);
             let crown = new THREE.Mesh(SharedGeo.torus, mat); crown.scale.set(size*0.8, size*0.8, size*0.2); crown.position.set(0, size*3.2, size*0.2); crown.rotation.x = Math.PI/2;
             let armL = new THREE.Mesh(SharedGeo.cylinder, darkMat); armL.scale.set(size*0.4, size*1.8, size*0.4); armL.position.set(-size*1.2, size*1.5, 0);
-            let armR = new THREE.Mesh(SharedGeo.cylinder, darkMat); armR.scale.set(size*0.4, size*1.8, size*0.4); armR.position.set(size*1.2, size*1.5, 0);
-            let sword = new THREE.Mesh(SharedGeo.box, mat); sword.scale.set(size*0.2, size*3, size*0.6); sword.position.set(0, -size*1.5, size); sword.rotation.x = Math.PI/2;
-            armR.add(sword); group.add(torso); group.add(core); group.add(head); group.add(crown); group.add(armL); group.add(armR);
+            
+            // FIX SCALA GERARCHICA: Group per il braccio destro così la spada non eredita la scala del cilindro
+            let armR = new THREE.Group(); armR.position.set(size*1.2, size*1.5, 0);
+            let armRMesh = new THREE.Mesh(SharedGeo.cylinder, darkMat); armRMesh.scale.set(size*0.4, size*1.8, size*0.4);
+            let sword = new THREE.Mesh(SharedGeo.box, mat); sword.scale.set(size*0.2, size*2.4, size*0.5); sword.position.set(0, -size*0.7, size*1.1); sword.rotation.x = Math.PI/2;
+            armR.add(armRMesh, sword);
+            group.add(torso, core, head, crown, armL, armR);
             parts.armL = armL; parts.armR = armR; parts.crown = crown;
         }
  
@@ -5281,13 +5292,14 @@ const debrisMat = new THREE.MeshStandardMaterial({roughness: 0.8, metalness: 0.2
         const geos = [SharedGeo.tetrahedron, SharedGeo.box, new THREE.DodecahedronGeometry(0.8, 0)];
         this.debrisMeshes = [];
         
-        let hideMat = new THREE.Matrix4().makeTranslation(0, -1000, 0);
+        let hideMat = new THREE.Matrix4().makeScale(0, 0, 0);
         let defColor = new THREE.Color(0x000000);
 
         // Creiamo 3 canali di rendering separati (Costo CPU/GPU: 0)
         for (let m = 0; m < 3; m++) {
             let im = new THREE.InstancedMesh(geos[m], debrisMat, maxDynamicDebris);
             im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+            im.frustumCulled = false; // Evita la sparizione dei detriti quando l'origine (0,0,0) esce dallo schermo
             im.castShadow = false; 
             im.receiveShadow = false;
             im.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(maxDynamicDebris * 3), 3);
@@ -9391,6 +9403,7 @@ this.fogMesh.renderOrder = -1; // Assicura che venga disegnato DOPO il terreno (
         
         let dummy = Game._dummyDebris;
         dummy.position.set(0, -1000, 0);
+        dummy.scale.set(0, 0, 0);
         dummy.updateMatrix();
         
         if (this.type === 'crate' && Game.map && Game.map.crateMesh) {
@@ -10061,6 +10074,7 @@ class Player extends Entity {
         if (this.stats.hp > this.stats.maxHp) this.stats.hp = this.stats.maxHp;
 
         // 2. Resetta tutti i poteri alle statistiche base
+        this.essenceSpeedBonus = 0;
         this.modifiers = {
             critChance: 0.10, bonusCritChance: 0, dmgMult: 1.0, speedMult: 1.0, atkSpeedMult: 1.0, bonusAtkSpeed: 0, dashCooldownMult: 1.0, vampirismMaxHp: 0, 
             fireTrail: false, fireTrailDebuff: false, ascensionDurationAdd: 0, dmgTakenMult: 1.0, xpMult: 1.0, healDropMult: 1.0, 
@@ -10069,7 +10083,7 @@ class Player extends Entity {
             passiveUltCharge: false, noHealDrops: false, noMaxHpLevelUp: false, bloodthirst: false, bloodthirstCount: oldBlood, flowMastery: false,
             timeSinceLastHit: 0, explosiveShield: false, shieldDurationAdd: 0, dashCritsEnabled: false, dashCritsStacks: 0, dashLightning: false,
             critGold: false, lowHpAtkSpeed: false, dashInvul: false, outOfCombatRegen: false, essenceSpeedStacks: false, levelUpNova: false, openerDmg: false, miserPact: false, dashSpeedBuff: false, dashResist: false,
-            seismicShield: false, ultDurationPerKill: false, ultKillCount: oldUlt, twinKinetic: false,
+            seismicShield: false, ultDurationPerKill: false, ultKillCount: oldUlt, twinKinetic: false, coinMagnet: false, shieldAtkSpeedBonus: 0,
             ionBattery: false, atkSpeedPenalty: 1.0, ultDurationPenalty: 1.0
         };
         
@@ -10332,8 +10346,8 @@ class Player extends Entity {
             }
             return; 
         }
+       if (dt === 0) return; // FIX BETA: Blocca input, attacchi e i-frames se il gioco è in pausa o in Hit-Stop!
         this.updateFlash(dt);
-        if (dt === 0) return; // FIX BETA: Blocca input, attacchi e i-frames se il gioco è in pausa!
         
         // Passiva Viandante del Vuoto: Vola (ignora gli effetti di acqua, lava e ghiaccio)
         let isVoidWalker = (SkinSystem.selectedId === 'void_walker');
@@ -11910,12 +11924,8 @@ class Enemy extends Entity {
             this.modelParts = modelData.parts;
             this.currentType = type;
 
-            // FIX: Riassegna la matrice per evitare desincronizzazioni fisiche dopo la ricostruzione
-            this.mesh.updateMatrixWorld(true);
-
             this.flashMats = [];
             if (type !== 'crystal') { 
-                // Evita le chiusure (closures) nelle traverse frequenti
                 let mats = this.flashMats;
                 let targetMat = this.mat;
                 this.mesh.traverse(function(c) { 
@@ -11924,9 +11934,6 @@ class Enemy extends Entity {
             }
         }
 
-        // --- AGGIORNAMENTO DINAMICO A COSTO ZERO ---
-        // Che il modello sia stato appena creato o riutilizzato, aggiorniamo i suoi colori e dimensioni:
-        
         // 1. Scala Dinamica
         let visualScale = this.isElite ? 1.5 : 1.0;
         this.mesh.scale.setScalar(visualScale);
@@ -11952,13 +11959,12 @@ class Enemy extends Entity {
             this.mat.emissiveIntensity = 0.0; 
         }
 
-        // Resetta le braccia se necessario
+        // Resetta le braccia e ripristina la clava dell'orco dal pool
         if (this.modelParts && this.modelParts.armL) { 
             this.modelParts.armL.rotation.x = 0; 
             this.modelParts.armR.rotation.x = 0; 
-            // NUOVO: Ripristina la clava dell'orco dal pool
-            if (this.type === 'orc' && this.modelParts.armR.children.length > 0) {
-                this.modelParts.armR.children[0].visible = true;
+            if (this.type === 'orc' && this.modelParts.club) {
+                this.modelParts.club.visible = true;
             }
         }
         
@@ -11970,8 +11976,10 @@ class Enemy extends Entity {
             this.mat.opacity = 0.90; 
         }
 
-       this.mesh.position.set(x, 0, y); 
-        this.mesh.updateMatrix(); // FIX SCATTI: Assegna subito le coordinate corrette
+        this.mesh.matrixAutoUpdate = true;
+        this.mesh.position.set(x, 0, y); 
+        this.mesh.updateMatrix();
+        this.mesh.updateMatrixWorld(true); // Calcola subito la matrice mondo DOPO aver settato posizione e scala
         this.mesh.visible = true;
         
        this.shadowMesh.position.set(x, 0.2, y);
@@ -12050,8 +12058,8 @@ class Enemy extends Entity {
             this.mat.emissiveIntensity = 1.0;
             
             // Nasconde la clava (Lotta a mani nude e corre verso di te!)
-            if (this.modelParts && this.modelParts.armR && this.modelParts.armR.children.length > 0) {
-                this.modelParts.armR.children[0].visible = false;
+            if (this.modelParts && this.modelParts.club) {
+                this.modelParts.club.visible = false;
             }
             
             Game.getFloatingText().spawn(this.x, this.y + 20, "FURENTE!", '#ff0000', 35, true);
@@ -12797,6 +12805,7 @@ class Enemy extends Entity {
                 if (Math.random() > 0.7) return; 
 
                child.getWorldPosition(_pos);
+                _pos.y = Math.max(5, Math.min(60, _pos.y)); // Impedisce spawn ad altezza telecamera
                 if (Game.map && Game.map.isSolid(_pos.x, _pos.z, true)) {
                     _pos.x = this.x;
                     _pos.z = this.y;
@@ -13862,9 +13871,10 @@ class Debris {
         Game.debrisMeshes[this.shapeType].setColorAt(this.index, Game._dummyColor);
         Game.debrisMeshes[this.shapeType].instanceColor.needsUpdate = true;
 
-        // Seppellisci immediatamente le altre 2 forme per nasconderle
+        // Seppellisci immediatamente le altre 2 forme collassando la scala a 0
         let hideDummy = Game._dummyDebris;
         hideDummy.position.set(0, -1000, 0);
+        hideDummy.scale.set(0, 0, 0);
         hideDummy.updateMatrix();
         for (let m = 0; m < 3; m++) {
             if (m !== this.shapeType) {
@@ -13903,6 +13913,7 @@ class Debris {
             this.active = false;
             let dummy = Game._dummyDebris;
             dummy.position.set(0, -1000, 0);
+            dummy.scale.set(0, 0, 0);
             dummy.updateMatrix();
             Game.debrisMeshes[this.shapeType].setMatrixAt(this.index, dummy.matrix);
             return true; // Riaggiorna la matrice per farlo sparire
@@ -14073,6 +14084,7 @@ function clearScene() {
                     child.geometry !== window.GLOBAL_GODRAY_GEO &&
                     child.geometry !== window.GLOBAL_FLOORGLOW_GEO &&
                     child.geometry !== window.GLOBAL_PIT_BOULDER_GEO &&
+                    child.geometry !== window.GLOBAL_WOW_PORTAL_GEO &&
                     !SharedGeoSet.has(child.geometry)) {
                     child.geometry.dispose();
                 }
@@ -14154,8 +14166,14 @@ function clearScene() {
             ep.hideAuras();
             if(ep.shadowMesh) ep.shadowMesh.visible = false; 
             
-            // FIX MEMORY LEAK: Se è il Pursuer, forza la distruzione dei materiali clonati al prossimo riutilizzo del pool
+            // FIX MEMORY LEAK: Rilascia subito dalla VRAM i materiali clonati per la Nemesi
             if (ep.isPursuer) {
+                ep.mesh.traverse(child => {
+                    if ((child.isMesh || child.isSprite) && child.material && child.material !== ep.mat && !SharedMatSet.has(child.material)) {
+                        if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                        else child.material.dispose();
+                    }
+                });
                 ep.currentType = null;
                 ep.isPursuer = false;
             }
