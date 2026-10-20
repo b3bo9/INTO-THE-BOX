@@ -9495,23 +9495,14 @@ this.fogMesh.renderOrder = -1; // Assicura che venga disegnato DOPO il terreno (
             } else {
                 for(let c=0; c<10; c++) Game.queueDrop('coin', this.x, this.y, 30, false);
             }
-        } else if (r < 0.17) {
-            // 16.4% - Buff Magici (5 Secondi)
-            let buffType = Math.random();
-            if (buffType < 0.33) {
-                Game.player.shortBuffs.atkSpeed = 5.0;
-                Game.getFloatingText().spawn(this.x, this.y + 30, "FRENESIA! (+15% ATK)", '#ffaa00', 30, true);
-            } else if (buffType < 0.66) {
-                Game.player.shortBuffs.movSpeed = 5.0;
-                Game.getFloatingText().spawn(this.x, this.y + 30, "SCATTO! (+10% VEL)", '#00aaff', 30, true);
-            } else {
-                Game.player.shortBuffs.regen = 5.0;
-                Game.getFloatingText().spawn(this.x, this.y + 30, "RIGENERO! (+20% HP)", '#33ff00', 30, true);
-            }
+        } else if (r < 0.06) {
+            // ~5.7% (Rara) - Rigenerazione HP (10% HP in 5 Secondi)
+            Game.player.shortBuffs.regen = 5.0;
+            Game.getFloatingText().spawn(this.x, this.y + 30, "RIGENERO! (+10% HP)", '#33ff00', 30, true);
             for(let i=0; i<6; i++) Game.getParticle().spawn(this.x, 25, this.y, SharedMat.spriteLevel, 'spark');
             AudioEngine.playCollect();
 
-        } else if (r < 0.37) { 
+        } else if (r < 0.26) {
             // 20% - Essenza
             Game.queueDrop('essence', this.x, this.y, 20, false);
         } else { 
@@ -10736,7 +10727,7 @@ class Player extends Entity {
         if (this.shortBuffs.movSpeed > 0) this.shortBuffs.movSpeed -= dt;
         if (this.shortBuffs.regen > 0) {
             this.shortBuffs.regen -= dt;
-            let healAmount = this.stats.maxHp * 0.04 * dt; 
+            let healAmount = this.stats.maxHp * 0.02 * dt; // 10% HP totali in 5 secondi
             this.stats.hp = Math.min(this.stats.maxHp, this.stats.hp + healAmount);
             if (Game.frameCount % 20 === 0) {
                 Game.getParticle().spawn(this.x, 25, this.y, SharedMat.spriteGreen, 'spark');
@@ -12147,7 +12138,8 @@ class Enemy extends Entity {
         
         // --- EFFETTO VISIVO PER I NEMICI BUFFATI ---
         if (this.isProphetBuffed) {
-            this.speed = this.baseSpeed * 2.5;
+            let buffSpeedMult = (this.type === 'goblin') ? 1.35 : 2.5;
+            this.speed = this.baseSpeed * buffSpeedMult;
             let pulse = 1.0 + Math.sin(Game.playTime * 20) * 0.4;
             for (let i = 0; i < this.flashMats.length; i++) { 
                 this.flashMats[i].emissive.setHex(0xff5500);
