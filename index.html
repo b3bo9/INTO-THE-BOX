@@ -1081,7 +1081,7 @@ body.colorblind-mode #opt-colorblind-text {
     </div> 
 <script>
 const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-let ESSENCE_COLORS = { 'red': 0xFF1133, 'blue': 0x00AAFF, 'green': 0x33FF00 }; 
+let ESSENCE_COLORS = { 'red': 0xFF1838, 'blue': 0x00CCFF, 'green': 0x22FF44 };
 const ESSENCE_NAMES = { 'red': 'INFERNO', 'blue': 'TEMPESTA', 'green': 'PANDEMIA' };
 const ESSENCE_TYPES = ['red', 'blue', 'green'];
 const AppSettings = {
@@ -1149,9 +1149,12 @@ const AppSettings = {
             }
         }
         
+        if (Game.player && Game.player.light && !isTouchDevice) {
+            Game.player.light.castShadow = this.shadowsEnabled;
+        }
         if (Game.bloomPass) {
-            Game.bloomPass.strength = this.isUltraPC ? 0.25 : 0.15;
-            Game.bloomPass.radius = 0.2;
+            Game.bloomPass.strength = this.isUltraPC ? 0.38 : 0.24;
+            Game.bloomPass.radius = 0.25;
         }
     },
     toggleColorblind() {
@@ -1160,11 +1163,11 @@ const AppSettings = {
             // Aggiunge la classe al body per far cambiare i colori all'HUD CSS
             document.body.classList.add('colorblind-mode');
             // Nuova palette ad alto contrasto: Magenta, Ciano, Giallo
-            ESSENCE_COLORS = { 'red': 0xFF00AA, 'blue': 0x00AAFF, 'green': 0xFFFF00 }; 
+            ESSENCE_COLORS = { 'red': 0xFF00AA, 'blue': 0x00CCFF, 'green': 0xFFFF00 }; 
         } else {
             // Rimuove la classe e torna ai colori originali
             document.body.classList.remove('colorblind-mode');
-            ESSENCE_COLORS = { 'red': 0xFF1133, 'blue': 0x00AAFF, 'green': 0x33FF00 }; 
+            ESSENCE_COLORS = { 'red': 0xFF1838, 'blue': 0x00CCFF, 'green': 0x22FF44 }; 
         }
         
         // 1. Aggiorna le particelle
@@ -1838,24 +1841,24 @@ const MathUtils = {
 
 const TILE_SIZE = 64; const CHUNK_SIZE = 30; const FIXED_TIME_STEP = 1 / 60; const MAX_TIME_STEP = 0.1;
  
-   const MAP_THEMES = [
-   // TEMA 1: FORESTA SMERALDO (Migliorato: più vibrante, contrasto fiabesco e luce più chiara)
+  const MAP_THEMES = [
+    // TEMA 1: FORESTA SMERALDO (Fiabesco: muschio vivo, smeraldo saturo e luce lunare menta)
     { 
-        dirt: 0x1c2b20, grass: 0x184a2a, rock: 0x1b362c, wall: 0x152b21, 
-        grassShader: 0x0c2619, tree: 0x0a1c14,
-        ambient: 0x10252b, dirLight: 0x88ffcc, fog: 0x081c18
+        dirt: 0x243b29, grass: 0x247a44, rock: 0x244d40, wall: 0x1a382d, 
+        grassShader: 0x164a2b, tree: 0x0b2117,
+        ambient: 0x16353d, dirLight: 0x99ffdd, fog: 0x071c17
     },
-    // TEMA 2: ABISSO INFERNALE (Complementare: Ombre Ottanio scuro vs Luce Cremisi)
+    // TEMA 2: ABISSO INFERNALE (Magma vivo: terra vulcanica calda e rosso cremisi intenso)
     { 
-        dirt: 0x501515, grass: 0x881515, rock: 0x3a1010, wall: 0x220a0a, 
-        grassShader: 0x4a0505, tree: 0x1a0505,
-        ambient: 0x001a22, dirLight: 0xff3300, fog: 0x0a0205
+        dirt: 0x52181b, grass: 0xad1f24, rock: 0x471417, wall: 0x290b0d, 
+        grassShader: 0x660b0e, tree: 0x1f0606,
+        ambient: 0x240b18, dirLight: 0xff6633, fog: 0x0c0205
     },
-    // TEMA 3: CAVERNA GLACIALE (Complementare: Ombre Prugna/Magenta vs Luce Ciano)
+    // TEMA 3: CAVERNA GLACIALE (Cristallo arcano: azzurro profondo e riflessi ciano/viola)
     { 
-        dirt: 0x0a1525, grass: 0x0f4066, rock: 0x081525, wall: 0x050a15, 
-        grassShader: 0x051a35, tree: 0x020a1a,
-        ambient: 0x1a001a, dirLight: 0x00ffff, fog: 0x05020a
+        dirt: 0x10243d, grass: 0x1b6ca8, rock: 0x14385c, wall: 0x09192e, 
+        grassShader: 0x0e3b6e, tree: 0x041226,
+        ambient: 0x1e0e38, dirLight: 0x66ffff, fog: 0x050712
     }
 ];
 
@@ -3891,17 +3894,54 @@ const ModelFactory = {
         let group = new THREE.Group(); let parts = {}; 
         let darkMat = SharedMat.enemyDark;
        if (type === 'goblin') {
-            let body = new THREE.Mesh(SharedGeo.tetrahedron, mat); body.scale.set(size*1.5, size*1.5, size*1.5); body.position.y = size; body.rotation.x = -Math.PI/4;
-
-            // Rimosso l'occhio fisico: manteniamo solo l'alone di avvertimento rosso per visibilità e performance
             if (!SharedMat.spriteGoblinGlow) {
-                SharedMat.spriteGoblinGlow = new THREE.SpriteMaterial({color: 0xff4400, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false});
+                SharedMat.spriteGoblinGlow = new THREE.SpriteMaterial({color: 0xff5500, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false});
             }
-            let glow = new THREE.Sprite(SharedMat.spriteGoblinGlow);
-            glow.scale.set(size * 4.5, size * 4.5, 1);
-            glow.position.y = size;
+            if (!SharedMat.goblinCore) {
+                SharedMat.goblinCore = new THREE.MeshBasicMaterial({color: 0xffffff});
+            }
+            if (!SharedMat.goblinWings) {
+                SharedMat.goblinWings = new THREE.MeshBasicMaterial({color: 0xff0055, wireframe: true, transparent: true, opacity: 0.9});
+            }
+            if (!SharedMat.goblinGroundRing) {
+                SharedMat.goblinGroundRing = new THREE.MeshBasicMaterial({color: 0xff3300, transparent: true, opacity: 0.65, blending: THREE.AdditiveBlending, depthWrite: false});
+            }
 
-            group.add(body); group.add(glow);
+            // Perno aereo: mantiene il triangolino in quota impedendo che finisca sotto il pavimento durante le rotazioni
+            let pivot = new THREE.Group();
+            pivot.position.y = size * 2.0;
+
+            // Corpo centrale a dardo piramidale (centrato in 0,0,0 dentro il pivot)
+            let body = new THREE.Mesh(SharedGeo.tetrahedron, mat);
+            body.scale.set(size * 1.7, size * 1.7, size * 2.2);
+
+            // Ali/Gabbia energetica controrotante ad alto contrasto (Magenta Neon)
+            let wings = new THREE.Mesh(SharedGeo.tetrahedron, SharedMat.goblinWings);
+            wings.scale.set(size * 2.3, size * 0.85, size * 2.3);
+
+            // Nucleo bianco incandescente al centro
+            let core = new THREE.Mesh(SharedGeo.icosahedron, SharedMat.goblinCore);
+            core.scale.setScalar(size * 0.75);
+
+            // Alone luminoso potenziato
+            let glow = new THREE.Sprite(SharedMat.spriteGoblinGlow);
+            glow.scale.set(size * 5.2, size * 5.2, 1);
+
+            pivot.add(body, wings, core, glow);
+
+            // Anello laser a terra per mostrare sempre la hitbox esatta sul pavimento
+            let groundRing = new THREE.Mesh(SharedGeo.torus, SharedMat.goblinGroundRing);
+            groundRing.rotation.x = Math.PI / 2;
+            groundRing.position.y = 0.6;
+            groundRing.scale.set(size * 1.25, size * 1.25, 1.5);
+
+            group.add(pivot, groundRing);
+            parts.pivot = pivot;
+            parts.body = body;
+            parts.wings = wings;
+            parts.core = core;
+            parts.glow = glow;
+            parts.groundRing = groundRing;
        }
         else if (type === 'slime' || type === 'slime_mini') {
             // Corpo: una sfera schiacciata a mo' di gelatina
@@ -5265,7 +5305,7 @@ prewarmShaders() {
                     dirt: new MapMaterialClass({ map: tDirt, shininess: 0, specular: 0x000000 }),
                     grass: new MapMaterialClass({ map: tGrass, shininess: 0, specular: 0x000000, alphaMap: GLOBAL_ALPHA_TEX, transparent: true, depthWrite: false }),
                     rock: new MapMaterialClass({ map: tRock, shininess: 15, specular: 0x222222, alphaMap: GLOBAL_ALPHA_TEX, transparent: true, depthWrite: false }),
-                    wall: new MapMaterialClass({ map: tRock, shininess: 6, specular: 0x111111, flatShading: true })
+                    wall: new MapMaterialClass({ map: tRock, shininess: 8, specular: 0x151515, flatShading: true })
                 };
                 window.GLOBAL_THEME_MATS.push(mats);
                 
@@ -6073,43 +6113,38 @@ loop(timestamp) {
             this.mistMat1.color.copy(baseColor);
             this.mistMat2.color.copy(baseColor);
         }
-   // --- ATMOSFERA E VISIBILITÀ DINAMICA ---
+ // --- ATMOSFERA E VISIBILITÀ DINAMICA ---
         if (this.currentThemeIndex === 2) {
-            // FIX VIGNETTATURA GHIACCIO: Avviciniamo la nebbia (-100) per ricreare 
-            // l'oscuramento visivo ai bordi dello schermo, mantenendo il freddo glaciale.
-            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 100, camDist + 400);
+            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 90, camDist + 430);
             if (this.bloomPass) {
-                // Ghiaccio: Bloom molto leggero e tagliente
-                this.bloomPass.strength = 0.25;
-                this.bloomPass.threshold = 0.70;
+                this.bloomPass.strength = AppSettings.isUltraPC ? 0.24 : 0.16;
+                this.bloomPass.threshold = 0.75;
             }
         } else if (this.currentThemeIndex === 1) {
-            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 300, camDist + 250);
+            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 260, camDist + 300);
             if (this.bloomPass) {
-                // Lava: Bagliore visibile solo sui rossi molto intensi
-                this.bloomPass.strength = 0.30;
-                this.bloomPass.threshold = 0.60;
+                this.bloomPass.strength = AppSettings.isUltraPC ? 0.26 : 0.18;
+                this.bloomPass.threshold = 0.72;
             }
        } else {
-            // FORESTA: Nebbia magica e avvolgente, migliorata per dare più profondità e colore
-            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 150, camDist + 450);
+            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 130, camDist + 460);
             if (this.bloomPass) {
-                // Foresta: Bloom aumentato per far brillare l'acqua azzurra e le lucciole
-                this.bloomPass.strength = 0.35;
-                this.bloomPass.threshold = 0.55;
+                this.bloomPass.strength = AppSettings.isUltraPC ? 0.28 : 0.20;
+                this.bloomPass.threshold = 0.70;
             }
         }
         Game.arenaEvolution = false; // DEVE ESSERE FALSE ALL'INIZIO!
         
+        // Illuminazione nitida e vivace per esaltare i colori delle texture senza slavarle
         if (this.dirLight) { 
-            this.dirLight.intensity = 1.4; 
+            this.dirLight.intensity = 1.35; 
             this.dirLight.color.setHex(currentTheme.dirLight); 
         }
         if (this.ambientLight) { 
-            this.ambientLight.intensity = 0.85; 
-            this.ambientLight.color.setHex(currentTheme.dirLight); // Cielo in tinta con la luce lunare/magmatica
+            this.ambientLight.intensity = 0.75; 
+            this.ambientLight.color.setHex(currentTheme.dirLight);
             if (this.ambientLight.groundColor) {
-                this.ambientLight.groundColor.setHex(currentTheme.dirt); // Rimbalzo luminoso dal suolo sui modelli!
+                this.ambientLight.groundColor.setHex(currentTheme.dirt);
             }
         }
         // Sincronizza il colore dell'erba 3D interattiva con il bioma corrente (Foresta, Lava, Ghiaccio)
@@ -8581,7 +8616,7 @@ class GameMap {
         };
 
         meshDirt.receiveShadow = true; meshGrass.receiveShadow = true; meshRock.receiveShadow = true;
-        wallMesh.castShadow = true; wallMesh.receiveShadow = false;
+        wallMesh.castShadow = true; wallMesh.receiveShadow = true;
        
 
         let dummy = new THREE.Object3D(); 
@@ -9683,9 +9718,11 @@ class Entity {
                 if (this === Game.player) {
                     this.updateAppearance();
                 } else {
-                    let baseEmissive = this.isElite ? 0x440000 : 0x000000;
+                    let baseEmissive = this.isElite ? 0x440000 : (this.type === 'goblin' ? 0xff2200 : 0x000000);
+                    let baseIntensity = this.isGolden ? 2.0 : (this.isElite ? 1.0 : (this.type === 'goblin' ? 0.75 : 0.0));
                     for (let i = 0; i < this.flashMats.length; i++) {
                         this.flashMats[i].emissive.setHex(baseEmissive);
+                        this.flashMats[i].emissiveIntensity = baseIntensity;
                     }
                 }
             }
@@ -9766,16 +9803,20 @@ class Player extends Entity {
         );
         this.mesh = this.modelParts.group; this.staffGemMat = this.modelParts.staffGem.material;
         
-       // Luce più calda (ambra/arancio), raggio esteso e decadimento più morbido (1.5 invece di 2) 
-        // OTTIMIZZAZIONE GPU: Raggio dimezzato su smartphone. Identico a schermo, ma salva il 50% del calcolo luce.
-        let lightRadius = isTouchDevice ? 700 : 1200;
-        // FIX ILLUMINAZIONE: Decay a 2.0 per un falloff fotorealistico e ombre più morbide ai bordi
-        this.light = new THREE.PointLight(0xffddaa, 5.0, lightRadius, 2.0); this.light.position.y = 30;
+       // Esclude le parti dell'arma dal generare ombre su se stesse così la PointLight sulla punta proietta ombre pulite a 360°
+        if (this.modelParts.staff) this.modelParts.staff.castShadow = false;
+        if (this.modelParts.staffGem) this.modelParts.staffGem.castShadow = false;
+        if (this.modelParts.halo) this.modelParts.halo.castShadow = false;
+
+        let lightRadius = isTouchDevice ? 650 : 1050;
+        // Luce sulla punta dell'arma con decay 2.0 per non sovraesporre mai il giocatore o il pavimento
+        this.light = new THREE.PointLight(0xffcc44, 2.4, lightRadius, 2.0);
+        this.light.position.set(12, 34, 16);
         
         this.mesh.add(this.light); this.mesh.position.set(this.x, 0, this.y); Game.scene.add(this.mesh);
-        this.mesh.traverse(c => { if(c.material && c.material.emissive && c !== this.modelParts.staffGem) this.flashMats.push(c.material); });
-    this.shieldMesh = new THREE.Mesh(SharedGeo.icosahedron, new THREE.MeshBasicMaterial({color: 0x00DDFF, wireframe: true, transparent: true, opacity: 0.6}));
-        this.shieldMesh.scale.set(28, 28, 28); // <-- Scudo ingrandito
+        this.mesh.traverse(c => { if(c.material && c.material.emissive && c !== this.modelParts.staffGem && c !== this.modelParts.halo) this.flashMats.push(c.material); });
+        this.shieldMesh = new THREE.Mesh(SharedGeo.icosahedron, new THREE.MeshBasicMaterial({color: 0x00DDFF, wireframe: true, transparent: true, opacity: 0.6}));
+        this.shieldMesh.scale.set(28, 28, 28);
         this.shieldMesh.position.y = 12;
         this.shieldMesh.visible = false;
         this.mesh.add(this.shieldMesh);
@@ -9790,13 +9831,17 @@ class Player extends Entity {
         this.glacialShieldMesh.position.y = 12;
         this.glacialShieldMesh.visible = false;
         this.mesh.add(this.glacialShieldMesh);
-       // FAKE BLOOM: Un alone 2D leggerissimo per simulare il bagliore su Smartphone
-        this.fakeBloom = new THREE.Sprite(SharedMat.spriteWhite.clone());
-        this.fakeBloom.scale.set(20, 20, 1); // Dimensione bilanciata per la punta
-        this.fakeBloom.position.set(0, 0, 0); // Zero locale: sta esattamente dentro la gemma
-        
-        // Riagganciamo il bloom alla bacchetta magica
-        this.modelParts.staffGem.add(this.fakeBloom);
+
+        // BAGLIORE CONTENUTO E NITIDO SULLA PUNTA DELL'ARMA
+        this.fakeBloom = new THREE.Sprite(SharedMat.spriteWhite.clone());
+        this.fakeBloom.scale.set(22, 22, 1);
+        this.fakeBloom.position.set(0, 0, 0);
+        this.modelParts.staffGem.add(this.fakeBloom);
+
+        this.weaponCoreBloom = new THREE.Sprite(SharedMat.spriteWhite.clone());
+        this.weaponCoreBloom.scale.set(9, 9, 1);
+        this.weaponCoreBloom.position.set(0, 0, 0);
+        this.modelParts.staffGem.add(this.weaponCoreBloom);
       // Attiva e scala l'ombra per il giocatore
         this.shadowMesh.scale.set(32, 1, 32); 
         this.shadowMesh.visible = !AppSettings.shadowsEnabled;
@@ -10120,20 +10165,25 @@ class Player extends Entity {
         this.modelParts.halo.rotation.set(0, 0, 0);
         this.modelParts.staffGem.rotation.set(0, 0, 0);
 
-        // Regola il bagliore sulla punta dell'arma
+        // Regola il bagliore sulla punta dell'arma mantenendo dimensioni compatte e leggibili
         if (this.fakeBloom) {
             if (skin.id === 'crimson_inquisitor') {
                 this.fakeBloom.position.set(0, 0, 8.5);
-                this.fakeBloom.scale.set(18, 18, 1);
+                this.fakeBloom.scale.set(20, 20, 1);
             } else if (skin.id === 'solar_archon' || skin.id === 'emerald_warden') {
                 this.fakeBloom.position.set(0, 5.5, 0);
-                this.fakeBloom.scale.set(15, 15, 1);
+                this.fakeBloom.scale.set(18, 18, 1);
             } else if (skin.id === 'void_walker' || skin.id === 'cyber_phantom') {
                 this.fakeBloom.position.set(0, 0, 0);
-                this.fakeBloom.scale.set(14, 14, 1);
+                this.fakeBloom.scale.set(16, 16, 1);
             } else {
                 this.fakeBloom.position.set(0, 0, 0);
-                this.fakeBloom.scale.set(20, 20, 1);
+                this.fakeBloom.scale.set(22, 22, 1);
+            }
+            if (this.weaponCoreBloom) {
+                this.weaponCoreBloom.position.copy(this.fakeBloom.position);
+                let coreSize = this.fakeBloom.scale.x * 0.40;
+                this.weaponCoreBloom.scale.set(coreSize, coreSize, 1);
             }
         }
 
@@ -10233,8 +10283,8 @@ class Player extends Entity {
     updateAppearance() {
         let skin = SkinSystem.getCurrentSkin();
         let hasActiveEssence = Boolean(this.essence || Game.ultimateActive);
-        let lColor = 0xffddaa;
-        let gemColor = 0xffff00;
+        let lColor = 0xffcc44;   // Oro arcano caldo di base
+        let gemColor = 0xffdd33;
 
         if (this.essence) {
             lColor = ESSENCE_COLORS[this.essence];
@@ -10243,25 +10293,26 @@ class Player extends Entity {
         
         // PRIORITÀ ASSOLUTA ULTIMATE
         if (Game.ultimateActive) {
-            lColor = 0x00DDFF;
-            gemColor = 0x00DDFF;
+            lColor = 0x00EEFF;
+            gemColor = 0x00EEFF;
         }
 
-        // Corpo, testa e struttura dell'arma mantengono SEMPRE i colori originali della skin
+        // Corpo e testa mantengono i colori della skin; l'asta dell'arma si infonde leggermente del bagliore dell'essenza
         this.modelParts.body.material.color.setHex(skin.colors.body);
         this.modelParts.head.material.color.setHex(skin.colors.head);
         this.modelParts.head.material.emissive.setHex(0x222222);
         this.modelParts.head.material.emissiveIntensity = 1.0;
         if (this.modelParts.staff) {
             this.modelParts.staff.material.color.setHex(skin.colors.staff);
-            this.modelParts.staff.material.emissive.setHex(0x000000);
+            this.modelParts.staff.material.emissive.setHex(hasActiveEssence ? gemColor : 0x332200);
+            this.modelParts.staff.material.emissiveIntensity = (this.overdrive || Game.ultimateActive) ? 0.40 : (hasActiveEssence ? 0.22 : 0.08);
         }
 
-        // Solo i dettagli del corpo (sciarpa/collare, visori, ali, cristalli) e il nucleo dell'arma prendono il colore dell'essenza
+        // Dettagli del corpo (sciarpa/collare, visori, ali) e nucleo dell'arma
         if (hasActiveEssence) {
             this.modelParts.scarf.material.color.setHex(gemColor);
             this.modelParts.scarf.material.emissive.setHex(gemColor);
-            this.modelParts.scarf.material.emissiveIntensity = (this.overdrive || Game.ultimateActive) ? 0.85 : 0.40;
+            this.modelParts.scarf.material.emissiveIntensity = (this.overdrive || Game.ultimateActive) ? 0.50 : 0.30;
         } else {
             this.modelParts.scarf.material.color.setHex(skin.colors.scarf);
             this.modelParts.scarf.material.emissive.setHex(0x000000);
@@ -10271,27 +10322,32 @@ class Player extends Entity {
         this.light.color.setHex(lColor);
         this.staffGemMat.color.setHex(gemColor);
         this.staffGemMat.emissive.setHex(gemColor);
+        this.staffGemMat.emissiveIntensity = (this.overdrive || Game.ultimateActive) ? 1.6 : (hasActiveEssence ? 1.3 : 1.0);
+
         this.fakeBloom.material.color.setHex(gemColor);
-        this.fakeBloom.material.opacity = (this.overdrive || Game.ultimateActive) ? 1.0 : 0.6;
+        this.fakeBloom.material.opacity = (this.overdrive || Game.ultimateActive) ? 0.80 : (hasActiveEssence ? 0.70 : 0.50);
+        if (this.weaponCoreBloom) {
+            this.weaponCoreBloom.material.color.setHex(0xffffff);
+            this.weaponCoreBloom.material.opacity = (this.overdrive || Game.ultimateActive) ? 0.75 : 0.60;
+        }
 
         if (this.modelParts.auraMat) {
             this.modelParts.auraMat.color.setHex(gemColor);
-            this.modelParts.auraMat.opacity = (this.overdrive || Game.ultimateActive) ? 0.65 : (this.essence ? 0.48 : 0.35);
+            this.modelParts.auraMat.opacity = (this.overdrive || Game.ultimateActive) ? 0.45 : (this.essence ? 0.38 : 0.28);
         }
         
-        // Il mantello/armatura non cambia colore: emette solo un leggero riverbero interno in Overdrive o Ultimate
+        // Il mantello resta scuro e leggibile anche in Ultimate (niente effetto "macchia di luce")
         if (Game.ultimateActive) {  
-            this.modelParts.body.material.emissive.setHex(0x00DDFF);  
-            this.modelParts.body.material.emissiveIntensity = 0.35;  
-            this.light.intensity = 4.0;
-            this.light.distance = isTouchDevice ? 900 : 1400;
-            this.staffGemMat.emissive.setHex(0xffffff); 
+            this.modelParts.body.material.emissive.setHex(0x0088aa);  
+            this.modelParts.body.material.emissiveIntensity = 0.10;  
+            this.light.intensity = 3.6;
+            this.light.distance = isTouchDevice ? 700 : 1100;
         } else if (this.overdrive) {  
-            this.light.intensity = 3.5; 
+            this.light.intensity = 3.2; 
             this.modelParts.body.material.emissive.setHex(gemColor);  
-            this.modelParts.body.material.emissiveIntensity = 0.22;  
+            this.modelParts.body.material.emissiveIntensity = 0.10;  
         } else {  
-            this.light.intensity = this.essence ? 2.5 : 1.8;  
+            this.light.intensity = this.essence ? 2.5 : 2.0;  
             this.modelParts.body.material.emissive.setHex(0x000000);  
             this.modelParts.body.material.emissiveIntensity = 0.0;  
         }
@@ -10932,9 +10988,10 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
             this.modelParts.weaponGroup.position.y += (targetY - this.modelParts.weaponGroup.position.y) * dt * 12;
             this.modelParts.weaponGroup.rotation.z += (targetRotZ - this.modelParts.weaponGroup.rotation.z) * dt * 12;
 
-            // 2. La luce reale segue la bacchetta con un lievissimo ritardo (elastico)
-            this.light.position.x += (this.modelParts.weaponGroup.position.x - this.light.position.x) * dt * 15;
-            this.light.position.y += (this.modelParts.weaponGroup.position.y + 10 - this.light.position.y) * dt * 15;
+            // 2. La PointLight è ancorata in 3D sulla punta dell'arma per muovere dinamicamente luci e ombre
+            this.light.position.x += (this.modelParts.weaponGroup.position.x + 2 - this.light.position.x) * dt * 18;
+            this.light.position.y += (this.modelParts.weaponGroup.position.y + 18 - this.light.position.y) * dt * 18;
+            this.light.position.z += (this.modelParts.weaponGroup.position.z + 12 - this.light.position.z) * dt * 18;
             
             // --- NUOVO: FIAMMA DELL'ARMA REATTIVA AL VENTO CINETICO ---
             // Se l'arma è carica (essenza o overdrive), emette una fiamma
@@ -11104,18 +11161,25 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
             this.modelParts.weaponGroup.rotation.x = restRotX;
         }
 
-        // --- SFARFALLIO SICURO E FEEDBACK D'ATTACCO (FOTOSENSIBILITÀ) ---
-        let baseInt = Game.ultimateActive ? 8.0 : (this.overdrive ? 6.5 : (this.essence ? 4.5 : 3.0));
-        let flicker = (Math.sin(Game.playTime * 4.3) * 0.1) + (Math.sin(Game.playTime * 7.8) * 0.12);
-        let attackIntensityBurst = this.isAttacking ? (Math.sin(this.attackSwing) * 0.3) : 0.0;
-        let baseRadius = 1200;
-        let attackRadiusBurst = this.isAttacking ? (Math.sin(this.attackSwing) * 200) : 0.0;
+        // --- BAGLIORE DINAMICO DELL'ARMA CALIBRATO (Niente sovraesposizione) ---
+        let stackBonus = (this.essenceList ? this.essenceList.length : 0) * 0.20;
+        let baseInt = Game.ultimateActive ? 3.8 : (this.overdrive ? 3.4 : (this.essence ? (2.5 + stackBonus) : 2.0));
+        let flicker = (Math.sin(Game.playTime * 4.3) * 0.08) + (Math.sin(Game.playTime * 7.8) * 0.08);
+        let attackSwingPulse = this.isAttacking ? Math.max(0, Math.sin(this.attackSwing)) : 0.0;
+        let attackIntensityBurst = attackSwingPulse * 0.6;
+        let baseRadius = isTouchDevice ? 650 : 1050;
+        let attackRadiusBurst = attackSwingPulse * 140;
         
         this.light.intensity = baseInt + flicker + attackIntensityBurst;
         this.light.distance = baseRadius + attackRadiusBurst;
         
-        let baseOpacity = this.overdrive ? 1.0 : (this.essence ? 0.8 : 0.5);
-        this.fakeBloom.material.opacity = Math.max(0.1, Math.min(1.0, baseOpacity + (flicker * 0.5)));
+        let baseOpacity = (this.overdrive || Game.ultimateActive) ? 0.80 : (this.essence ? 0.68 : 0.48);
+        this.fakeBloom.material.opacity = Math.max(0.2, Math.min(0.88, baseOpacity + (flicker * 0.25) + (attackSwingPulse * 0.15)));
+        if (this.weaponCoreBloom) {
+            let corePulse = 1.0 + attackSwingPulse * 0.25;
+            let baseCore = this.fakeBloom.scale.x * 0.40 * corePulse;
+            this.weaponCoreBloom.scale.set(baseCore, baseCore, 1);
+        }
 
         // Rotazione dei 3 cristalli orbitanti per il Viandante del Vuoto
         if (SkinSystem.selectedId === 'void_walker' && this.modelParts.accentMesh) {
@@ -11778,6 +11842,8 @@ class Enemy extends Entity {
         this.active = true;
         this.dead = false;
         this.thinkOffset = Math.floor(Math.random() * 5);
+        this.animPhase = Math.random() * Math.PI * 2; // Fase casuale per desincronizzare le animazioni
+        this.animSpeed = MathUtils.randomRange(0.82, 1.32); // Velocità di volo/rotazione individuale
         this.x = x; 
         this.y = y; 
         this.type = type; 
@@ -11810,7 +11876,7 @@ class Enemy extends Entity {
         this.isFlying = false; // Reset di base
         
         // Fazioni e Statistiche
-        if (type === 'goblin') { color = 0x99dd22; size = 10; spdMod = 1.8; hpMod = 0.5; dmgMod = 1.2; this.aggroRange = 500; this.attackRange = 40; this.isFlying = true; } // I Goblin VOLANO sopra le fosse!
+        if (type === 'goblin') { color = 0xffcc00; size = 11; spdMod = 1.8; hpMod = 0.5; dmgMod = 1.2; this.aggroRange = 500; this.attackRange = 40; this.isFlying = true; } // I Goblin VOLANO sopra le fosse!
         else if (type === 'orc') { color = 0x5c4033; size = 18; spdMod = 0.8; hpMod = 1.6; dmgMod = 2.5; this.aggroRange = 450; this.attackRange = 55; }
         else if (type === 'skeleton_archer') { color = 0x888888; size = 14; spdMod = 1.1; hpMod = 0.4; dmgMod = 1.5; this.aggroRange = 700; this.attackRange = 400; } 
         else if (type === 'slime') { color = 0xaa00ff; size = 15; spdMod = 0.9; hpMod = 0.9; dmgMod = 1.0; this.aggroRange = 500; this.attackRange = 40; } 
@@ -11955,8 +12021,8 @@ class Enemy extends Entity {
         } 
         else { 
             this.mat.color.setHex(color); 
-            this.mat.emissive.setHex(0x000000); 
-            this.mat.emissiveIntensity = 0.0; 
+            this.mat.emissive.setHex(this.type === 'goblin' ? 0xff2200 : 0x000000); 
+            this.mat.emissiveIntensity = this.type === 'goblin' ? 0.75 : 0.0; 
         }
 
         // Resetta le braccia e ripristina la clava dell'orco dal pool
@@ -12097,7 +12163,32 @@ class Enemy extends Entity {
                 this.speed = this.baseSpeed; 
             }
         }
-        if (this.type === 'goblin') { this.mesh.rotation.x += dt * 15; this.mesh.rotation.y += dt * 10; }
+        if (this.type === 'goblin' && this.modelParts && this.modelParts.pivot) {
+            let t = Game.playTime * (this.animSpeed || 1.0) + (this.animPhase || 0);
+            let isClose = (this.distToTargetSq !== undefined && this.distToTargetSq < 36000);
+
+            // 1. Fluttuazione verticale e oscillazione laterale asincrone
+            let hoverY = (this.radius * 1.35) + Math.sin(t * 6.5) * 4.0;
+            let weaveX = Math.cos(t * 4.5) * 5.0;
+            let lungeZ = (this.attackSwingTimer > 0) ? Math.sin((1.0 - this.attackSwingTimer / 0.28) * Math.PI) * 18.0 : 0;
+
+            this.modelParts.pivot.position.set(weaveX, hoverY, lungeZ);
+            this.modelParts.pivot.rotation.z = -Math.sin(t * 4.5) * 0.4;
+            this.modelParts.pivot.rotation.x = isClose ? 0.3 : 0.08;
+
+            // 2. Avvitamento del dardo centrale e controrotazione delle ali esterne
+            this.modelParts.body.rotation.z += dt * 10.0 * (this.animSpeed || 1.0);
+            this.modelParts.body.rotation.x = Math.sin(t * 7.0) * 0.25;
+            this.modelParts.wings.rotation.y -= dt * 13.0 * (this.animSpeed || 1.0);
+            this.modelParts.wings.rotation.x = Math.cos(t * 5.5) * 0.3;
+
+            // 3. Pulsazione dell'alone in prossimità del giocatore
+            let pulse = isClose ? (1.25 + Math.sin(Game.playTime * 24.0 + this.animPhase) * 0.25) : (1.0 + Math.sin(t * 6.0) * 0.12);
+            if (this.modelParts.glow) {
+                let gSize = this.radius * 3.8 * pulse;
+                this.modelParts.glow.scale.set(gSize, gSize, 1);
+            }
+        }
         if (this.type === 'crystal') { this.modelParts.ring.rotation.x += dt; this.modelParts.gem.rotation.y -= dt; }
         
         // --- ANIMAZIONE SLIME: Squash & Stretch basato sul tempo ---
@@ -12185,7 +12276,7 @@ class Enemy extends Entity {
             let swingAngle = -1.6 + Math.sin(swingProg * Math.PI) * 2.8;
             if (this.modelParts.armR) this.modelParts.armR.rotation.x = swingAngle;
             if (this.modelParts.armL) this.modelParts.armL.rotation.x = swingAngle * 0.5;
-            this.mesh.rotation.x = Math.sin(swingProg * Math.PI) * 0.35;
+            if (this.type !== 'goblin') this.mesh.rotation.x = Math.sin(swingProg * Math.PI) * 0.35;
         } else if (this.modelParts.armL && this.speed > 0 && this.state !== 'leaping') {
             this.modelParts.armL.rotation.x = Game.animArm;
             this.modelParts.armR.rotation.x = -Game.animArm;
@@ -12459,7 +12550,7 @@ class Enemy extends Entity {
         // -----------------------------------------------------------------------
 
        // Rotazione visiva fluida (Eseguita ogni frame)
-        if (this.type === 'leaper' || this.type === 'orc' || this.type === 'skeleton_archer' || this.type === 'fire_demon' || this.type === 'boss' || this.type === 'slime' || this.type === 'slime_mini') {
+        if (this.type === 'goblin' || this.type === 'leaper' || this.type === 'orc' || this.type === 'skeleton_archer' || this.type === 'fire_demon' || this.type === 'boss' || this.type === 'slime' || this.type === 'slime_mini') {
             this.mesh.rotation.y = -this.angle + Math.PI / 2;
         } else if (this.type === 'golem') {
             // Il Golem ruota molto lentamente, permettendo al giocatore di agirargli alle spalle
@@ -12618,7 +12709,15 @@ class Enemy extends Entity {
             this.attackCooldown = 2.0 * cdMult; 
         }
         else if (this.type !== 'leaper' && this.type !== 'dark_prophet') { 
-            this.attackSwingTimer = 0.28; // Innesca il fendente fisico delle braccia/clava
+            this.attackSwingTimer = 0.28; // Innesca il fendente fisico o l'affondo aereo
+            if (this.type === 'goblin' && !AppSettings.isLow) {
+                let hitX = (this.x + Game.player.x) * 0.5;
+                let hitZ = (this.y + Game.player.y) * 0.5;
+                let flash = Game.getParticle();
+                flash.spawn(hitX, 20, hitZ, SharedMat.spriteYellow, 'nova');
+                flash.baseSize = 42;
+                for (let s = 0; s < 3; s++) Game.getParticle().spawn(hitX, 20, hitZ, SharedMat.spriteRed, 'spark', this.angle);
+            }
             let dmg = this.isPursuer ? (Game.player.stats.maxHp * 0.3) : actualDmg;
             Game.player.takeDamage(dmg, this); 
             this.push(Math.cos(this.angle), Math.sin(this.angle), this.type === 'golem' ? 3 : 18); 
