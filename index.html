@@ -444,72 +444,88 @@ body.colorblind-mode #opt-colorblind-text {
         <h1 id="startText" class="hidden text-[6vw] sm:text-4xl font-display font-black text-red-600 tracking-widest animate-pulse text-center px-4 drop-shadow-[0_0_15px_rgba(220,38,38,0.8)] z-10 uppercase">Tocca per Entrare</h1>
     </div>
 
-  <!-- MAIN MENU -->
-    <div id="mainMenu" class="absolute inset-0 z-[200] pointer-events-auto hidden flex-col justify-between overflow-y-auto overflow-x-hidden bg-cover bg-center bg-no-repeat" style="background-image: url('bg.png');">
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_10%,_rgba(0,0,0,0.85)_100%)] pointer-events-none"></div>
-        <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/95 pointer-events-none"></div>
+ <!-- MAIN MENU -->
+    <div id="mainMenu" class="absolute inset-0 z-[200] pointer-events-auto hidden flex-col justify-between overflow-y-auto overflow-x-hidden bg-cover bg-center bg-no-repeat" style="background-image: url('bg.png');">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_15%,_rgba(5,5,10,0.88)_100%)] pointer-events-none"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/95 pointer-events-none"></div>
 
-        <div class="w-full h-full flex flex-col justify-between items-center z-10 px-4 py-8">
-        <!-- TITOLO 3D INTERATTIVO IN ALTO -->
-            <div class="relative w-full flex flex-col items-center justify-center -mt-8 sm:-mt-12 min-h-[220px] sm:min-h-[300px] pointer-events-none">
-                <!-- Canvas 3D per Effetti Particellari e Sfere Elementali RGB -->
-                <div id="title-3d-canvas-container" class="absolute inset-0 w-full h-[280px] sm:h-[360px] -top-8 flex items-center justify-center z-0"></div>
+        <div class="w-full h-full flex flex-col justify-between items-center z-10 px-4 py-6 sm:py-8">
+            <!-- TITOLO 3D INTERATTIVO IN ALTO (Senza Definitive Edition) -->
+            <div class="relative w-full flex flex-col items-center justify-center -mt-6 sm:-mt-10 min-h-[200px] sm:min-h-[260px] pointer-events-none">
+                <div id="title-3d-canvas-container" class="absolute inset-0 w-full h-[260px] sm:h-[340px] -top-6 flex items-center justify-center z-0"></div>
                 
-                <!-- Testo 3D Accattivante -->
                 <div class="relative z-10 flex flex-col items-center">
                     <div class="relative">
-                        <!-- Bagliore Elementale Sotto il Titolo -->
-                       <div class="absolute -inset-4 bg-gradient-to-r from-red-600/30 via-blue-600/30 to-green-600/30 blur-2xl rounded-full animate-pulse"></div>
+                        <div class="absolute -inset-4 bg-gradient-to-r from-red-600/30 via-blue-600/30 to-green-600/30 blur-2xl rounded-full animate-pulse"></div>
                         <h1 class="title-3d-text font-black italic tracking-tighter leading-none text-[11vw] sm:text-7xl md:text-8xl whitespace-nowrap select-none m-0">INTO THE BOX</h1>
-                    </div>
-                    
-                    <!-- Sottotitolo con Badge Cyberpunk/Arcade RGB -->
-                    <div class="flex items-center gap-2 mt-2 sm:mt-4 px-4 py-1.5 rounded-full bg-black/60 border border-gray-700/80 backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.8)]">
-                        <span class="w-2 h-2 rounded-full bg-red-500 animate-ping shadow-[0_0_8px_#ff0000]"></span>
-                        <span class="w-2 h-2 rounded-full bg-blue-400 animate-ping shadow-[0_0_8px_#00aaff]" style="animation-delay: 0.3s;"></span>
-                        <span class="w-2 h-2 rounded-full bg-green-400 animate-ping shadow-[0_0_8px_#33ff00]" style="animation-delay: 0.6s;"></span>
-                        <h2 class="text-[3vw] sm:text-xs text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-blue-300 to-green-400 uppercase tracking-[0.6em] font-extrabold m-0 pl-1">Definitive Edition</h2>
                     </div>
                 </div>
             </div>
 
-           <!-- ZONA CENTRALE: VUOTA PER LASCIAR VEDERE LO SFONDO -->
-            <div class="flex-1 w-full min-h-[50px]"></div>
+            <!-- ZONA CENTRALE: VUOTA PER LASCIAR VEDERE LO SFONDO -->
+            <div class="flex-1 w-full min-h-[40px]"></div>
 
-     <!-- CONTROLLI IN BASSO -->
-            <div class="w-full max-w-[450px] flex flex-col gap-3 pointer-events-auto shrink-0 relative z-20 mb-4 sm:mb-8">
+            <!-- CONSOLE COMANDI IN BASSO -->
+            <div class="w-full max-w-[440px] flex flex-col gap-2.5 pointer-events-auto shrink-0 relative z-20 mb-2 sm:mb-6">
                 
-                <!-- Decorazione Ambientale dietro i pulsanti -->
-                <div class="absolute -inset-10 bg-gradient-to-t from-red-900/10 via-transparent to-transparent blur-3xl pointer-events-none animate-pulse"></div>
+                <div class="absolute -inset-8 bg-gradient-to-t from-red-950/25 via-transparent to-transparent blur-2xl pointer-events-none"></div>
 
-                <!-- BOTTONI: OPZIONI, SKIN, INFO -->
-                <div class="grid grid-cols-3 gap-2.5 sm:gap-3 w-full relative z-10">
-                    <button onclick="UIManager.showModal('optionsModal')" onmouseenter="AudioEngine.playHover()" class="btn-cyber glass-panel box-glow-gray w-full h-12 sm:h-14 text-[10px] sm:text-xs font-bold text-gray-300">
-                        <i class="fa-solid fa-gear"></i> OPZIONI
-                    </button>
-
-                    <button id="btn-menu-skins" onclick="UIManager.showModal('skinModal')" onmouseenter="AudioEngine.playHover()" class="btn-cyber glass-panel box-glow-purple w-full h-12 sm:h-14 text-[10px] sm:text-xs font-bold text-purple-300 border-purple-900/30 relative">
-                        <i class="fa-solid fa-user-astronaut"></i> SKIN
+                <!-- RIGA SUPERIORE: SKIN IN USO (Elegante) + CAMPO CRISTALLI (Separato) -->
+                <div class="flex items-stretch gap-2.5 w-full relative z-10">
+                    
+                    <!-- Box Skin Selezionata (Cliccabile per cambiare Skin) -->
+                    <button id="btn-menu-skins" onclick="UIManager.showModal('skinModal')" onmouseenter="AudioEngine.playHover()" class="hud-panel flex-1 px-3 py-2.5 flex items-center justify-between gap-3 cursor-pointer group hover:border-purple-400/50 transition-all text-left relative">
                         <span id="skin-new-badge" class="hidden absolute -top-1.5 -right-1.5 w-3 h-3 bg-amber-400 rounded-full animate-ping"></span>
+                        
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div id="menu-skin-frame" class="w-11 h-11 rounded-lg bg-black/90 border-2 border-gray-600 flex items-center justify-center shrink-0 transition-colors">
+                                <svg id="menu-skin-svg" viewBox="0 0 40 40" class="w-9 h-9"></svg>
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_6px_#c084fc]"></span>
+                                    <span class="text-[9px] text-purple-300/90 font-extrabold uppercase tracking-[0.2em] leading-none">In Uso</span>
+                                </div>
+                                <span id="menu-skin-name" class="text-xs sm:text-sm font-black text-white uppercase tracking-wider truncate mt-1 group-hover:text-purple-200 transition-colors">Mago Oscuro</span>
+                            </div>
+                        </div>
+
+                        <div class="w-7 h-7 rounded-md bg-white/5 border border-white/10 group-hover:border-purple-400/40 group-hover:bg-purple-950/40 flex items-center justify-center shrink-0 transition-all">
+                            <i class="fa-solid fa-repeat text-[10px] text-gray-400 group-hover:text-purple-300"></i>
+                        </div>
                     </button>
 
-                    <button onclick="UIManager.showModal('infoModal')" onmouseenter="AudioEngine.playHover()" class="btn-cyber glass-panel box-glow-blue w-full h-12 sm:h-14 text-[10px] sm:text-xs font-bold text-blue-300 border-blue-900/30">
-                        <i class="fa-solid fa-book"></i> INFO
+                    <!-- Box Cristalli (Modulo separato a parte) -->
+                    <div onclick="UIManager.showModal('skinModal')" onmouseenter="AudioEngine.playHover()" class="hud-panel px-4 py-2.5 flex items-center justify-center gap-2.5 shrink-0 cursor-pointer hover:border-purple-400/50 transition-all" title="Cristalli Viola">
+                        <i class="fa-solid fa-gem text-purple-400 text-sm sm:text-base drop-shadow-[0_0_8px_rgba(192,132,252,0.8)]"></i>
+                        <span id="menu-crystals-count" class="text-sm sm:text-base font-black text-purple-100 tracking-wider">0</span>
+                    </div>
+                </div>
+
+                <!-- PULSANTE PRINCIPALE: GIOCA -->
+                <button onmouseenter="AudioEngine.playHover()" onclick="AudioEngine.playClick(); startGameFromMenu()" class="anim-play-pulse btn-cyber box-glow-red bg-gradient-to-r from-red-950 via-red-600 to-red-950 text-white font-display font-black py-4 sm:py-5 rounded-xl text-2xl sm:text-3xl border border-red-400 overflow-hidden group z-10 relative">
+                    <div class="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:animate-shimmer pointer-events-none"></div>
+                    <span class="relative z-10 flex justify-center items-center gap-3 tracking-wider drop-shadow-md"><i class="fa-solid fa-play text-xl sm:text-2xl"></i> GIOCA</span>
+                </button>
+
+                <!-- BARRA TATTICA SECONDARIA: OPZIONI, CLASSIFICA, INFO -->
+                <div class="grid grid-cols-3 gap-2 sm:gap-2.5 w-full relative z-10">
+                    <button onclick="UIManager.showModal('optionsModal')" onmouseenter="AudioEngine.playHover()" class="btn-cyber glass-panel box-glow-gray w-full h-12 sm:h-13 text-[10px] sm:text-xs font-bold text-gray-300">
+                        <i class="fa-solid fa-gear text-gray-400"></i> OPZIONI
+                    </button>
+
+                    <button onmouseenter="AudioEngine.playHover()" onclick="AudioEngine.playClick(); showHighScores()" class="btn-cyber glass-panel box-glow-amber w-full h-12 sm:h-13 text-[10px] sm:text-xs font-bold text-amber-300 border-amber-500/30">
+                        <i class="fa-solid fa-trophy text-amber-400"></i> CLASSIFICA
+                    </button>
+
+                    <button onclick="UIManager.showModal('infoModal')" onmouseenter="AudioEngine.playHover()" class="btn-cyber glass-panel box-glow-blue w-full h-12 sm:h-13 text-[10px] sm:text-xs font-bold text-blue-300 border-blue-500/30">
+                        <i class="fa-solid fa-book text-blue-400"></i> INFO
                     </button>
                 </div>
 
-                <button onmouseenter="AudioEngine.playHover()" onclick="AudioEngine.playClick(); startGameFromMenu()" class="anim-play-pulse btn-cyber box-glow-red bg-gradient-to-r from-red-900 via-red-600 to-red-900 text-white font-black py-4 sm:py-5 rounded-xl text-2xl sm:text-3xl border border-red-500 overflow-hidden group mt-1 z-10 relative">
-                    <div class="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:animate-shimmer pointer-events-none"></div>
-                    <span class="relative z-10 flex justify-center items-center gap-3 drop-shadow-md"><i class="fa-solid fa-play"></i> GIOCA</span>
-                </button>
-                
-                <button onmouseenter="AudioEngine.playHover()" onclick="AudioEngine.playClick(); showHighScores()" class="btn-cyber glass-panel box-glow-amber w-full py-3.5 text-xs sm:text-sm font-bold text-amber-300 border-amber-900/30 relative z-10">
-                    <i class="fa-solid fa-trophy"></i> CLASSIFICA
-                </button>
-
-                <!-- CREDITS (Stile Cabinato Arcade) -->
-               <div class="text-center mt-2 relative z-10">
-                    <p class="text-white/50 text-[10px] sm:text-xs font-bold tracking-[0.3em] uppercase pointer-events-none whitespace-nowrap">b3bo 2026 - Build 150</p>
+                <!-- CREDITS -->
+                <div class="text-center mt-1 relative z-10">
+                    <p class="text-white/40 text-[10px] sm:text-xs font-bold tracking-[0.3em] uppercase pointer-events-none whitespace-nowrap m-0">b3bo 2026 - Build 150</p>
                 </div>
             </div>
         </div>
@@ -2243,6 +2259,27 @@ const SkinSystem = {
             if (canBuyAny) badge.classList.remove('hidden');
             else badge.classList.add('hidden');
         }
+        this.updateMenuUI();
+    },
+
+    updateMenuUI() {
+        let skin = this.getCurrentSkin();
+        let svgEl = document.getElementById('menu-skin-svg');
+        if (svgEl && skin) svgEl.innerHTML = skin.svg;
+        
+        let nameEl = document.getElementById('menu-skin-name');
+        if (nameEl && skin) nameEl.innerText = skin.name;
+        
+        let frameEl = document.getElementById('menu-skin-frame');
+        if (frameEl && skin) {
+            let borderCol = skin.rarity === 'legendary' ? 'border-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.35)]' :
+                            skin.rarity === 'epic' ? 'border-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.35)]' :
+                            skin.rarity === 'rare' ? 'border-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.35)]' : 'border-gray-600';
+            frameEl.className = `w-11 h-11 rounded-lg bg-black/90 border-2 ${borderCol} flex items-center justify-center shrink-0 transition-all`;
+        }
+
+        let cryEl = document.getElementById('menu-crystals-count');
+        if (cryEl) cryEl.innerText = this.crystals;
     },
 
     buySkin(id) {
@@ -2268,6 +2305,7 @@ const SkinSystem = {
         if (!this.unlockedIds.includes(id)) return;
         this.selectedId = id;
         this.save();
+        this.updateMenuUI();
         AudioEngine.playClick();
         this.renderModal();
         if (Game.player) {
@@ -2793,40 +2831,40 @@ const UIManager = {
 };
 const RelicSystem = {
     allRelics: [
-        // COMUNI: Utility & Traits (Ex statistiche pure)
-       { id: 'c1', name: "Prisma dell'Avarizia", desc: "I tuoi colpi critici hanno il 30% di probabilità di generare 1 Moneta.", rarity: "common", image: "icona_prisma.png", icon: "fa-gem", apply: (p) => p.modifiers.critGold = true },
-        { id: 'c2', name: "Siero Adrenalinico", desc: "Se i tuoi HP scendono sotto il 30%, la Velocità d'Attacco aumenta del +30%.", rarity: "common", image: "icona_adrenalina.png", icon: "fa-bolt", apply: (p) => p.modifiers.lowHpAtkSpeed = true },
-      { id: 'c3', name: "Piuma Spettrale", desc: "Dopo aver eseguito uno Scatto, ottieni invulnerabilità totale per 0.4 secondi e +15% velocità per 2 sec.", rarity: "common", image: "icona_piuma.png", icon: "fa-feather", apply: (p) => { p.modifiers.dashInvul = true; p.modifiers.dashSpeedBuff = true; } },
-       { id: 'c4', name: "Cristallo Rigenerante", desc: "Se non subisci danni per 5 sec, rigeneri 1% di Salute al secondo.", rarity: "common", image: "icona_cristallo_vitale.png", icon: "fa-heart", apply: (p) => p.modifiers.outOfCombatRegen = true },
-       { id: 'r5', name: "Magnete delle Anime", desc: "Attrae automaticamente le monete cadute. Raccogliere un'essenza dona +5% Velocità di movimento (Max 20%).", rarity: "common", image: "icona_magnete_delle_anime.png", icon: "fa-magnet", apply: (p) => { p.modifiers.pickupRadiusMult += 1.0; p.modifiers.essenceSpeedStacks = true; p.modifiers.coinMagnet = true; } },
+        // 🟢 COMUNI (4 Reliquie - Drop 45% - Utility di base)
+        { id: 'c1', name: "Prisma dell'Avarizia", desc: "I tuoi colpi critici hanno il 30% di probabilità di generare 1 Moneta (cooldown 1s).", rarity: "common", image: "icona_prisma.png", icon: "fa-gem", apply: (p) => { p.modifiers.critGold = true; } },
+        { id: 'c2', name: "Siero Adrenalinico", desc: "Se i tuoi HP scendono sotto il 30%, la Velocità d'Attacco aumenta del +30%.", rarity: "common", image: "icona_adrenalina.png", icon: "fa-bolt", apply: (p) => { p.modifiers.lowHpAtkSpeed = true; } },
+        { id: 'c4', name: "Cristallo Rigenerante", desc: "Se non subisci danni per 5 secondi, rigeneri l'1% di Salute massima al secondo.", rarity: "common", image: "icona_cristallo_vitale.png", icon: "fa-heart", apply: (p) => { p.modifiers.outOfCombatRegen = true; } },
+        { id: 'r5', name: "Magnete Elementale", desc: "Attrae magneticamente le monete. Raccogliere un'essenza dona +3% Velocità di movimento per 3s (max 5 stack).", rarity: "common", image: "icona_magnete_delle_anime.png", icon: "fa-magnet", apply: (p) => { p.modifiers.pickupRadiusMult += 1.0; p.modifiers.essenceSpeedStacks = true; p.modifiers.coinMagnet = true; } },
 
-        // RARE: Meccaniche di combattimento
-       { id: 'c5', name: "Runa dell'Agguato", desc: "Infliggi il +20% di danni ai nemici che hanno più dell'80% di Salute.", rarity: "rare", image: "icona_runa_minore.png", icon: "fa-fire", apply: (p) => p.modifiers.openerDmg = true },
-        { id: 'r1', name: "Bussola Dimensionale", desc: "Tutte le Essenze raccolte e l'Overdrive durano il 50% in più.", rarity: "rare", image: "icona_bussola_dimensionale.png", icon: "fa-compass", apply: (p) => p.modifiers.essenceDurationMult += 0.50 },
-        { id: 'r3', name: "Scudo dell'Egidio", desc: "Lo Scudo Cinetico si attiva automaticamente ogni 15 sec.", rarity: "rare", image: "icona_scudo_dell_egidio.png", icon: "fa-shield-halved", apply: (p) => p.modifiers.shieldActive = true },
-       { id: 'r4', name: "Apprendimento Rapido", desc: "+10% XP. Sali di Livello per generare un'onda d'urto.", rarity: "rare", image: "icona_spirito_avaro.png", icon: "fa-coins", apply: (p) => { p.modifiers.xpMult += 0.10; p.modifiers.levelUpNova = true; } },
-        { id: 'r6', name: "Sovraccarico Cinetico", desc: "Mentre lo Scudo Cinetico è attivo, la tua Velocità d'Attacco aumenta del +40%.", rarity: "rare", image: "icona_sovraccarico_cinetico.png", icon: "fa-bolt", apply: (p) => p.modifiers.shieldAtkSpeedBonus = 0.40 },
-        
-        // EPICHE: Sinergie Costruttive (Build Definers)
-       { id: 'r2', name: "Calzari di Mercurio", desc: "Il Cooldown dello Scatto è ridotto del 20%. Dopo lo scatto subisci -20% danni per 3s.", rarity: "epic", image: "icona_mercurio.png", icon: "fa-shoe-prints", apply: (p) => { p.modifiers.dashCooldownMult -= 0.20; p.modifiers.dashResist = true; } },
-        { id: 'e1', name: "Ritmo di Battaglia", desc: "La Combo sale di +2 a colpo e decade più lentamente.", rarity: "epic", image: "icona_ritmo_di_battaglia.png", icon: "fa-drum", apply: (p) => { p.modifiers.comboStep += 1; p.modifiers.comboDecayAdd += 1.0; } },
-        { id: 'e2', name: "Riciclo Magico", desc: "Quando usi un'Essenza Overdrive, non consumi l'ultima raccolta.", rarity: "epic", image: "icona_riciclo_magico.png", icon: "fa-recycle", apply: (p) => p.modifiers.keepEssenceOnCombo = true },
-        { id: 'e3', name: "Passo Infernale", desc: "Lo scatto lascia una scia di fuoco. I nemici a fuoco subiscono +25% danni dai tuoi colpi.", rarity: "epic", image: "icona_passo_infernale.png", icon: "fa-fire-flame-curved", apply: (p) => { p.modifiers.fireTrail = true; p.modifiers.fireTrailDebuff = true; } },
-        { id: 'e4', name: "Sovraccarico Etereo", desc: "La durata dell'Ascensione Finale aumenta di 0.5s ogni 15 nemici uccisi.", rarity: "epic", image: "icona_sovraccarico.png", icon: "fa-bolt-lightning", apply: (p) => p.modifiers.ultDurationPerKill = true },
-       { id: 'e5', name: "Sovraccarico Sismico", desc: "Attivare lo Scudo genera un'onda d'urto che respinge e stordisce i nemici per 1s, infliggendo lievi danni.", rarity: "epic", image: "icona_zanna_del_vampiro.png", icon: "fa-wifi", apply: (p) => p.modifiers.seismicShield = true },
-        { id: 'e9', name: "Gemelli Cinetici", desc: "Mentre lo Scudo è attivo, spari 2 proiettili alla volta (danno ridotto al 70%).", rarity: "epic", image: "icona_gemelli_cinetici.png", icon: "fa-clone", apply: (p) => p.modifiers.twinKinetic = true },
-        { id: 'e6', name: "Batteria a Ioni", desc: "Lo Scudo Cinetico dura 1 secondo in più e assorbe l'80% dei danni invece del 50%.", rarity: "epic", image: "icona_batteria_ioni.png", icon: "fa-battery-full", apply: (p) => { p.modifiers.shieldDurationAdd += 1.0; p.modifiers.ionBattery = true; } },
-       { id: 'e7', name: "Lama del Vento", desc: "Subito dopo uno Scatto, i tuoi prossimi 2 attacchi sono Colpi Critici garantiti.", rarity: "epic", image: "icona_lama_vento.png", icon: "fa-wind", apply: (p) => { p.modifiers.dashCritsEnabled = true; } },
-        { id: 'e8', name: "Patto dell'Avaro", desc: "Le monete non scompaiono col tempo. Ogni moneta raccolta aumenta velocità di attacco e movimento per 3 sec.", rarity: "epic", image: "icona_patto_avaro.png", icon: "fa-sack-dollar", apply: (p) => { p.modifiers.miserPact = true; } },
+        // 🔵 RARE (5 Reliquie - Drop 30% - Meccaniche di combattimento)
+        { id: 'c5', name: "Runa dell'Agguato", desc: "Infliggi +20% danni ai nemici che hanno più dell'80% di Salute.", rarity: "rare", image: "icona_runa_minore.png", icon: "fa-fire", apply: (p) => { p.modifiers.openerDmg = true; } },
+        { id: 'r1', name: "Bussola Dimensionale", desc: "Tutte le Essenze raccolte e l'Overdrive durano il +40% in più.", rarity: "rare", image: "icona_bussola_dimensionale.png", icon: "fa-compass", apply: (p) => { p.modifiers.essenceDurationMult += 0.40; } },
+        { id: 'r4', name: "Apprendimento Rapido", desc: "+15% XP guadagnata. Salire di livello scatena un'onda d'urto che respinge i nemici.", rarity: "rare", image: "icona_spirito_avaro.png", icon: "fa-coins", apply: (p) => { p.modifiers.xpMult += 0.15; p.modifiers.levelUpNova = true; } },
+        { id: 'r6', name: "Sovraccarico Cinetico", desc: "Mentre lo Scudo Cinetico è attivo, la tua Velocità d'Attacco aumenta del +30%.", rarity: "rare", image: "icona_sovraccarico_cinetico.png", icon: "fa-bolt", apply: (p) => { p.modifiers.shieldAtkSpeedBonus = 0.30; } },
+        { id: 'c3', name: "Piuma Spettrale", desc: "Dopo uno Scatto ottieni 0.4s di invulnerabilità e +15% Velocità di movimento per 2s.", rarity: "rare", image: "icona_piuma.png", icon: "fa-feather", apply: (p) => { p.modifiers.dashInvul = true; p.modifiers.dashSpeedBuff = true; } },
 
-        // LEGGENDARIE: Cambiano drasticamente le regole (Trade-offs e Potere)
-       { id: 'l1', name: "Follia Omicida", desc: "Danni critici letali (2.0x), ma la tua Velocità d'Attacco è ridotta del 15%.", rarity: "legendary", image: "icona_follia_omicida.png", icon: "fa-skull", apply: (p) => { p.modifiers.critDmgMult = 2.0; p.modifiers.atkSpeedPenalty = 0.85; } },
-        { id: 'l2', name: "Lama del Giudizio", desc: "Infliggi il DOPPIO dei danni se il nemico ha Meno del 30% di Salute (Esecuzione).", rarity: "legendary", image: "icona_lama_del_giudizio.png", icon: "fa-gavel", apply: (p) => p.modifiers.executioner = true },
-        { id: 'l3', name: "Patto Ascetico", desc: "La Ultimate si ricarica passivamente da sola, ma la sua durata è ridotta del 40%.", rarity: "legendary", image: "icona_patto_ascetico.png", icon: "fa-link", apply: (p) => { p.modifiers.passiveUltCharge = true; p.modifiers.ultDurationPenalty = 0.60; } },
-        { id: 'l4', name: "Sete di Sangue Eterna", desc: "Ogni nemico ucciso ti cura dell'1% HP. Tuttavia, sanguini perdendo lo 0.5% HP al secondo (emorragia disattivata contro i Boss).", rarity: "legendary", image: "icona_sete_di_sangue_eterna.png", icon: "fa-droplet", apply: (p) => { p.modifiers.bloodthirst = true; } },
-        { id: 'l5', name: "Maestria del Flow", desc: "Cap Combo raddoppiato. Se Combo > 50, fai e subisci +20% danni. Se < 50, fai e subisci -20% danni.", rarity: "legendary", image: "icona_maestria_del_flow.png", icon: "fa-infinity",  apply: (p) => {  p.modifiers.flowMastery = true; p.modifiers.comboDecayRate *= 0.5;  } },
-        { id: 'l6', name: "Aegis del Guardiano", desc: "Lo Scudo esplode quando finisce. Il danno e l'area scalano in base ai colpi bloccati.", rarity: "legendary", image: "fa_shieldx.png", icon: "fa-shield", apply: (p) => { p.modifiers.explosiveShield = true; } },
-       { id: 'l7', name: "Impatto Tonante", desc: "Lo scatto genera 3 fulmini nella zona d'arrivo che danneggiano e stordiscono i nemici vicini per 1.5s.", rarity: "legendary", image: "icona_impatto_tonante.png", icon: "fa-bolt", apply: (p) => { p.modifiers.dashLightning = true; } },
+        // 🟣 EPICHE (8 Reliquie - Drop 17% - Sinergie forti)
+        { id: 'r2', name: "Calzari di Mercurio", desc: "Cooldown dello Scatto ridotto del -20%. Per 3s dopo lo scatto subisci -15% danni.", rarity: "epic", image: "icona_mercurio.png", icon: "fa-shoe-prints", apply: (p) => { p.modifiers.dashCooldownMult -= 0.20; p.modifiers.dashResist = true; } },
+        { id: 'e1', name: "Ritmo di Battaglia", desc: "La Combo sale di +2 a colpo e dura +1.5s prima di decadere.", rarity: "epic", image: "icona_ritmo_di_battaglia.png", icon: "fa-drum", apply: (p) => { p.modifiers.comboStep += 1; p.modifiers.comboDecayAdd += 1.5; } },
+        { id: 'e4', name: "Sovraccarico Etereo", desc: "Durante l'Ascensione (Ultimate), ogni 12 nemici uccisi estende la durata dell'Ultimate di +0.5s.", rarity: "epic", image: "icona_sovraccarico.png", icon: "fa-bolt-lightning", apply: (p) => { p.modifiers.ultDurationPerKill = true; } },
+        { id: 'e5', name: "Sovraccarico Sismico", desc: "Attivare lo Scudo Cinetico genera un'onda d'urto immediata che respinge i nemici e li stordisce per 1s.", rarity: "epic", image: "icona_zanna_del_vampiro.png", icon: "fa-wifi", apply: (p) => { p.modifiers.seismicShield = true; } },
+        { id: 'e9', name: "Gemelli Cinetici", desc: "Mentre lo Scudo Cinetico è attivo, spari 2 proiettili paralleli (ciascuno infligge il 65% del danno).", rarity: "epic", image: "icona_gemelli_cinetici.png", icon: "fa-clone", apply: (p) => { p.modifiers.twinKinetic = true; } },
+        { id: 'e7', name: "Lama del Vento", desc: "Subito dopo uno Scatto, i tuoi prossimi 2 attacchi sono Colpi Critici garantiti.", rarity: "epic", image: "icona_lama_vento.png", icon: "fa-wind", apply: (p) => { p.modifiers.dashCritsEnabled = true; } },
+        { id: 'l3', name: "Patto Ascetico", desc: "La Ultimate si ricarica passivamente da sola (+2% al sec), ma la sua durata è ridotta del -30%.", rarity: "epic", image: "icona_patto_ascetico.png", icon: "fa-link", apply: (p) => { p.modifiers.passiveUltCharge = true; p.modifiers.ultDurationPenalty = 0.70; } },
+        { id: 'r3', name: "Scudo dell'Egidio", desc: "Lo Scudo Cinetico si attiva automaticamente gratis ogni 15 secondi.", rarity: "epic", image: "icona_scudo_dell_egidio.png", icon: "fa-shield-halved", apply: (p) => { p.modifiers.shieldActive = true; } },
+
+        // 🟡 LEGGENDARIE (10 Reliquie - Drop 8% - Con Mutazioni 3D, Kill FX, Scie e Arrivi)
+        { id: 'e2', name: "Riciclo Magico", desc: "Conbi/Overdrive non consumano l'ultima essenza e lanciano 2 dardi a ricerca (75% Danno).", rarity: "legendary", image: "icona_riciclo_magico.png", icon: "fa-recycle", apply: (p) => { p.modifiers.keepEssenceOnCombo = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
+        { id: 'l1', name: "Follia Omicida", desc: "Danni Critici 2.0x e +15% Prob. Critico, ma Velocità d'Attacco ridotta del -15%.", rarity: "legendary", image: "icona_follia_omicida.png", icon: "fa-skull", apply: (p) => { p.modifiers.critDmgMult = 2.0; p.modifiers.bonusCritChance += 0.15; p.modifiers.atkSpeedPenalty = 0.85; p.modifiers.homicidalFrenzy = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
+        { id: 'l5', name: "Maestria del Flow", desc: "Cap Combo raddoppiata. Se >50: +15% danni fatti/subiti e colpi perforano 1 bersaglio. Se <50: -15% danni.", rarity: "legendary", image: "icona_maestria_del_flow.png", icon: "fa-infinity", apply: (p) => { p.modifiers.flowMastery = true; p.modifiers.comboDecayRate *= 0.5; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
+        { id: 'e6', name: "Batteria a Ioni", desc: "Lo Scudo dura +1s, riduce i danni del 65% e folgora i nemici vicini.", rarity: "legendary", image: "icona_batteria_ioni.png", icon: "fa-battery-full", apply: (p) => { p.modifiers.shieldDurationAdd += 1.0; p.modifiers.ionBattery = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
+        { id: 'e8', name: "Patto dell'Avaro", desc: "Le monete non spariscono e donano +4% Vel. Mov/Atk e +3% Danno per 3s (max 5 stack).", rarity: "legendary", image: "icona_patto_avaro.png", icon: "fa-sack-dollar", apply: (p) => { p.modifiers.miserPact = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
+        { id: 'l2', name: "Lama del Giudizio", desc: "+75% danni ai nemici sotto il 30% HP (+25% ai Boss sotto il 20% HP) ignorando gli scudi.", rarity: "legendary", image: "icona_lama_del_giudizio.png", icon: "fa-gavel", apply: (p) => { p.modifiers.executioner = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
+        { id: 'l4', name: "Sete di Sangue Eterna", desc: "Ogni kill cura 1% HP (cd 0.4s, fino a +10% Scudo Sangue a vita piena). Perdi 0.6% HP/s.", rarity: "legendary", image: "icona_sete_di_sangue_eterna.png", icon: "fa-droplet", apply: (p) => { p.modifiers.bloodthirst = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
+        { id: 'e3', name: "Passo Infernale", desc: "Lo scatto lascia fuoco che brucia i nemici (+20% danni subiti). Atterraggio meteorico a inizio piano.", rarity: "legendary", image: "icona_passo_infernale.png", icon: "fa-fire-flame-curved", apply: (p) => { p.modifiers.fireTrail = true; p.modifiers.fireTrailDebuff = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
+        { id: 'l7', name: "Impatto Tonante", desc: "Lo scatto scatena 3 fulmini che danneggiato e stordiscono i nemici. Atterraggio elettrico a inizio piano.", rarity: "legendary", image: "icona_impatto_tonante.png", icon: "fa-bolt", apply: (p) => { p.modifiers.dashLightning = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
+        { id: 'l6', name: "Aegis del Guardiano", desc: "Lo Scudo esplode al termine in una Nova Arcana (max 12 stack, fino a 2.5x Danno Base).", rarity: "legendary", image: "fa_shieldx.png", icon: "fa-shield", apply: (p) => { p.modifiers.explosiveShield = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } }
     ],
     getRandomRarity() { 
         let r = Math.random() * 100; 
@@ -4314,7 +4352,12 @@ class Hazard {
                                 // Questo impedisce alle pozze velenose/infuocate di aumentare il contatore delle Combo in modo passivo.
                                 e.takeDamage(this.damage, 'hazard', false, false); 
                                 if(this.type === 'poison') e.slowedTimer = 2.0; 
-                                if(this.type === 'fire' && Game.player && Game.player.modifiers.fireTrailDebuff) e.fireDebuffTimer = 3.0;
+                                if(this.type === 'fire' && Game.player && Game.player.modifiers.fireTrailDebuff) {
+                                    e.fireDebuffTimer = 3.0;
+                                    let baseAtk = ((Game.player.stats.minDmg + Game.player.stats.maxDmg) * 0.5) * Game.player.modifiers.dmgMult;
+                                    e.obeliskBurnDps = baseAtk / 5.0;
+                                    e.obeliskBurnTimer = 4.0;
+                                }
                                 this.hitCooldown.set(e.id, Game.playTime + 0.5);
                             }
                         }
@@ -5791,22 +5834,20 @@ loop(timestamp) {
             this.fpsFrames = 0;
         }
 
-        // --- NUOVO POSIZIONAMENTO FRAME-RATE INDEPENDENT PER IL WARP ---
-  // --- ANIMAZIONE ENTRATA IN GIOCO (WARP IN) ---
+       
+  // --- ANIMAZIONE ENTRATA IN GIOCO (WARP IN CON SOVRAPPOSIZIONE RELIQUIE LEGGENDARIE) ---
         if (this.state === 'WARPING_IN') {
             this.warpTimer -= frameTime;
-            let progress = 1.0 - (this.warpTimer / 1.0); // Va da 0.0 a 1.0
+            let progress = 1.0 - (this.warpTimer / 1.0);
+            let mods = (this.player && this.player.modifiers) ? this.player.modifiers : {};
 
             if (this.player && this.player.mesh) {
-                this.player.mesh.visible = true; // FIX TRASPARENZA: Forza visibilità ad ogni frame della caduta
-                // Rotazione a trivella velocissima
+                this.player.mesh.visible = true;
                 this.player.mesh.rotation.y += frameTime * (25 - progress * 10);
                 
-                // Caduta accelerata (ease-in): parte da 800 di altezza e si schianta a 0
                 let dropCurve = Math.pow(progress, 3); 
                 this.player.mesh.position.y = 800 - (800 * dropCurve); 
                 
-                // Il personaggio appare piccolo e si ingrandisce mentre cade
                 let s = Math.max(0.01, progress);
                 this.player.mesh.scale.setScalar(s); 
                 
@@ -5814,22 +5855,30 @@ loop(timestamp) {
                 this.player.mesh.updateMatrixWorld(true);
             }
             
-            // Zoom in dinamico della telecamera per seguire la caduta
             if (this.camera.fov > 50) {
                 this.camera.fov -= frameTime * 40;
                 if (this.camera.fov < 50) this.camera.fov = 50;
                 this.camera.updateProjectionMatrix();
             }
             
-            // Scia azzurra di energia durante la caduta
-            if (this.frameCount % 2 === 0) Game.getParticle().spawn(this.player.x, this.player.mesh.position.y, this.player.y, SharedMat.spriteBlue, 'trail');
+            // Scia durante la caduta: cicla armoniosamente tra tutte le Reliquie d'Arrivo possedute
+            if (this.frameCount % 2 === 0 && this.player) {
+                let fallMats = [];
+                if (mods.fireTrail) fallMats.push(SharedMat.spriteRed, SharedMat.spriteYellow);
+                if (mods.dashLightning) fallMats.push(SharedMat.spriteWhite, SharedMat.spriteBlue);
+                if (mods.explosiveShield) fallMats.push(SharedMat.spritePink, SharedMat.spriteBlackSmoke);
+                if (fallMats.length === 0) fallMats.push(SharedMat.spriteBlue);
+
+                let chosenMat = fallMats[(this.frameCount >> 1) % fallMats.length];
+                Game.getParticle().spawn(this.player.x, this.player.mesh.position.y, this.player.y, chosenMat, 'trail');
+            }
             for (let i = 0; i < this.particles.length; i++) if(this.particles[i].active) this.particles[i].update(frameTime);
             
             this.frameCount++;
             this.updateCamera(frameTime);
             UI.update();
 
-            // IMPATTO A TERRA
+            // IMPATTO A TERRA (Combina senza conflitti tutti gli effetti posseduti)
             if (this.warpTimer <= 0) {
                 this.state = 'PLAYING';
                 this.player.mesh.position.y = 0;
@@ -5838,15 +5887,48 @@ loop(timestamp) {
                 this.camera.fov = 50;
                 this.camera.updateProjectionMatrix();
                 
-                // Schianto esplosivo sul terreno
                 Game.addTrauma(2.5);
-                AudioEngine.playShoot('explosive_arrow'); // Suono dell'impatto
-                Game.spawnLightFlash(this.player.x, this.player.y, 0x00DDFF, 6.0, 600);
                 Game.spawnDecal(this.player.x, this.player.y, 'scorch');
-                
-                let pCount = AppSettings.isLow ? 10 : 30;
-                for(let i=0; i<pCount; i++) Game.getParticle().spawn(this.player.x, 5, this.player.y, SharedMat.spriteDust, 'dust');
-                Game.getParticle().spawn(this.player.x, 15, this.player.y, SharedMat.spriteWhite, 'nova');
+                let hasCustomArrival = (mods.fireTrail || mods.dashLightning || mods.explosiveShield);
+                let pCount = AppSettings.isLow ? 8 : 20;
+
+                if (mods.fireTrail) {
+                    // Impatto Meteorico: Onda d'urto infuocata reale che danneggia e brucia i nemici intorno
+                    let meteorDmg = this.player.stats.maxDmg * 1.5 * this.player.modifiers.dmgMult;
+                    Game.getHazard().spawn(this.player.x, this.player.y, 260, 0.45, meteorDmg, 0xff3300, 'nova_ring');
+                    Game.spawnLightFlash(this.player.x, this.player.y, 0xff3300, 7.5, 650);
+                    for(let i=0; i<pCount; i++) {
+                        let a = (Math.PI * 2 / pCount) * i;
+                        Game.getParticle().spawn(this.player.x, 8, this.player.y, (i % 2 === 0 ? SharedMat.spriteRed : SharedMat.spriteYellow), 'flame', a);
+                    }
+                }
+                if (mods.dashLightning) {
+                    // Discesa del Fulmine: Pilastri elettrici verticali
+                    AudioEngine.playShoot('chain_lightning');
+                    Game.spawnLightFlash(this.player.x, this.player.y, 0x00ddff, 8.0, 680);
+                    for(let j=0; j<4; j++) {
+                        let bolt = Game.getParticle();
+                        bolt.spawn(this.player.x, 20 + j * 55, this.player.y, SharedMat.spriteWhite, 'nova');
+                        bolt.baseSize = 135 - j * 25;
+                    }
+                    for(let i=0; i<Math.floor(pCount/2); i++) Game.getParticle().spawn(this.player.x, 12, this.player.y, SharedMat.spriteBlue, 'spark');
+                }
+                if (mods.explosiveShield) {
+                    // Squarcio del Vuoto: Vortice abissale viola
+                    Game.spawnLightFlash(this.player.x, this.player.y, 0xaa00ff, 7.5, 650);
+                    let n = Game.getParticle(); n.spawn(this.player.x, 15, this.player.y, SharedMat.spritePink, 'nova'); n.baseSize = 185;
+                    for(let i=0; i<Math.floor(pCount/2); i++) {
+                        let p = Game.getParticle();
+                        p.spawn(this.player.x, 10, this.player.y, (i % 2 === 0 ? SharedMat.spriteBlackSmoke : SharedMat.spritePink), 'dust');
+                        p.baseSize = 32;
+                    }
+                }
+                if (!hasCustomArrival) {
+                    Game.spawnLightFlash(this.player.x, this.player.y, 0x00DDFF, 6.0, 600);
+                    for(let i=0; i<pCount; i++) Game.getParticle().spawn(this.player.x, 5, this.player.y, SharedMat.spriteDust, 'dust');
+                    Game.getParticle().spawn(this.player.x, 15, this.player.y, SharedMat.spriteWhite, 'nova');
+                }
+                AudioEngine.playShoot('explosive_arrow');
             }
             
             this.draw();
@@ -8657,8 +8739,14 @@ class GameMap {
                         dummy.updateMatrix(); 
                         meshDirt.setMatrixAt(idxDirt++, dummy.matrix);
                         
-                        // --- LOGICA SPAWN PROPS (Spazi aperti e Cluster Dinamici) ---
-                        if (!isBossFloor && this.grid[x][y] === 2) {
+                        // --- LOGICA SPAWN PROPS (Spazi aperti, Cluster Dinamici e Boss Arena) ---
+                        let cxBoss = Math.floor(this.width / 2);
+                        let cyBoss = Math.floor(this.height / 2);
+                        let isBossReservedSpot = isBossFloor && (
+                            (Math.abs(x - cxBoss) <= 2 && Math.abs(y - cyBoss) <= 2) ||
+                            (Math.abs(x - (cxBoss - 6)) <= 1 && Math.abs(y - (cyBoss - 6)) <= 1)
+                        );
+                        if (this.grid[x][y] === 2 && !isBossReservedSpot) {
                             // BILANCIAMENTO: Ridotta probabilità base di trovare props (da 4% a 2.5%)
                             if (Math.random() < 0.025) {
                                 let px = (x * TILE_SIZE + TILE_SIZE / 2);
@@ -9695,12 +9783,33 @@ class Entity {
             this.stats.hp = 0; 
             this.dead = true; 
             
-            // NUOVO: Sete di Sangue Eterna (Cura 1% alla morte del nemico)
-            if (Game.player.modifiers.bloodthirst) {
-                let heal = Game.player.stats.maxHp * 0.01;
-                Game.player.stats.hp = Math.min(Game.player.stats.maxHp, Game.player.stats.hp + heal);
-                // Feedback visivo rosso sangue, piccolo ma soddisfacente
-                Game.getFloatingText().spawn(this.x, this.y, `+${Math.max(1, Math.floor(heal))}`, '#FF1133', 18);
+            // SETE DI SANGUE ETERNA: Cura 1% HP (cooldown 0.4s) e fino a +10% Temp HP se a vita piena
+            if (this !== Game.player && Game.player && Game.player.modifiers.bloodthirst) {
+                let p = Game.player;
+                if (!p._lastBloodHealTime || Game.playTime - p._lastBloodHealTime >= 0.4) {
+                    p._lastBloodHealTime = Game.playTime;
+                    let heal = p.stats.maxHp * 0.01;
+                    let missingHp = p.stats.maxHp - p.stats.hp;
+                    if (missingHp > 0) {
+                        let actualHeal = Math.min(missingHp, heal);
+                        p.stats.hp += actualHeal;
+                        let overflow = heal - actualHeal;
+                        if (overflow > 0) {
+                            p.tempHp = Math.min(p.stats.maxHp * 0.10, (p.tempHp || 0) + overflow);
+                            p.glacialShieldMesh.material.color.setHex(0xff1133);
+                            p.glacialShieldMesh.visible = true;
+                        }
+                        Game.getFloatingText().spawn(this.x, this.y, `+${Math.max(1, Math.floor(heal))}`, '#FF1133', 18);
+                    } else {
+                        let maxBloodShield = p.stats.maxHp * 0.10;
+                        if ((p.tempHp || 0) < maxBloodShield) {
+                            p.tempHp = Math.min(maxBloodShield, (p.tempHp || 0) + heal);
+                            p.glacialShieldMesh.material.color.setHex(0xff1133);
+                            p.glacialShieldMesh.visible = true;
+                            Game.getFloatingText().spawn(this.x, this.y, `+SCUDO SANGUE`, '#FF1133', 16);
+                        }
+                    }
+                }
             }
         }
     }
@@ -9900,7 +10009,152 @@ class Player extends Entity {
         this.overheadCrystalTimer = 0;
         this.mesh.add(this.overheadCrystal);
 
+        // --- SISTEMA MULTI-FAMIGLIO 3D DELLE RELIQUIE LEGGENDARIE (Zero Conflitti Visivi) ---
+        this.relicPetsContainer = new THREE.Group();
+        this.mesh.add(this.relicPetsContainer);
+        this.relicPetMeshes = {};
+        this.activePetList = [];
+        this._buildRelicPetModels();
+        this.syncRelicVisuals();
+
         this.applySkin();
+    }
+
+    _buildRelicPetModels() {
+        // 1. Grimorio Arcano (Riciclo Magico)
+        let grimoire = new THREE.Group();
+        let coverMat = new THREE.MeshStandardMaterial({ color: 0x4c1d95, roughness: 0.6 });
+        let pageMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+        let coverL = new THREE.Mesh(SharedGeo.box, coverMat);
+        coverL.scale.set(4.5, 0.8, 6.5); coverL.position.set(-2.0, 0, 0); coverL.rotation.z = 0.35;
+        let coverR = new THREE.Mesh(SharedGeo.box, coverMat);
+        coverR.scale.set(4.5, 0.8, 6.5); coverR.position.set(2.0, 0, 0); coverR.rotation.z = -0.35;
+        let pages = new THREE.Mesh(SharedGeo.box, pageMat);
+        pages.scale.set(6.8, 0.9, 5.8); pages.position.set(0, 0.6, 0);
+        let gGlow = new THREE.Sprite(SharedMat.spriteYellow); gGlow.scale.set(16, 16, 1);
+        grimoire.add(coverL, coverR, pages, gGlow);
+        grimoire.visible = false;
+
+        // 2. Teschio Sussurrante (Follia Omicida)
+        let skull = new THREE.Group();
+        let boneMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.7 });
+        let cranium = new THREE.Mesh(SharedGeo.sphere, boneMat); cranium.scale.set(3.8, 3.8, 4.2);
+        let jaw = new THREE.Mesh(SharedGeo.box, boneMat); jaw.scale.set(3.5, 2.2, 3.5); jaw.position.set(0, -2.8, 0.8);
+        let eyeL = new THREE.Mesh(SharedGeo.box, SharedMat.enemyEye); eyeL.scale.set(1.2, 1.2, 1.2); eyeL.position.set(-1.3, 0.2, 3.4);
+        let eyeR = new THREE.Mesh(SharedGeo.box, SharedMat.enemyEye); eyeR.scale.set(1.2, 1.2, 1.2); eyeR.position.set(1.3, 0.2, 3.4);
+        let sGlow = new THREE.Sprite(SharedMat.spriteRed); sGlow.scale.set(16, 16, 1);
+        skull.add(cranium, jaw, eyeL, eyeR, sGlow);
+        skull.userData.glow = sGlow;
+        skull.visible = false;
+
+        // 3. Mini-Box "Il Cubo" (Maestria del Flow)
+        let box = new THREE.Group();
+        let cubeMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.7, roughness: 0.3 });
+        let wireMat = new THREE.MeshBasicMaterial({ color: 0x00ddff, wireframe: true });
+        let cube = new THREE.Mesh(SharedGeo.box, cubeMat); cube.scale.set(5.8, 5.8, 5.8);
+        let wire = new THREE.Mesh(SharedGeo.box, wireMat); wire.scale.set(6.5, 6.5, 6.5);
+        let bGlow = new THREE.Sprite(SharedMat.spriteBlue); bGlow.scale.set(18, 18, 1);
+        box.add(cube, wire, bGlow);
+        box.userData = { wireMat, bGlow };
+        box.visible = false;
+
+        // 4. Fuoco Fatuo Elettrico (Batteria a Ioni)
+        let wisp = new THREE.Group();
+        let wCore = new THREE.Mesh(SharedGeo.icosahedron, new THREE.MeshBasicMaterial({ color: 0x00ddff })); wCore.scale.setScalar(3.2);
+        let wRing = new THREE.Mesh(SharedGeo.torus, new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true })); wRing.scale.set(5.0, 5.0, 1.8); wRing.rotation.x = Math.PI / 3;
+        let wGlow = new THREE.Sprite(SharedMat.spriteBlue); wGlow.scale.set(20, 20, 1);
+        wisp.add(wCore, wRing, wGlow);
+        wisp.visible = false;
+
+        this.relicPetMeshes = { grimoire, skull, box, wisp };
+        this.relicPetsContainer.add(grimoire, skull, box, wisp);
+    }
+
+    syncRelicVisuals() {
+        if (!this.relicPetMeshes) return;
+        this.activePetList.length = 0;
+        let m = this.modifiers;
+
+        this.relicPetMeshes.grimoire.visible = !!m.keepEssenceOnCombo;
+        if (m.keepEssenceOnCombo) this.activePetList.push(this.relicPetMeshes.grimoire);
+
+        this.relicPetMeshes.skull.visible = !!m.homicidalFrenzy;
+        if (m.homicidalFrenzy) this.activePetList.push(this.relicPetMeshes.skull);
+
+        this.relicPetMeshes.box.visible = !!m.flowMastery;
+        if (m.flowMastery) this.activePetList.push(this.relicPetMeshes.box);
+
+        this.relicPetMeshes.wisp.visible = !!m.ionBattery;
+        if (m.ionBattery) this.activePetList.push(this.relicPetMeshes.wisp);
+    }
+
+    fireGrimoireBolts() {
+        if (!this.modifiers.keepEssenceOnCombo) return;
+        let baseDmg = ((this.stats.minDmg + this.stats.maxDmg) * 0.5) * 0.75 * this.modifiers.dmgMult;
+        for (let i = 0; i < 2; i++) {
+            let a = this.angle + (i === 0 ? -0.35 : 0.35);
+            let p = Game.getProjectile();
+            p.spawn(this.x, this.y, a, 750, baseDmg, 'player', 'homing_arrow', false, false);
+            p.canInfect = false;
+        }
+        Game.getParticle().spawn(this.x, 28, this.y, SharedMat.spriteYellow, 'spark');
+    }
+
+    updatePetModel() {
+        if (!this.petGroup) return;
+        while (this.petGroup.children.length > 0) {
+            this.petGroup.remove(this.petGroup.children[0]);
+        }
+        let petId = (typeof SkinSystem !== 'undefined') ? SkinSystem.selectedPet : 'pet_none';
+        if (petId === 'pet_none') {
+            this.petGroup.visible = false;
+            return;
+        }
+        this.petGroup.visible = true;
+
+        if (petId === 'pet_wisp') {
+            let core = new THREE.Mesh(SharedGeo.icosahedron, new THREE.MeshBasicMaterial({ color: 0x00ddff }));
+            core.scale.setScalar(3.5);
+            let ring = new THREE.Mesh(SharedGeo.torus, new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true }));
+            ring.scale.set(5.5, 5.5, 2.0);
+            ring.rotation.x = Math.PI / 3;
+            let glow = new THREE.Sprite(SharedMat.spriteBlue);
+            glow.scale.set(22, 22, 1);
+            this.petGroup.add(core, ring, glow);
+        } else if (petId === 'pet_grimoire') {
+            let coverMat = new THREE.MeshStandardMaterial({ color: 0x4c1d95, roughness: 0.6 });
+            let pageMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+            let coverL = new THREE.Mesh(SharedGeo.box, coverMat);
+            coverL.scale.set(5, 0.8, 7); coverL.position.set(-2.2, 0, 0); coverL.rotation.z = 0.35;
+            let coverR = new THREE.Mesh(SharedGeo.box, coverMat);
+            coverR.scale.set(5, 0.8, 7); coverR.position.set(2.2, 0, 0); coverR.rotation.z = -0.35;
+            let pages = new THREE.Mesh(SharedGeo.box, pageMat);
+            pages.scale.set(7.5, 0.9, 6.2); pages.position.set(0, 0.6, 0);
+            let glow = new THREE.Sprite(SharedMat.spriteYellow);
+            glow.scale.set(18, 18, 1);
+            this.petGroup.add(coverL, coverR, pages, glow);
+        } else if (petId === 'pet_skull') {
+            let boneMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.7 });
+            let cranium = new THREE.Mesh(SharedGeo.sphere, boneMat);
+            cranium.scale.set(4.2, 4.2, 4.5);
+            let jaw = new THREE.Mesh(SharedGeo.box, boneMat);
+            jaw.scale.set(4.0, 2.5, 4.0); jaw.position.set(0, -3.2, 1.0);
+            let eyeL = new THREE.Mesh(SharedGeo.box, SharedMat.enemyEye);
+            eyeL.scale.set(1.3, 1.3, 1.3); eyeL.position.set(-1.5, 0.2, 3.8);
+            let eyeR = new THREE.Mesh(SharedGeo.box, SharedMat.enemyEye);
+            eyeR.scale.set(1.3, 1.3, 1.3); eyeR.position.set(1.5, 0.2, 3.8);
+            let glow = new THREE.Sprite(SharedMat.spriteRed);
+            glow.scale.set(18, 18, 1);
+            this.petGroup.add(cranium, jaw, eyeL, eyeR, glow);
+        } else if (petId === 'pet_box') {
+            let cube = new THREE.Mesh(SharedGeo.box, new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.3 }));
+            cube.scale.set(6.5, 6.5, 6.5);
+            let wire = new THREE.Mesh(SharedGeo.box, new THREE.MeshBasicMaterial({ color: 0xfbbf24, wireframe: true }));
+            wire.scale.set(7.2, 7.2, 7.2);
+            let glow = new THREE.Sprite(SharedMat.spriteYellow);
+            glow.scale.set(20, 20, 1);
+            this.petGroup.add(cube, wire, glow);
+        }
     }
 
     showOverheadCrystal() {
@@ -9923,17 +10177,17 @@ class Player extends Entity {
         }
     }
     collectEssence(type) {
-        // Accumulo velocità per Magnete delle Anime
+        // Magnete Elementale: +3% Velocità di movimento per 3 sec (max 5 stack = +15%)
         if (this.modifiers.essenceSpeedStacks) {
-            if (this.essenceSpeedBonus === undefined) this.essenceSpeedBonus = 0;
-            this.essenceSpeedBonus = Math.min(0.20, this.essenceSpeedBonus + 0.05); // Max 20%
+            this.essenceSpdTimer = 3.0;
+            this.essenceSpdStacks = Math.min(5, (this.essenceSpdStacks || 0) + 1);
+            this.essenceSpeedBonus = this.essenceSpdStacks * 0.03;
             Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteWhite, 'dust');
         }
 
         Game.addUltimateCharge(10);
         AudioEngine.playCollect();
 
-        // Se l'Overdrive è attivo: lo stesso colore lo prolunga, un colore diverso NON lo interrompe
         if (this.overdrive) {
             if (type === this.essence) {
                 let odBase = 5.0 + (SkinSystem.selectedId === 'dark_mage' ? 2.0 : 0.0);
@@ -9951,7 +10205,8 @@ class Player extends Entity {
         this.updateAppearance();
         if (this.essenceList.length === 3) this.evaluateCombinations();
     }
-  evaluateCombinations() {
+
+    evaluateCombinations() {
         let counts = { red: 0, blue: 0, green: 0 };
         this.essenceList.forEach(e => counts[e]++);
         
@@ -9961,59 +10216,45 @@ class Player extends Entity {
         else {
             Game.addTrauma(1.5); let comboName = ""; let color = '#ffffff';
             
-            // ONDA D'URTO
             if (counts.red > 0 && counts.blue > 0 && counts.green === 0) {
                 comboName = "ONDA D'URTO!"; color = "#00AAFF"; 
-                let shockRange = 250; 
-                let shockRangeSq = shockRange * shockRange;
+                let shockRange = 250; let shockRangeSq = shockRange * shockRange;
                 this.shockSpeedTimer = 3.0;
-                
                 let nearby = Game.enemyGrid.findNearby(this, shockRange);
-                // ZERO-ALLOCATION FIX: Ciclo For al posto del forEach
                 for (let i=0; i<nearby.length; i++) { 
                     let e = nearby[i];
                     if (MathUtils.distanceSq(this, e) < shockRangeSq) { 
-                        e.slowedTimer = 4.0; 
-                        e.slowType = 'blue'; 
+                        e.slowedTimer = 4.0; e.slowType = 'blue'; 
                         e.takeDamage(this.stats.maxDmg * 0.15 * this.modifiers.dmgMult, this, false, false); 
                         let angleToEnemy = Math.atan2(e.y - this.y, e.x - this.x);
                         e.push(Math.cos(angleToEnemy), Math.sin(angleToEnemy), 200);
                         Game.getParticle().spawn(e.x, 20, e.y, SharedMat.spriteWhite, 'nova');
                     } 
                 }
-
                 for (let i = 0; i < Game.projectiles.length; i++) {
                     let p = Game.projectiles[i];
                     if (p.active && p.owner !== 'player' && MathUtils.distanceSq(this, p) < shockRangeSq) {
                         let overload = Game.getParticle(); overload.spawn(p.x, 15, p.y, SharedMat.spriteWhite, 'nova'); overload.baseSize = 45; p.destroy(); 
                     }
                 }
-
                 Game.hitStop = 0.25; Game.addTrauma(2.5);
                 Game.getHazard().spawn(this.x, this.y, shockRange, 0.4, 0, 0x00AAFF, 'nova_ring');
                 let novaW = Game.getParticle(); novaW.spawn(this.x, 15, this.y, SharedMat.spriteWhite, 'nova'); novaW.baseSize = 400;
-                
                 AudioEngine.playShoot('explosive_arrow'); setTimeout(() => { AudioEngine.playShoot('chain_lightning'); }, 50); 
             } 
-            
-            // GLACIAZIONE
             else if (counts.blue > 0 && counts.green > 0 && counts.red === 0) {
                 comboName = "GLACIAZIONE!"; color = "#00ffaa"; 
                 let freezeRange = 300; let freezeRangeSq = freezeRange * freezeRange;
-                
                 let nearby = Game.enemyGrid.findNearby(this, freezeRange);
-                // ZERO-ALLOCATION FIX
                 for (let i=0; i<nearby.length; i++) { 
                     let e = nearby[i];
                     if (MathUtils.distanceSq(this, e) < freezeRangeSq) { 
                         e.frozenTimer = 4.0; e.takeDamage(this.stats.maxDmg * 0.15 * this.modifiers.dmgMult, this, true, false); 
                     } 
                 } 
-
                 this.tempHp = this.stats.maxHp * 0.20;
                 this.glacialShieldMesh.material.color.setHex(0x00ffaa); this.glacialShieldMesh.visible = true; 
                 Game.addTrauma(1.2); 
-                
                 let nova = Game.getParticle(); nova.spawn(this.x, 15, this.y, SharedMat.spriteWhite, 'nova'); nova.baseSize = 400; 
                 let pCount = AppSettings.isLow ? 20 : 60;
                 for(let i=0; i<pCount; i++) { 
@@ -10023,25 +10264,18 @@ class Player extends Entity {
                 }
                 AudioEngine.playShoot('chain_lightning'); Game.addTrauma(0.8);
             } 
-            
-            // NOVA TOSSICA
             else if (counts.red > 0 && counts.green > 0 && counts.blue === 0) {
                 comboName = "NOVA TOSSICA!"; color = "#99FF00"; 
                 Game.getHazard().spawn(this.x, this.y, 250, 1.5, this.stats.maxDmg * 1.5 * this.modifiers.dmgMult, 0x99FF00, 'nova_ring');
-                
                 let pCount = AppSettings.isLow ? 15 : (AppSettings.isUltraPC ? 80 : 40);
                 for(let i=0; i<pCount; i++) { let a = (Math.PI * 2 / pCount) * i; Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteGreen, 'trail', a); }
                 if (!AppSettings.isLow) { let flash = Game.getParticle(); flash.spawn(this.x, 20, this.y, SharedMat.spriteGreen, 'flame'); flash.baseSize = 90; }
                 AudioEngine.playShoot('explosive_arrow');
             }
-            
-            // CAOS ELEMENTALE
             else if (counts.red === 1 && counts.blue === 1 && counts.green === 1) {
                 comboName = "CAOS ELEMENTALE!"; color = "#ffffff"; 
                 Game.addTrauma(3.0); 
-                
                 let range = 300; let nearby = Game.enemyGrid.findNearby(this, range);
-                // ZERO-ALLOCATION FIX
                 for (let i=0; i<nearby.length; i++) { 
                     let e = nearby[i];
                     if (MathUtils.distanceSq(this, e) < range * range) { 
@@ -10049,34 +10283,22 @@ class Player extends Entity {
                         e.takeDamage(this.stats.maxDmg * 1.5 * this.modifiers.dmgMult, this, true, true); 
                     } 
                 }
-
                 let pCount = AppSettings.isLow ? 30 : (AppSettings.isUltraPC ? 120 : 60);
                 if (!AppSettings.isLow) {
                     let novaR = Game.getParticle(); novaR.spawn(this.x, 20, this.y, SharedMat.spriteRed, 'nova'); novaR.baseSize = 280;
                     let novaG = Game.getParticle(); novaG.spawn(this.x, 20, this.y, SharedMat.spriteGreen, 'nova'); novaG.baseSize = 240;
                     let novaB = Game.getParticle(); novaB.spawn(this.x, 20, this.y, SharedMat.spriteBlue, 'nova'); novaB.baseSize = 200;
-                    
-                    if (Game.dirLight) {
-                        let oldInt = Game.dirLight.intensity; let oldCol = Game.dirLight.color.getHex();
-                        Game.dirLight.intensity = 6.0; Game.dirLight.color.setHex(0xffffff);
-                        setTimeout(() => { if (Game.dirLight) { Game.dirLight.intensity = oldInt; Game.dirLight.color.setHex(oldCol); } }, 150);
-                    }
                 }
-
                 for(let i=0; i<pCount; i++) { 
                     let mat = [SharedMat.spriteRed, SharedMat.spriteBlue, SharedMat.spriteGreen][i % 3]; 
                     let angle = (Math.PI * 2 / pCount) * i; 
                     Game.getParticle().spawn(this.x, 20, this.y, mat, 'flame', angle); 
                     Game.getParticle().spawn(this.x, 30, this.y, mat, 'spark', angle + 0.1); 
                 }
-                
-               AudioEngine.playShoot('explosive_arrow'); AudioEngine.playShoot('chain_lightning');
-                
-                // CAOS ELEMENTALE - REWORK CURA: 10% Istantaneo, 20% spalmato su 4 secondi (HoT)
+                AudioEngine.playShoot('explosive_arrow'); AudioEngine.playShoot('chain_lightning');
                 let instantHeal = this.stats.maxHp * 0.10;
                 this.stats.hp = Math.min(this.stats.maxHp, this.stats.hp + instantHeal); 
                 Game.getFloatingText().spawn(this.x, this.y + 20, `+${Math.floor(instantHeal)} HP`, '#00DDFF', 25, true);
-                
                 this.chaosHoTTimer = 4.0;
                 this.chaosHoTAmount = this.stats.maxHp * 0.20;
                 this.chaosHoTTickTimer = 0;
@@ -10085,10 +10307,15 @@ class Player extends Entity {
             Game.getFloatingText().spawn(this.x, this.y, comboName, color, 60, true);
             let kept = this.modifiers.keepEssenceOnCombo ? this.essenceList[this.essenceList.length - 1] : null;
             this.essenceList = []; this.essence = null; 
-            if (kept) { this.essenceList.push(kept); this.essence = kept; this.essenceTimer = 8.0 * this.modifiers.essenceDurationMult; }
+            if (kept) {
+                this.essenceList.push(kept); this.essence = kept;
+                this.essenceTimer = 8.0 * this.modifiers.essenceDurationMult;
+                this.fireGrimoireBolts();
+            }
             this.updateAppearance();
         }
     }
+
     triggerOverdrive() {
         this.overdrive = true; Game.hitStop = 0.2; Game.addTrauma(1.0); 
         let odBase = 5.0 + (SkinSystem.selectedId === 'dark_mage' ? 2.0 : 0.0);
@@ -10096,23 +10323,23 @@ class Player extends Entity {
         if (Game.matchStats) Game.matchStats.essencesUsed[this.essence]++;
         Game.getFloatingText().spawn(this.x, this.y, ESSENCE_NAMES[this.essence] + "!", '#' + ESSENCE_COLORS[this.essence].toString(16).padStart(6, '0'), 40, true);
         let mat = this.essence === 'red' ? SharedMat.spriteRed : (this.essence === 'blue' ? SharedMat.spriteBlue : SharedMat.spriteGreen);
-        let pCount = AppSettings.isLow ? 4 : (isTouchDevice ? 10 : (AppSettings.isUltraPC ? 60 : 30)); for(let i=0; i<pCount; i++) Game.getParticle().spawn(this.x, 20, this.y, mat, 'trail');
+        let pCount = AppSettings.isLow ? 4 : (isTouchDevice ? 10 : (AppSettings.isUltraPC ? 60 : 30));
+        for(let i=0; i<pCount; i++) Game.getParticle().spawn(this.x, 20, this.y, mat, 'trail');
+        this.fireGrimoireBolts();
     }
-  recalculateModifiers() {
-        // Salviamo i contatori storici che non vanno resettati
+
+    recalculateModifiers() {
         let oldBlood = this.modifiers.bloodthirstCount;
         let oldUlt = this.modifiers.ultKillCount;
         
-        // 1. RIPRISTINA LE STATISTICHE BASE (Cura le malattie delle Reliquie sacrificate!)
         this.stats.maxHp = this.baseStats.maxHp;
         this.stats.minDmg = this.baseStats.minDmg;
         this.stats.maxDmg = this.baseStats.maxDmg;
-        
-        // Sicurezza: se perdiamo Max HP, abbassiamo la salute corrente per non sforare
         if (this.stats.hp > this.stats.maxHp) this.stats.hp = this.stats.maxHp;
 
-        // 2. Resetta tutti i poteri alle statistiche base
         this.essenceSpeedBonus = 0;
+        this.essenceSpdStacks = 0;
+        this.essenceSpdTimer = 0;
         this.modifiers = {
             critChance: 0.10, bonusCritChance: 0, dmgMult: 1.0, speedMult: 1.0, atkSpeedMult: 1.0, bonusAtkSpeed: 0, dashCooldownMult: 1.0, vampirismMaxHp: 0, 
             fireTrail: false, fireTrailDebuff: false, ascensionDurationAdd: 0, dmgTakenMult: 1.0, xpMult: 1.0, healDropMult: 1.0, 
@@ -10122,19 +10349,16 @@ class Player extends Entity {
             timeSinceLastHit: 0, explosiveShield: false, shieldDurationAdd: 0, dashCritsEnabled: false, dashCritsStacks: 0, dashLightning: false,
             critGold: false, lowHpAtkSpeed: false, dashInvul: false, outOfCombatRegen: false, essenceSpeedStacks: false, levelUpNova: false, openerDmg: false, miserPact: false, dashSpeedBuff: false, dashResist: false,
             seismicShield: false, ultDurationPerKill: false, ultKillCount: oldUlt, twinKinetic: false, coinMagnet: false, shieldAtkSpeedBonus: 0,
-            ionBattery: false, atkSpeedPenalty: 1.0, ultDurationPenalty: 1.0
+            ionBattery: false, homicidalFrenzy: false, atkSpeedPenalty: 1.0, ultDurationPenalty: 1.0
         };
         
-        // 3. Riapplica gli upgrade pagati al Negozio
         this.modifiers.dmgMult += ShopSystem.bonus.dmg;
         this.modifiers.speedMult += ShopSystem.bonus.speed;
         this.modifiers.bonusAtkSpeed += ShopSystem.bonus.atkSpeed;
         this.modifiers.bonusCritChance += ShopSystem.bonus.crit;
 
-        // 4. Riapplica silenziosamente le restanti reliquie nello zaino
         this.relics.forEach(r => r.apply(this));
-        
-        // 5. Aggiorna la grafica nel caso la reliquia alterasse le aure/essenze
+        this.syncRelicVisuals(); // Rimuove istantaneamente gli FX delle reliquie sacrificate e attiva quelli nuovi
         this.updateAppearance();
     }
    applySkin() {
@@ -10420,9 +10644,9 @@ class Player extends Entity {
                 Game.getParticle().spawn(this.x + MathUtils.randomRange(-10, 10), 15, this.y + MathUtils.randomRange(-10, 10), SharedMat.spriteGreen, 'spark');
             }
         }
-        // --- EMORRAGIA (SETE DI SANGUE ETERNA) ---
+       // --- EMORRAGIA (SETE DI SANGUE ETERNA: 0.6% HP/s) ---
         if (this.modifiers.bloodthirst && !Game.isBossFloor) {
-            let bleedAmount = this.stats.maxHp * 0.005 * dt; // 0.5% al secondo fluido
+            let bleedAmount = this.stats.maxHp * 0.006 * dt; // 0.6% al secondo fluido
             
             // Il sanguinamento ti porta fino a 1 HP, ma non ti uccide in modo diretto
             this.stats.hp = Math.max(1, this.stats.hp - bleedAmount);
@@ -10491,6 +10715,26 @@ class Player extends Entity {
             }
 
 
+            // BATTERIA A IONI: Folgora 1 nemico vicino ogni secondo mentre lo scudo è attivo (80% Danno Base)
+            if (this.modifiers.ionBattery) {
+                this.ionZapTimer = (this.ionZapTimer || 0) + dt;
+                if (this.ionZapTimer >= 1.0) {
+                    this.ionZapTimer = 0;
+                    let nearby = Game.enemyGrid.findNearby(this, 240);
+                    for (let k = 0; k < nearby.length; k++) {
+                        let e = nearby[k];
+                        if (!e.dead && !e.isPursuer && e.type !== 'crystal') {
+                            let zapDmg = ((this.stats.minDmg + this.stats.maxDmg) * 0.5) * 0.80 * this.modifiers.dmgMult;
+                            e.takeDamage(zapDmg, this, false, false);
+                            Game.getParticle().spawn(e.x, 22, e.y, SharedMat.spriteBlue, 'nova');
+                            for (let s = 0; s < 3; s++) Game.getParticle().spawn(e.x, 18, e.y, SharedMat.spriteWhite, 'electric');
+                            AudioEngine.playShoot('chain_lightning');
+                            break;
+                        }
+                    }
+                }
+            }
+
             if (this.activeShieldTimer <= 0) {
                 this.shieldMesh.visible = false;
                 if (!this.autoShieldActive) {
@@ -10498,31 +10742,29 @@ class Player extends Entity {
                 }
                 this.autoShieldActive = false;
                 
-                // --- FIX: ESPLOSIONE AEGIS DEL GUARDIANO ---
+                // --- ESPLOSIONE AEGIS DEL GUARDIANO (Max 12 stack, fino a 2.5x Danno Base, Nova Arcana Multicolore) ---
                 if (this.modifiers.explosiveShield) {
-                    let baseDmg = this.stats.maxDmg * 2.0;
-                    // +50% di danno per ogni proiettile assorbito
-                   let bonusDmg = Math.min(this.shieldAbsorbed, 15) * (this.stats.maxDmg * 0.5); // Cap massimo 15 stack
-                    let totalDmg = (baseDmg + bonusDmg) * this.modifiers.dmgMult;
+                    let stacks = Math.min(this.shieldAbsorbed, 12);
+                    let mult = 1.0 + (stacks / 12) * 1.5; // Da 1.0x a 2.5x Danno Base
+                    let totalDmg = this.stats.maxDmg * mult * this.modifiers.dmgMult;
+                    let totalRadius = Math.min(160 + stacks * 18, 376); 
                     
-                    let baseRadius = 150;
-                    let bonusRadius = this.shieldAbsorbed * 20;
-                    // Cap massimo al raggio per evitare che pulisca l'intera mappa
-                    let totalRadius = Math.min(baseRadius + bonusRadius, 400); 
-                    
-                    // Genera l'onda d'urto letale
-                    Game.getHazard().spawn(this.x, this.y, totalRadius, 0.5, totalDmg, 0x00DDFF, 'nova_ring');
-                    Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteBlue, 'nova');
+                    Game.getHazard().spawn(this.x, this.y, totalRadius, 0.5, totalDmg, 0xc084fc, 'nova_ring');
+                    let n1 = Game.getParticle(); n1.spawn(this.x, 20, this.y, SharedMat.spritePink, 'nova'); n1.baseSize = totalRadius * 0.8;
+                    let n2 = Game.getParticle(); n2.spawn(this.x, 20, this.y, SharedMat.spriteBlue, 'nova'); n2.baseSize = totalRadius * 0.5;
+                    let arcMats = [SharedMat.spritePink, SharedMat.spriteBlue, SharedMat.spriteYellow, SharedMat.spriteWhite];
+                    for (let s = 0; s < 16; s++) {
+                        let a = (Math.PI * 2 / 16) * s;
+                        Game.getParticle().spawn(this.x, 18, this.y, arcMats[s % 4], 'spark', a);
+                    }
                     Game.addTrauma(1.5);
                     AudioEngine.playShoot('explosive_arrow');
                     
-                    // Feedback visivo
-                    if (this.shieldAbsorbed > 0) {
-                        Game.getFloatingText().spawn(this.x, this.y + 20, `AEGIS: ${this.shieldAbsorbed} ASSORBITI!`, '#00DDFF', 35, true);
+                    if (stacks > 0) {
+                        Game.getFloatingText().spawn(this.x, this.y + 20, `AEGIS NOVA (${stacks}x)!`, '#e879f9', 35, true);
                     }
-                    this.shieldAbsorbed = 0; // Reset contatore
+                    this.shieldAbsorbed = 0;
                 }
-                // ------------------------------------------
             }
         } else {
             this.shieldMesh.visible = false;
@@ -10636,12 +10878,23 @@ class Player extends Entity {
         }
         if (!Game.ultimateActive && this.modelParts.body.material.emissive.getHex() === 0x0088aa) this.updateAppearance();
         
+        if (this.essenceSpdTimer > 0) {
+            this.essenceSpdTimer -= dt;
+            if (this.essenceSpdTimer <= 0) {
+                this.essenceSpdStacks = 0;
+                this.essenceSpeedBonus = 0;
+            }
+        }
         if (this.essenceList.length > 0 || this.overdrive) { 
             this.essenceTimer -= dt; 
             if (this.essenceTimer <= 0) { 
                 let kept = (this.overdrive && this.modifiers.keepEssenceOnCombo) ? this.essence : null;
-               this.essenceList.length = 0; this.essence = null; this.overdrive = false;
-                if (kept) { this.essenceList.push(kept); this.essence = kept; this.essenceTimer = 8.0 * this.modifiers.essenceDurationMult; }
+                this.essenceList.length = 0; this.essence = null; this.overdrive = false;
+                if (kept) {
+                    this.essenceList.push(kept); this.essence = kept;
+                    this.essenceTimer = 8.0 * this.modifiers.essenceDurationMult;
+                    this.fireGrimoireBolts();
+                }
                 this.updateAppearance(); 
             } 
         }
@@ -10749,13 +11002,12 @@ class Player extends Entity {
             }
         }
         
-        // TIMING REWORK RELIQUIA: Riduce il tempo del buff e azzera gli stack allo scadere dei 3 secondi
         if (this.miserBuffTimer === undefined) { this.miserBuffTimer = 0; this.miserBuffStacks = 0; }
         if (this.miserBuffTimer > 0) {
             this.miserBuffTimer -= dt;
             if (this.miserBuffTimer <= 0) this.miserBuffStacks = 0;
         }
-        let miserSpdBonus = 1.0 + (this.miserBuffStacks * 0.06); // +6% velocità per stack (max +30% a 5 stack)
+        let miserSpdBonus = 1.0 + (this.miserBuffStacks * 0.04); // +4% velocità per stack (max +20% a 5 stack)
         // ---------------------------------------------
         let flowCapMult = this.modifiers.flowMastery ? 2 : 1;
         let aura = Game.getAuraAt(this.x, this.y);
@@ -10880,23 +11132,43 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
                 this.speed = currentSpeed; 
                 this.move(dx, dy, dt); 
                 
-                // --- EFFETTI VISIVI CAMMINATA ---
+              // --- EFFETTI VISIVI CAMMINATA (Sovrapposizione Armonica Multi-Reliquia) ---
                 if (Game.frameCount % 6 === 0) {
                     if (inPit) {
-                        if (Game.currentThemeIndex === 0) Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteBlue, 'dust'); // Schizzi acqua
-                        else if (Game.currentThemeIndex === 1) Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteRed, 'spark'); // Lapilli lava
-                        else Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteWhite, 'dust'); // Polvere di ghiaccio
+                        if (Game.currentThemeIndex === 0) Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteBlue, 'dust');
+                        else if (Game.currentThemeIndex === 1) Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteRed, 'spark');
+                        else Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteWhite, 'dust');
                     } else {
-                        Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteDust, 'dust'); // Terra normale
+                        let stepEffects = [];
+                        if (this.modifiers.miserPact) stepEffects.push('gold');
+                        if (this.modifiers.fireTrail) stepEffects.push('embers');
+                        if (this.modifiers.dashLightning) stepEffects.push('glitch');
+                        if (this.modifiers.explosiveShield) stepEffects.push('void');
+
+                        if (stepEffects.length === 0) {
+                            Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteDust, 'dust');
+                        } else {
+                            this._stepFxIdx = ((this._stepFxIdx || 0) + 1) % stepEffects.length;
+                            let fx = stepEffects[this._stepFxIdx];
+                            if (fx === 'gold') {
+                                let p = Game.getParticle(); p.spawn(this.x, 4, this.y, SharedMat.spriteYellow, 'trail'); p.baseSize = 9;
+                            } else if (fx === 'embers') {
+                                Game.getParticle().spawn(this.x, 4, this.y, (Math.random() > 0.4 ? SharedMat.spriteRed : SharedMat.spriteYellow), 'spark');
+                            } else if (fx === 'glitch') {
+                                Game.getParticle().spawn(this.x, 6, this.y, (Game.frameCount % 12 === 0 ? SharedMat.spriteBlue : SharedMat.spritePink), 'electric');
+                            } else if (fx === 'void') {
+                                let p = Game.getParticle(); p.spawn(this.x, 4, this.y, SharedMat.spriteBlackSmoke, 'dust'); p.baseSize = 20;
+                            }
+                        }
                     }
                 }
             }
             
-           // 4. SPROFONDAMENTO E DANNI (LAVA E ACQUA) O VOLO DEL VIANDANTE DEL VUOTO
+            // 4. SPROFONDAMENTO E DANNI (LAVA E ACQUA) O VOLO DEL VIANDANTE DEL VUOTO
             let targetDepth = isVoidWalker ? 8.0 : 0; 
             if (inPit && !isIce) {
                 targetDepth = -30; 
-                if (Game.currentThemeIndex === 1) { // TEMA LAVA
+                if (Game.currentThemeIndex === 1) {
                     if (this.lavaTimer === undefined) this.lavaTimer = 0;
                     this.lavaTimer += dt;
                     if (this.lavaTimer >= 1.0) {
@@ -10909,45 +11181,27 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
                             p.baseSize = MathUtils.randomRange(25, 40);
                             p.vy = MathUtils.randomRange(60, 150);
                         }
-                        for(let i=0; i<3; i++) {
-                            let p = Game.getParticle();
-                            p.spawn(this.x + MathUtils.randomRange(-4, 4), 12, this.y + MathUtils.randomRange(-4, 4), SharedMat.spriteYellow, 'flame');
-                            p.baseSize = MathUtils.randomRange(15, 25);
-                            p.vy = MathUtils.randomRange(80, 180);
-                        }
-                        if (!AppSettings.isLow) {
-                            let smoke = Game.getParticle();
-                            smoke.spawn(this.x, 25, this.y, SharedMat.spriteDust, 'dust');
-                            smoke.baseSize = 45;
-                            smoke.vy = 80;
-                        }
                     }
                 }
             } else {
                 this.lavaTimer = 0;
             }
 
-            // Sbuffi di fumo animati sotto il Viandante del Vuoto per dare il senso di levitazione/volo
             if (isVoidWalker && Game.frameCount % (isTouchDevice ? 6 : 4) === 0) {
                 let p = Game.getParticle();
-                let ox = MathUtils.randomRange(-7, 7);
-                let oz = MathUtils.randomRange(-7, 7);
+                let ox = MathUtils.randomRange(-7, 7), oz = MathUtils.randomRange(-7, 7);
                 p.spawn(this.x + ox, 3, this.y + oz, Math.random() > 0.35 ? SharedMat.spriteBlackSmoke : SharedMat.spritePink, 'dust');
                 p.baseSize = MathUtils.randomRange(16, 26);
                 p.vy = MathUtils.randomRange(4, 12);
                 p.vx = MathUtils.randomRange(-12, 12) - (this.slideDx || 0) * 25;
                 p.vz = MathUtils.randomRange(-12, 12) - (this.slideDy || 0) * 25;
-                p.life = MathUtils.randomRange(0.35, 0.55);
-                p.maxLife = p.life;
+                p.life = MathUtils.randomRange(0.35, 0.55); p.maxLife = p.life;
             }
 
-            // Interpolazione morbida dell'altezza (fluttuazione eterea per il Viandante del Vuoto)
             let activeBounce = isVoidWalker ? (Math.sin(Game.playTime * 4.5) * 2.2) : (isMoving ? (Game.animBounce * 0.75) : (Math.sin(Game.playTime * 3.0) * 0.4));
             this.mesh.position.y += ((targetDepth + activeBounce) - this.mesh.position.y) * dt * 10;
 
-            // --- ANIMAZIONE SECONDARIA: PITCH, BANKING LATERALE, TESTA E SCIARPA ---
             let targetPitch = isMoving ? 0.20 : 0.0;
-            // Calcola la componente laterale (strafing) rispetto a dove guarda il personaggio per inclinarlo in curva
             let forwardX = Math.cos(displayAngle), forwardY = Math.sin(displayAngle);
             let strafeCross = (dx * forwardY) - (dy * forwardX);
             let targetRoll = isMoving ? (strafeCross * 0.22) : 0.0;
@@ -10962,32 +11216,23 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
                 this.modelParts.scarf.position.y = 24 + Math.cos(Game.playTime * 12) * 0.6;
             }
             
-            // --- PENDOLO FISICO E FLUIDO DELLA LANTERNA ---
-            // Inizializziamo le variabili di fase se non esistono
             if (this.swingPhase === undefined) { this.swingPhase = 0; this.currentSwingSpd = 3; }
-            
-            // Transizione fluida della velocità di dondolio per non causare "scatti"
             let targetSwingSpd = isMoving ? 10.0 : 2.5; 
             this.currentSwingSpd += (targetSwingSpd - this.currentSwingSpd) * dt * 5.0; 
             this.swingPhase += this.currentSwingSpd * dt;
             
-            // Calcoliamo i target desiderati in base al respiro/passo
             let targetX = 12 + Math.sin(this.swingPhase) * (isMoving ? 2.5 : 0.5);
             let targetY = 16 + Math.abs(Math.cos(this.swingPhase)) * (isMoving ? 1.5 : 0.3);
             let targetRotZ = Math.sin(this.swingPhase) * (isMoving ? 0.15 : 0.03);
 
-            // 1. Applichiamo i movimenti all'arma usando il Lerp: dona un senso di "peso" al modello
             this.modelParts.weaponGroup.position.x += (targetX - this.modelParts.weaponGroup.position.x) * dt * 12;
             this.modelParts.weaponGroup.position.y += (targetY - this.modelParts.weaponGroup.position.y) * dt * 12;
             this.modelParts.weaponGroup.rotation.z += (targetRotZ - this.modelParts.weaponGroup.rotation.z) * dt * 12;
 
-            // 2. La PointLight è ancorata in 3D sulla punta dell'arma per muovere dinamicamente luci e ombre
             this.light.position.x += (this.modelParts.weaponGroup.position.x + 2 - this.light.position.x) * dt * 18;
             this.light.position.y += (this.modelParts.weaponGroup.position.y + 18 - this.light.position.y) * dt * 18;
             this.light.position.z += (this.modelParts.weaponGroup.position.z + 12 - this.light.position.z) * dt * 18;
             
-            // --- NUOVO: FIAMMA DELL'ARMA REATTIVA AL VENTO CINETICO ---
-            // Se l'arma è carica (essenza o overdrive), emette una fiamma
             if ((this.essence || this.overdrive || Game.ultimateActive) && Game.frameCount % (isTouchDevice ? 4 : 2) === 0) {
                 let pMat = SharedMat.spriteWhite;
                 if (Game.ultimateActive) pMat = SharedMat.spriteBlue;
@@ -10996,8 +11241,6 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
                 else if (this.essence === 'green') pMat = SharedMat.spriteGreen;
 
                 let p = Game.getParticle();
-                
-                // La particella nasce esattamente sulla punta della bacchetta magica
                 let wAngle = -this.mesh.rotation.y + Math.PI/2;
                 let tipX = this.x + Math.cos(wAngle) * 12;
                 let tipZ = this.y + Math.sin(wAngle) * 12;
@@ -11005,9 +11248,6 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
 
                 p.spawn(tipX, tipY, tipZ, pMat, 'trail');
                 p.baseSize = Game.ultimateActive ? 22 : 14;
-                
-                // Dinamica del Vento: La fiamma viene "stirata" fisicamente nella direzione OPPOSTA al movimento!
-                // Più il giocatore corre veloce, più il fuoco si allunga all'indietro.
                 if (isMoving) {
                     p.vx = -dx * this.speed * 0.45;
                     p.vz = -dy * this.speed * 0.45;
@@ -11015,81 +11255,54 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
                     p.vx = MathUtils.randomRange(-10, 10);
                     p.vz = MathUtils.randomRange(-10, 10);
                 }
-                // Tende sempre verso l'alto come il vero fuoco
                 p.vy = MathUtils.randomRange(30, 80); 
                 p.life = 0.25; p.maxLife = 0.25;
             }
-            // --------------------------------------------------------
 
-           // Assicuriamoci che la scala torni normale quando non scatta
             this.mesh.scale.setScalar(massScale); 
         } else {
             this.dashTimer -= dt;
-            
-            // NOVITÀ: Riporta fluidamente il personaggio in superficie se scatta dall'acqua
             this.mesh.position.y += (0 - this.mesh.position.y) * dt * 15;
             
-            // --- INIZIO SQUASH & STRETCH ---
             let progress = this.dashTimer / 0.25; 
-            
-            // La curva sale morbida a 1 e torna a 0
             let stretchCurve = Math.sin(progress * Math.PI); 
-            
-            // L'asse Z è la direzione in cui guarda il modello. Lo allunghiamo dell'80%
             let stretch = 1.0 + (stretchCurve * 0.8); 
-            // Gli assi X e Y vengono schiacciati del 40% per mantenere il "volume" percepito
             let squash = 1.0 - (stretchCurve * 0.4);  
-            
-            // Applica Squash & Stretch moltiplicato per la stazza enorme!
             this.mesh.scale.set(squash * massScale, squash * massScale, stretch * massScale);
-            // --- FINE SQUASH & STRETCH ---
 
             if (this.essence === 'red' && Game.frameCount % 8 === 0) Game.getHazard().spawn(this.x, this.y, 25 * massScale, 3.0, this.stats.maxDmg * 0.5, ESSENCE_COLORS.red, 'fire');
-            if (this.modifiers.fireTrail && Game.frameCount % 5 === 0) Game.getHazard().spawn(this.x, this.y, 20 * massScale, 1.5, this.stats.maxDmg * 0.8, 0xffaa00, 'fire');
+            if (this.modifiers.fireTrail && Game.frameCount % 5 === 0) Game.getHazard().spawn(this.x, this.y, 24 * massScale, 2.0, this.stats.maxDmg * 0.8, 0xffaa00, 'fire');
             this.move(Math.cos(this.dashAngle), Math.sin(this.dashAngle), dt * 4.0);
             
             if (this.dashTimer <= 0) { 
                 this.isDashing = false; 
-                this.mesh.scale.setScalar(massScale); // Reset alla grandezza attuale della massa
+                this.mesh.scale.setScalar(massScale);
                 
                 if (this.overdrive && this.essence === 'red') { 
                     Game.getHazard().spawn(this.x, this.y, 80 * massScale, 1.0, this.stats.maxDmg * 3 * this.modifiers.dmgMult, ESSENCE_COLORS.red, 'fire'); 
                     Game.addTrauma(0.5); 
                 } 
                 
-               if (this.modifiers.dashLightning) {
-                    Game.addTrauma(1.2); // Tremolio più forte per dare senso d'impatto
+                if (this.modifiers.dashLightning) {
+                    Game.addTrauma(1.2);
                     AudioEngine.playShoot('chain_lightning');
-                    
-                    // 1. FLASH DI LUCE AMBIENTALE (Illumina i muri e il pavimento di azzurro)
                     Game.spawnLightFlash(this.x, this.y, 0x00aaff, 5.0, 600, 0.4);
                     
-                    // 2. ESPLOSIONE RADIALE DI PARTICELLE AZZURRINE DAL GIOCATORE
-                    let pCount = AppSettings.isLow ? 15 : 45;
+                    let pCount = AppSettings.isLow ? 15 : 40;
                     for(let i = 0; i < pCount; i++) {
                         let a = (Math.PI * 2 / pCount) * i + MathUtils.randomRange(-0.1, 0.1);
                         let p = Game.getParticle();
-                        
-                        // Alterniamo scie allungate (trail) a scintille tonde (spark)
                         let pType = i % 2 === 0 ? 'trail' : 'spark';
-                        p.spawn(this.x, 15, this.y, SharedMat.spriteBlue, pType, a);
-                        
-                        // Fisica: le facciamo schizzare orizzontalmente rasoterra a grandissima velocità
+                        p.spawn(this.x, 15, this.y, (i % 3 === 0 ? SharedMat.spritePink : SharedMat.spriteBlue), pType, a);
                         let pSpeed = MathUtils.randomRange(600, 1200);
-                        p.vx = Math.cos(a) * pSpeed;
-                        p.vz = Math.sin(a) * pSpeed;
-                        p.vy = MathUtils.randomRange(10, 50); // Rimangono basse
+                        p.vx = Math.cos(a) * pSpeed; p.vz = Math.sin(a) * pSpeed;
+                        p.vy = MathUtils.randomRange(10, 50);
                         p.baseSize = MathUtils.randomRange(15, 30);
-                        p.life = MathUtils.randomRange(0.2, 0.45);
-                        p.maxLife = p.life;
+                        p.life = MathUtils.randomRange(0.2, 0.45); p.maxLife = p.life;
                     }
 
-                    // FIX GC: Zero-Allocation Arrays. Non istanziamo nuovi oggetti in memoria!
                     if (!Game._dashImpactPoints) Game._dashImpactPoints = [{x:0, y:0}, {x:0, y:0}, {x:0, y:0}];
-                    
-                    Game._dashImpactPoints[0].x = this.x;
-                    Game._dashImpactPoints[0].y = this.y;
-                    
+                    Game._dashImpactPoints[0].x = this.x; Game._dashImpactPoints[0].y = this.y;
                     for(let i=1; i<3; i++) {
                         let a = Math.random() * Math.PI * 2;
                         let d = MathUtils.randomRange(40, 90); 
@@ -11097,10 +11310,8 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
                         Game._dashImpactPoints[i].y = this.y + Math.sin(a)*d;
                     }
 
-                    // Eseguiamo grafica, danni e stordimento senza .forEach()
                     for(let k=0; k<3; k++) {
                         let pt = Game._dashImpactPoints[k];
-                        // Pilastro visivo del fulmine: nucleo bianco, alone azzurro
                         let baseSpark = Game.getParticle();
                         baseSpark.spawn(pt.x, 10, pt.y, SharedMat.spriteBlue, 'nova');
                         baseSpark.baseSize = 160;
@@ -11108,18 +11319,16 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
                         for(let j=0; j<4; j++) {
                             let spark = Game.getParticle();
                             spark.spawn(pt.x, 20 + (j*45), pt.y, SharedMat.spriteWhite, 'nova');
-                            spark.baseSize = 100 - (j*20); // Più grande alla base, stretto in cima
+                            spark.baseSize = 100 - (j*20);
                         }
                         
-                        // Calcolo danni ad area e STUN
-                        let nearby = Game.enemyGrid.findNearby(pt, 120); // Raggio d'impatto aumentato da 90 a 120
+                        // 50% Danno Base ad area e 1.8s di Stun
+                        let nearby = Game.enemyGrid.findNearby(pt, 120);
                         for (let j = 0; j < nearby.length; j++) {
                             let e = nearby[j];
                             if (!e.dead && MathUtils.distanceSq(pt, e) < 120*120) {
-                                e.takeDamage(this.stats.maxDmg * 0.4 * this.modifiers.dmgMult, this, false, false); // Danno alzato al 40%
-                                e.frozenTimer = 2.0; // Stun glaciale/elettrico aumentato a 2 secondi
-                                
-                                // Piccolo feedback elettrico sul nemico
+                                e.takeDamage(this.stats.maxDmg * 0.50 * this.modifiers.dmgMult, this, false, false);
+                                e.frozenTimer = 1.8;
                                 Game.getParticle().spawn(e.x, 30, e.y, SharedMat.spriteBlue, 'nova');
                             }
                         }
@@ -11130,7 +11339,6 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
         
         this.attackTimer -= dt;
         if (isShooting && this.attackTimer <= 0 && !this.isDashing && !(this.overdrive && this.essence === 'red')) this.attack();
-       // Inclinazione in avanti a riposo per Tridente, Alabarda e Falce così la loro forma svetta nella visuale dall'alto
         let restRotX = (curSkin === 'solar_archon' || curSkin === 'emerald_warden' || curSkin === 'crimson_inquisitor') ? 0.38 : 0;
         if (this.isAttacking) { 
             this.attackSwing += dt * 14; 
@@ -11141,7 +11349,6 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
             } else {
                 let sinSwing = Math.max(0, Math.sin(this.attackSwing));
                 if (curSkin === 'cyber_phantom') {
-                    // Rinculo balistico potente e sicuro
                     let kick = Math.sqrt(sinSwing);
                     this.modelParts.weaponGroup.rotation.x = -kick * 0.65;
                     this.modelParts.weaponGroup.position.z = 8 - kick * 14.0;
@@ -11154,7 +11361,6 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
             this.modelParts.weaponGroup.rotation.x = restRotX;
         }
 
-        // --- BAGLIORE DINAMICO DELL'ARMA CALIBRATO (Niente sovraesposizione) ---
         let stackBonus = (this.essenceList ? this.essenceList.length : 0) * 0.20;
         let baseInt = Game.ultimateActive ? 3.8 : (this.overdrive ? 3.4 : (this.essence ? (2.5 + stackBonus) : 2.0));
         let flicker = (Math.sin(Game.playTime * 4.3) * 0.08) + (Math.sin(Game.playTime * 7.8) * 0.08);
@@ -11174,14 +11380,43 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
             this.weaponCoreBloom.scale.set(baseCore, baseCore, 1);
         }
 
-        // Rotazione dei 3 cristalli orbitanti per il Viandante del Vuoto
         if (SkinSystem.selectedId === 'void_walker' && this.modelParts.accentMesh) {
             this.modelParts.accentMesh.rotation.y += dt * 2.5;
         }
 
+        // --- ORBITA ARMONICA MULTI-FAMIGLIO 3D (Senza collisioni tra più reliquie) ---
+        if (this.activePetList && this.activePetList.length > 0) {
+            let count = this.activePetList.length;
+            let baseOrbit = Game.playTime * 2.0;
+            for (let i = 0; i < count; i++) {
+                let pet = this.activePetList[i];
+                let a = baseOrbit + (Math.PI * 2 / count) * i;
+                pet.position.set(
+                    Math.cos(a) * 20,
+                    26 + Math.sin(Game.playTime * 4.2 + i * 1.5) * 3.0,
+                    Math.sin(a) * 20
+                );
+                pet.rotation.y += dt * 2.2;
+            }
+            // Reazione dinamica del Mini-Box (Maestria del Flow) sopra le 50 Combo
+            if (this.modifiers.flowMastery && this.relicPetMeshes.box) {
+                let isHighFlow = Game.combo > 50;
+                let boxData = this.relicPetMeshes.box.userData;
+                boxData.wireMat.color.setHex(isHighFlow ? 0xfbbf24 : 0x00ddff);
+                boxData.bGlow.material = isHighFlow ? SharedMat.spriteYellow : SharedMat.spriteBlue;
+                if (isHighFlow) {
+                    this.relicPetMeshes.box.rotation.x += dt * 5.0;
+                    this.relicPetMeshes.box.rotation.y += dt * 5.0;
+                    if (Game.frameCount % 8 === 0) {
+                        Game.getParticle().spawn(this.x, 28, this.y, SharedMat.spriteYellow, 'spark');
+                    }
+                }
+            }
+        }
+
         this.mesh.updateMatrix();
 
-        // --- GESTIONE SCIA OLOGRAFICA DI SCATTO (AFTERIMAGE) ---
+        // --- SCIA OLOGRAFICA DI SCATTO (Cicla tra tutti gli effetti posseduti) ---
         if (this.isDashing) {
             this._ghostSpawnTimer -= dt;
             if (this._ghostSpawnTimer <= 0) {
@@ -11189,7 +11424,16 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
                 let g = this.dashGhosts[this._ghostIdx];
                 this._ghostIdx = (this._ghostIdx + 1) % this.dashGhosts.length;
                 g.life = 0.22;
-                let gColor = this.essence ? ESSENCE_COLORS[this.essence] : 0x00ddff;
+
+                let dashColors = [];
+                if (this.essence) dashColors.push(ESSENCE_COLORS[this.essence]);
+                if (this.modifiers.dashLightning) dashColors.push(0x00ddff, 0xff00aa);
+                if (this.modifiers.explosiveShield) dashColors.push(0x9333ea);
+                if (this.modifiers.fireTrail) dashColors.push(0xff4400);
+                if (this.modifiers.miserPact) dashColors.push(0xffd700);
+                if (dashColors.length === 0) dashColors.push(0x00ddff);
+
+                let gColor = dashColors[this._ghostIdx % dashColors.length];
                 g.mat.color.setHex(gColor);
                 g.mat.opacity = 0.55;
                 g.mesh.position.set(this.x, this.mesh.position.y + 12 * massScale, this.y);
@@ -11203,14 +11447,12 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
             let g = this.dashGhosts[i];
             if (g.life > 0) {
                 g.life -= dt;
-                if (g.life <= 0) {
-                    g.mesh.visible = false;
-                } else {
-                    g.mat.opacity = (g.life / 0.22) * 0.55;
-                }
+                if (g.life <= 0) g.mesh.visible = false;
+                else g.mat.opacity = (g.life / 0.22) * 0.55;
             }
         }
    }
+   
         
   flamethrower(dt) {
         if (Game.frameCount % (isTouchDevice ? 2 : 1) === 0) {
@@ -11290,50 +11532,57 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
         // MODIFICA VELOCITÀ D'ATTACCO: +30% se l'Onda d'Urto è attiva (shockSpeedTimer) 
         // e +6% a stack per ogni moneta raccolta (miserBuffStacks)
        let shockAtkSpeed = this.shockSpeedTimer > 0 ? 1.30 : 1.0;
-        let miserAtkSpeedBonus = 1.0 + ((this.miserBuffStacks || 0) * 0.06);
+        let miserAtkSpeedBonus = 1.0 + ((this.miserBuffStacks || 0) * 0.04); // +4% Vel. Attacco per stack
+        let miserDmgBonus = 1.0 + ((this.miserBuffStacks || 0) * 0.03);      // +3% Danno per stack
         
         let aura = Game.getAuraAt(this.x, this.y); 
-       // FIX OBELISCO ROSSO: +20% Velocità d'attacco se sei nell'Aura Rossa
-       let auraAtkSpd = (aura === 'blue') ? 0.6 : (aura === 'red' ? 1.2 : 1.0);
-        let buffAtkMult = this.shortBuffs.atkSpeed > 0 ? 1.15 : 1.0; // +15% Atk Speed
-        if (this.obeliskSpdTimer > 0) buffAtkMult *= this.obeliskSpdVal; // Buff Obelisco
-        // REWORK: Aggiunto malus Follia Omicida (atkSpeedPenalty) e nerfato il bonus velocità d'attacco
+        let auraAtkSpd = (aura === 'blue') ? 0.6 : (aura === 'red' ? 1.2 : 1.0);
+        let buffAtkMult = this.shortBuffs.atkSpeed > 0 ? 1.15 : 1.0;
+        if (this.obeliskSpdTimer > 0) buffAtkMult *= this.obeliskSpdVal;
         let spdMult = (1 + Math.min(Game.combo * 0.005, 0.25 * flowCapMult)) * this.modifiers.atkSpeedMult * shopSpeed * adrenalineSpeed * (1 + shieldSpeed) * shockAtkSpeed * miserAtkSpeedBonus * auraAtkSpd * buffAtkMult * this.modifiers.atkSpeedPenalty;
         if (this.overdrive && this.essence === 'blue') spdMult *= 3.0; 
-        
-        // --- MODIFICA CADENZA ARMA ROSSA ---
-        if (this.essence === 'red') spdMult *= 0.6; // Abbassa la velocità di attacco
-        
+        if (this.essence === 'red') spdMult *= 0.6;
         if (Game.ultimateActive) spdMult *= 2.0; 
+
         this.attackTimer = 1 / (this.baseAttackSpeed * spdMult); this.isAttacking = true; this.attackSwing = 0;
-      let critChance = this.modifiers.critChance + this.modifiers.bonusCritChance + Math.min(Game.combo * 0.005, 0.5 * flowCapMult); let isCrit = Math.random() < critChance;
+        let critChance = this.modifiers.critChance + this.modifiers.bonusCritChance + Math.min(Game.combo * 0.005, 0.5 * flowCapMult);
+        let isCrit = Math.random() < critChance;
         if (this.modifiers.dashCritsStacks > 0) { isCrit = true; this.modifiers.dashCritsStacks--; }
-        // 1. Calcolo del Danno Base INIZIALE
-        let baseDmg = MathUtils.randomRange(this.stats.minDmg, this.stats.maxDmg) * (1 + Math.min(Game.combo * 0.04, 2.0 * flowCapMult)) * this.modifiers.dmgMult;
-        if (this.obeliskDmgTimer > 0) baseDmg *= this.obeliskDmgVal; // Buff Obelisco
+
+        let baseDmg = MathUtils.randomRange(this.stats.minDmg, this.stats.maxDmg) * (1 + Math.min(Game.combo * 0.04, 2.0 * flowCapMult)) * this.modifiers.dmgMult * miserDmgBonus;
+        if (this.obeliskDmgTimer > 0) baseDmg *= this.obeliskDmgVal;
         
-        // 2. MASSA CRITICA: Moltiplica i danni per quanto sei grosso!
         if (Game.isCorrupted && Game.corruptedType === 'critical_mass') {
             let massScale = 1.0 + Math.min(Game.combo * 0.03, 1.5);
             baseDmg *= massScale; 
         }
 
-        // 3. Bonus Obelischi e Corruzione
         if (aura === 'red') baseDmg *= 1.4;
-        if (aura === 'corrupted') baseDmg *= 1.2; // +20% Danni inflitti
+        if (aura === 'corrupted') baseDmg *= 1.2;
         
-        // 4. Applicazione Maestria del Flow sul danno INFLITTO
+        // Maestria del Flow (+15% sopra 50 Combo, -15% sotto 50 Combo)
         if (this.modifiers.flowMastery) {
-            if (Game.combo > 50) baseDmg *= 1.20; // Fai +20% danni
-            else baseDmg *= 0.80; // Fai -20% danni
+            if (Game.combo > 50) baseDmg *= 1.15;
+            else baseDmg *= 0.85;
         }
 
         if (Game.ultimateActive) baseDmg *= 2.0;
-        if (isCrit) baseDmg *= this.modifiers.critDmgMult;
-        let projType = 'player_arrow'; if (this.essence === 'red') projType = 'explosive_arrow'; if (this.essence === 'blue') projType = 'chain_lightning'; if (this.essence === 'green') projType = 'homing_arrow';
-      let piercing = (this.overdrive && this.essence === 'blue'); AudioEngine.playShoot(projType, isCrit);
+        if (isCrit) {
+            baseDmg *= this.modifiers.critDmgMult;
+            // Follia Omicida: il Teschio Sussurrante brilla ad ogni colpo critico
+            if (this.modifiers.homicidalFrenzy && this.relicPetMeshes && this.relicPetMeshes.skull) {
+                Game.getParticle().spawn(this.x, 30, this.y, SharedMat.spriteRed, 'spark');
+            }
+        }
+
+        let projType = 'player_arrow';
+        if (this.essence === 'red') projType = 'explosive_arrow';
+        if (this.essence === 'blue') projType = 'chain_lightning';
+        if (this.essence === 'green') projType = 'homing_arrow';
+        let piercing = (this.overdrive && this.essence === 'blue');
+        let bonusPierce = (this.modifiers.flowMastery && Game.combo > 50 && projType === 'player_arrow') ? 1 : 0;
+        AudioEngine.playShoot(projType, isCrit);
         
-        // MUZZLE FLASH SULLA PUNTA DELL'ARMA
         if (!AppSettings.isLow) {
             let muzzleX = this.x + Math.cos(this.angle) * 24 + Math.cos(this.angle + Math.PI/2) * 10;
             let muzzleZ = this.y + Math.sin(this.angle) * 24 + Math.sin(this.angle + Math.PI/2) * 10;
@@ -11344,16 +11593,15 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
             mf.life = 0.08; mf.maxLife = 0.08;
         }
         
-        // Calcola la velocità: 400 per il rosso, 800 per tutti gli altri
-       let projSpeed = (projType === 'explosive_arrow') ? 400 : 800;
-        
-        // NUOVO: Gemelli Cinetici
+        let projSpeed = (projType === 'explosive_arrow') ? 400 : 800;
+        
+        // Gemelli Cinetici (65% danno per colpo)
         if (this.activeShieldTimer > 0 && this.modifiers.twinKinetic) {
-            let twinDmg = baseDmg * 0.70;
-            let p1 = Game.getProjectile(); p1.spawn(this.x, this.y, this.angle - 0.15, projSpeed, twinDmg, 'player', projType, piercing, isCrit); p1.canInfect = true;
-            let p2 = Game.getProjectile(); p2.spawn(this.x, this.y, this.angle + 0.15, projSpeed, twinDmg, 'player', projType, piercing, isCrit); p2.canInfect = true;
+            let twinDmg = baseDmg * 0.65;
+            let p1 = Game.getProjectile(); p1.spawn(this.x, this.y, this.angle - 0.15, projSpeed, twinDmg, 'player', projType, piercing, isCrit); p1.canInfect = true; p1.pierceCount = bonusPierce;
+            let p2 = Game.getProjectile(); p2.spawn(this.x, this.y, this.angle + 0.15, projSpeed, twinDmg, 'player', projType, piercing, isCrit); p2.canInfect = true; p2.pierceCount = bonusPierce;
         } else {
-            let p1 = Game.getProjectile(); p1.spawn(this.x, this.y, this.angle, projSpeed, baseDmg, 'player', projType, piercing, isCrit); p1.canInfect = true;
+            let p1 = Game.getProjectile(); p1.spawn(this.x, this.y, this.angle, projSpeed, baseDmg, 'player', projType, piercing, isCrit); p1.canInfect = true; p1.pierceCount = bonusPierce;
         }
 
         if (this.overdrive && this.essence === 'green') {
@@ -11561,9 +11809,9 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
             }
         }
         
-        // NUOVO: Riduzione del 20% dai Calzari di Mercurio
+        // Calzari di Mercurio: -15% danni subiti per 3s dopo lo scatto
         if (this.dashResistTimer > 0) {
-            amount *= 0.80;
+            amount *= 0.85;
         }
 
         if (Game.ultimateActive) {
@@ -11592,18 +11840,15 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
         
         let wasDead = this.dead; amount *= this.modifiers.dmgTakenMult; 
         
-   // Dentro Player.takeDamage
-if (this.modifiers.flowMastery && !wasDead) {
-    if (Game.combo > 50) {
-        // Sei una macchina da guerra, ma fragile
-        amount *= 1.20;
-        Game.getFloatingText().spawn(this.x, this.y + 30, "SOVRACCARICO!", '#ff0000', 30, true);
-    } else {
-        // Sei in fase di ricarica/difesa
-        amount *= 0.80;
-        Game.getFloatingText().spawn(this.x, this.y + 30, "DIFESA!", '#00DDFF', 30, true);
-    }
-}
+   if (this.modifiers.flowMastery && !wasDead) {
+            if (Game.combo > 50) {
+                amount *= 1.15;
+                Game.getFloatingText().spawn(this.x, this.y + 30, "SOVRACCARICO!", '#ff0000', 30, true);
+            } else {
+                amount *= 0.85;
+                Game.getFloatingText().spawn(this.x, this.y + 30, "DIFESA!", '#00DDFF', 30, true);
+            }
+        }
 
         if (Game.matchStats) Game.matchStats.dmgTaken += amount;
 
@@ -12741,29 +12986,48 @@ class Enemy extends Entity {
         let aura = Game.getAuraAt(this.x, this.y);
         if (aura === 'green') amount *= 0.6;
 
-        // 1. Calcola PRIMA i modificatori di danno del Giocatore (Esecuzione, Danni Opener, ecc.)
-        if (source === Game.player && Game.player.modifiers.executioner && (this.stats.hp / this.stats.maxHp) < 0.3 && !this.isBoss) amount *= 2.0;
-        if (source === Game.player && Game.player.modifiers.openerDmg && (this.stats.hp / this.stats.maxHp) >= 0.8) amount *= 1.2;
-        
-        // 2. APPLICA LO SCUDO DEL PROFETA (Riduce del 95% e impedisce i critici)
+        // 1. LAMA DEL GIUDIZIO: +75% danni ai nemici <30% HP, +25% ai Boss <20% HP + Dardo di luce
+        let executionTriggered = false;
+        if (source === Game.player && Game.player.modifiers.executioner) {
+            let hpRatio = this.stats.hp / this.stats.maxHp;
+            if (!this.isBoss && hpRatio < 0.30) {
+                amount *= 1.75;
+                executionTriggered = true;
+            } else if (this.isBoss && hpRatio < 0.20) {
+                amount *= 1.25;
+                executionTriggered = true;
+            }
+            if (executionTriggered && (!this._lastExecFx || Game.playTime - this._lastExecFx > 0.25)) {
+                this._lastExecFx = Game.playTime;
+                let ray = Game.getParticle();
+                ray.spawn(this.x, 38, this.y, SharedMat.spriteWhite, 'nova');
+                ray.baseSize = 55;
+            }
+        }
+        if (source === Game.player && Game.player.modifiers.openerDmg && (this.stats.hp / this.stats.maxHp) >= 0.8) amount *= 1.2;
+        
+        // 2. APPLICA LO SCUDO DEL PROFETA
         if (this.isProphetBuffed) {
             amount *= 0.05; 
             isCrit = false; 
             if (Game.frameCount % 4 === 0) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteWhite, 'spark');
         }
-        
-        // NUOVO: Prisma (Crit Gold)
-        if (isCrit && source === Game.player && Game.player.modifiers.critGold && Math.random() < 0.30) {
-            Game.coins++; 
-            if(UI.els.coins) UI.els.coins.innerText = Game.coins;
-            Game.getFloatingText().spawn(this.x, this.y, "+1", '#ffff00', 20);
+        
+        // PRISMA DELL'AVARIZIA: 30% chance con cooldown interno di 1s
+        if (isCrit && source === Game.player && Game.player.modifiers.critGold && Math.random() < 0.30) {
+            if (!Game.player._lastCritGoldTime || Game.playTime - Game.player._lastCritGoldTime >= 1.0) {
+                Game.player._lastCritGoldTime = Game.playTime;
+                Game.coins++; 
+                if(UI.els.coins) UI.els.coins.innerText = Game.coins;
+                Game.getFloatingText().spawn(this.x, this.y, "+1", '#ffff00', 20);
+            }
         }
 
-        // Danni bonus se il nemico è a fuoco
-        if (this.fireDebuffTimer > 0 && Game.player.modifiers.fireTrailDebuff) amount *= 1.25;
+        // PASSO INFERNALE: +20% danni ai nemici bruciati
+        if (this.fireDebuffTimer > 0 && Game.player.modifiers.fireTrailDebuff) amount *= 1.20;
         
-        // --- LOGICA SCUDO GOLEM (MANTENUTA E INTACTA) ---
-        if (this.type === 'golem' && source) {
+        // --- LOGICA SCUDO GOLEM (Ignorato se il giocatore possiede Lama del Giudizio) ---
+        if (this.type === 'golem' && source && !(source === Game.player && Game.player.modifiers.executioner)) {
             let angleToSource = Math.atan2(source.y - this.y, source.x - this.x);
             let golemFacingAngle = -this.mesh.rotation.y + Math.PI / 2; 
             
@@ -12876,39 +13140,38 @@ class Enemy extends Entity {
       
         this.shadowMesh.visible = false;
         AudioEngine.playEnemyDeath();
-       Game.player.gainXp(this.xpValue);
-        // FIX: Sovraccarico Etereo (Estende solo l'Ultimate in corso)
+      Game.player.gainXp(this.xpValue);
+
+        // SOVRACCARICO ETEREO: Ogni 12 nemici uccisi durante l'Ultimate estende la durata di +0.5s
         if (Game.player.modifiers.ultDurationPerKill && Game.ultimateActive) {
             Game.player.modifiers.ultKillCount++;
-            if (Game.player.modifiers.ultKillCount >= 10) {
+            if (Game.player.modifiers.ultKillCount >= 12) {
                 Game.player.modifiers.ultKillCount = 0;
-                Game.ultimateTimer += 0.5; // Aggiunge tempo reale all'Ultimate attiva
-                Game.player.modifiers.ascensionDurationAdd += 0.5; // Estende il cap della barra UI per non "sbordare" oltre il 100%
+                Game.ultimateTimer += 0.5;
+                Game.player.modifiers.ascensionDurationAdd += 0.5;
                 Game.getFloatingText().spawn(Game.player.x, Game.player.y + 30, "+0.5s ASCENSIONE!", '#00DDFF', 25, true);
             }
         }
-      let cHex = this.mat.color.getHex();
+
+        let pMods = Game.player ? Game.player.modifiers : {};
+        let cHex = this.mat.color.getHex();
+
         // FIX DETRITI: Forza l'aggiornamento della matrice locale prima di calcolare il mondo!
         this.mesh.position.set(this.x, this.mesh.position.y, this.y);
         this.mesh.updateMatrix(); 
         this.mesh.updateMatrixWorld(true);
 
-        // OTTIMIZZAZIONE RAM: Zero-Allocation.
-        // Invece di creare nuovi vettori, ricicliamo quelli globali già presenti nell'oggetto Game.
-        // Evita i microuscatti (GC Stutters) quando fai saltare in aria gruppi numerosi di nemici.
         const _pos = Game._vec3;
         const _quat = Game._dummyQuat;
         const _scale = Game._dummyScale;
+        let pieceIdx = 0;
 
         this.mesh.traverse((child) => {
             if (child.isMesh && child.geometry && child.material !== SharedMat.enemyEye) {
-                
-                // SALVA CPU & RIDUCI CONFUSIONE: 
-                // Genera solo il 70% dei frammenti a caso (salta il 30%)
                 if (Math.random() > 0.7) return; 
 
-               child.getWorldPosition(_pos);
-                _pos.y = Math.max(5, Math.min(60, _pos.y)); // Impedisce spawn ad altezza telecamera
+                child.getWorldPosition(_pos);
+                _pos.y = Math.max(5, Math.min(60, _pos.y));
                 if (Game.map && Game.map.isSolid(_pos.x, _pos.z, true)) {
                     _pos.x = this.x;
                     _pos.z = this.y;
@@ -12916,12 +13179,43 @@ class Enemy extends Entity {
                 child.getWorldQuaternion(_quat);
                 child.getWorldScale(_scale);
                 
-                // Passiamo "this.type" invece della geometria per decidere la forma dei pezzi!
+                // Sovrapposizione colori detriti: alterna Oro (Mida) e Cremisi (Sete di Sangue) se posseduti insieme
+                let pieceColor = cHex;
+                if (pMods.miserPact && pMods.bloodthirst) {
+                    pieceColor = (pieceIdx % 2 === 0) ? 0xffd700 : 0xaa0011;
+                } else if (pMods.miserPact) {
+                    pieceColor = 0xffd700;
+                } else if (pMods.bloodthirst) {
+                    pieceColor = 0xaa0011;
+                }
+                pieceIdx++;
+
                 let debris = Game.getDebris();
-                if (debris) debris.spawn(_pos, _quat, _scale, this.type, cHex, this.radius, this.isElite);
+                if (debris) debris.spawn(_pos, _quat, _scale, this.type, pieceColor, this.radius, this.isElite && !pMods.miserPact);
             }
         });
-       // --- SPLIT E POZZA DELLO SLIME ---
+
+        // KILL FX SOVRAPPONIBILI DELLE RELIQUIE LEGGENDARIE (Zero riferimenti a killFx)
+        if (pMods.miserPact) {
+            for (let i = 0; i < 5; i++) Game.getParticle().spawn(this.x, 18, this.y, SharedMat.spriteYellow, 'spark');
+        }
+        if (pMods.executioner) {
+            for (let i = 0; i < 3; i++) {
+                let soul = Game.getParticle();
+                soul.spawn(this.x + MathUtils.randomRange(-5, 5), 18 + i * 8, this.y + MathUtils.randomRange(-5, 5), (i === 0 ? SharedMat.spriteWhite : SharedMat.spriteBlue), 'trail');
+                soul.vy = 165 + i * 35;
+                soul.vx = 0; soul.vz = 0;
+                soul.baseSize = 19 - i * 4;
+                soul.life = 0.65; soul.maxLife = 0.65;
+            }
+        }
+        if (pMods.bloodthirst) {
+            let bNova = Game.getParticle();
+            bNova.spawn(this.x, 22, this.y, SharedMat.spriteRed, 'nova');
+            bNova.baseSize = 75;
+        }
+
+        // --- SPLIT E POZZA DELLO SLIME ---
         if (this.type === 'slime' || this.type === 'slime_mini') {
             // 1. Entrambi (grandi e piccoli) lasciano una pozza viola a terra
             // Usiamo 'crystal_fire' che danneggia sia i nemici (poolDamage) sia il giocatore.
@@ -13501,7 +13795,7 @@ class Projectile {
     
     spawn(x, y, angle, speed, damage, owner, type, piercing=false, isCrit=false, sourceEntity=null) {
         this.active = true; this.group.visible = true; this.x = x; this.y = y; this.angle = angle; this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
-        this.damage = damage; this.owner = owner; this.type = type; this.piercing = piercing; this.bounceCount = (type === 'chain_lightning') ? 2 : 0;
+       this.damage = damage; this.owner = owner; this.type = type; this.piercing = piercing; this.pierceCount = 0; this.bounceCount = (type === 'chain_lightning') ? 2 : 0;
         this.isCrit = isCrit;
         this.hitEnemies.clear(); this.target = null; this.canInfect = true;
         this.sourceEntity = sourceEntity; // Salva chi ha sparato!
@@ -13767,6 +14061,10 @@ if (type === 'arrow' || type === 'homing_arrow') {
                 this.angle = Math.atan2(closest.y - this.y, closest.x - this.x); let speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
                 this.vx = Math.cos(this.angle) * speed; this.vy = Math.sin(this.angle) * speed; this.damage *= 0.8; return; 
             }
+        }
+       if (this.pierceCount > 0) {
+            this.pierceCount--;
+            return;
         }
         if (!this.piercing) this.destroy();
     }
@@ -14421,6 +14719,7 @@ function goToMainMenu() {
             Game.player = null;
         }
         Game.state = 'MENU'; AudioEngine.stopAllMusic(); AudioEngine.playMenuMusic();
+        if (typeof SkinSystem !== 'undefined') SkinSystem.updateMenuUI();
         
         if (typeof TitleSystem !== 'undefined') {
             TitleSystem.init(); // Ricrea il renderer solo quando l'utente torna al menu
