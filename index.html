@@ -1364,6 +1364,17 @@ const AudioEngine = {
                 gain.gain.setValueAtTime(0.1, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
                 osc.connect(gain); gain.connect(this.ctx.destination); osc.start(t); osc.stop(t + 0.1);
             }
+        } else if (type === 'shield_clang') {
+            // Timbro metallico acuto per colpi mitigati da scudi (Golem / Profeta)
+            let dest = this.masterCompressor || this.ctx.destination;
+            let osc1 = this.ctx.createOscillator(); let osc2 = this.ctx.createOscillator();
+            let gain = this.ctx.createGain();
+            osc1.type = 'triangle'; osc2.type = 'sine';
+            osc1.frequency.setValueAtTime(1350 * r, t); osc1.frequency.exponentialRampToValueAtTime(520, t + 0.12);
+            osc2.frequency.setValueAtTime(2120 * r, t); osc2.frequency.exponentialRampToValueAtTime(880, t + 0.12);
+            gain.gain.setValueAtTime(0.14, t); gain.gain.exponentialRampToValueAtTime(0.005, t + 0.12);
+            osc1.connect(gain); osc2.connect(gain); gain.connect(dest);
+            osc1.start(t); osc2.start(t); osc1.stop(t + 0.12); osc2.stop(t + 0.12);
         } else if (type === 'crit') {
             let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
             osc.type = 'triangle'; osc.frequency.setValueAtTime(900 * r, t); osc.frequency.exponentialRampToValueAtTime(100, t + 0.15);
@@ -4054,8 +4065,9 @@ const ModelFactory = {
             let core = new THREE.Mesh(SharedGeo.icosahedron, mat); core.scale.set(size, size, size); core.position.set(0, size*1.5, size*0.2);
             let head = new THREE.Mesh(SharedGeo.box, darkMat); head.scale.set(size*0.6, size*0.6, size*0.6); head.position.set(0, size*2.8, 0);
             let hornL = new THREE.Mesh(SharedGeo.cone, mat); hornL.scale.set(size*0.3, size*2.0, size*0.3); hornL.position.set(-size*0.4, size*3.2, 0); hornL.rotation.z = Math.PI/4;
-let hornR = new THREE.Mesh(SharedGeo.cone, mat); hornR.scale.set(size*0.3, size*2.0, size*0.3); hornR.position.set(size*0.4, size*3.2, 0); hornR.rotation.z = -Math.PI/4;
+            let hornR = new THREE.Mesh(SharedGeo.cone, mat); hornR.scale.set(size*0.3, size*2.0, size*0.3); hornR.position.set(size*0.4, size*3.2, 0); hornR.rotation.z = -Math.PI/4;
             group.add(torso); group.add(core); group.add(head); group.add(hornL); group.add(hornR);
+            parts.core = core;
         } else if (type === 'crystal') {
             let base = new THREE.Mesh(SharedGeo.cylinder, darkMat); base.scale.set(size, size*0.5, size); base.position.y = size*0.25;
             let gem = new THREE.Mesh(SharedGeo.icosahedron, mat); gem.scale.set(size*0.8, size*2.5, size*0.8); gem.position.y = size*1.8;
@@ -9534,6 +9546,7 @@ this.fogMesh.renderOrder = -1; // Assicura che venga disegnato DOPO il terreno (
         if (!this.active || this.dead) return;
         if (this.isProphetBuffed) {
             amount *= 0.05; // Protetta dallo scudo del Profeta
+            if (source === Game.player) AudioEngine.playHit('shield_clang');
             if (Game.frameCount % 4 === 0) Game.getParticle().spawn(this.x, 18, this.y, SharedMat.spriteWhite, 'spark');
         }
         this.hp -= amount;
@@ -9778,8 +9791,14 @@ class Entity {
         if (this.dead) return; this.stats.hp -= amount;
         
         if (source === Game.player) {
-            AudioEngine.playHit(isCrit ? 'crit' : 'enemy');
-            Haptics.vibrate(isCrit ? [20, 10, 20] : 15);
+            if (this._shieldClang) {
+                AudioEngine.playHit('shield_clang');
+                this._shieldClang = false;
+                Haptics.vibrate(8);
+            } else {
+                AudioEngine.playHit(isCrit ? 'crit' : 'enemy');
+                Haptics.vibrate(isCrit ? [20, 10, 20] : 15);
+            }
         }
 
         if (isCrit && source === Game.player) {Game.addTrauma(0.5); Game.addCombo(); } else if (source === Game.player) { Game.addCombo(); }
@@ -10775,14 +10794,26 @@ class Player extends Entity {
             this.shieldMesh.rotation.y += dt * 5;
             this.shieldMesh.rotation.z += dt * 3;
             
-          if (this.shieldFlashTimer > 0) {
+         if (this.shieldFlashTimer > 0) {
                 this.shieldFlashTimer -= dt;
                 let pulse = this.shieldFlashTimer / 0.15;
                 this.shieldMesh.material.opacity = 0.6 + (0.4 * pulse);
-                this.shieldMesh.scale.set(28 + (12 * pulse), 28 + (12 * pulse), 28 + (12 * pulse)); // <-- Animazione scalata
+                this.shieldMesh.scale.set(28 + (12 * pulse), 28 + (12 * pulse), 28 + (12 * pulse));
+            } else if (this.activeShieldTimer < 0.8) {
+                // Avviso scadenza negli ultimi 0.8s: pulsazione rapida + tick sonoro
+                let warnWave = Math.sin(this.activeShieldTimer * 32);
+                this.shieldMesh.material.opacity = 0.20 + Math.abs(warnWave) * 0.65;
+                let sScale = 28 + warnWave * 2.5;
+                this.shieldMesh.scale.set(sScale, sScale, sScale);
+                this._shieldWarnTick = (this._shieldWarnTick || 0) - dt;
+                if (this._shieldWarnTick <= 0) {
+                    this._shieldWarnTick = 0.22;
+                    AudioEngine.playHover();
+                }
             } else {
+                this._shieldWarnTick = 0;
                 this.shieldMesh.material.opacity = 0.6;
-                this.shieldMesh.scale.set(28, 28, 28); // <-- Reset alla nuova grandezza
+                this.shieldMesh.scale.set(28, 28, 28);
             }
 
 
@@ -10959,7 +10990,20 @@ class Player extends Entity {
         }
         if (this.essenceList.length > 0 || this.overdrive) { 
             this.essenceTimer -= dt; 
+            if (this.overdrive && this.essenceTimer > 0 && this.essenceTimer < 1.0) {
+                let odWave = 1.0 + Math.sin(this.essenceTimer * 28) * 0.35;
+                if (this.modelParts.halo) this.modelParts.halo.scale.setScalar(odWave);
+                this._odWarnTick = (this._odWarnTick || 0) - dt;
+                if (this._odWarnTick <= 0) {
+                    this._odWarnTick = 0.25;
+                    AudioEngine.playHover();
+                }
+            } else if (this.modelParts.halo) {
+                this.modelParts.halo.scale.setScalar(1.0);
+                this._odWarnTick = 0;
+            }
             if (this.essenceTimer <= 0) { 
+                if (this.modelParts.halo) this.modelParts.halo.scale.setScalar(1.0);
                 let kept = (this.overdrive && this.modifiers.keepEssenceOnCombo) ? this.essence : null;
                 this.essenceList.length = 0; this.essence = null; this.overdrive = false;
                 if (kept) {
@@ -12557,7 +12601,31 @@ class Enemy extends Entity {
                 this.modelParts.glow.scale.set(gSize, gSize, 1);
             }
         }
-        if (this.type === 'crystal') { this.modelParts.ring.rotation.x += dt; this.modelParts.gem.rotation.y -= dt; }
+       // Nucleo pulsante e rotante del Demone del Fuoco (accelera quando carica il colpo)
+        if (this.type === 'fire_demon' && this.modelParts && this.modelParts.core) {
+            let isCharging = this.telegraphTimer > 0;
+            let rotSpd = isCharging ? 14.0 : 3.5;
+            this.modelParts.core.rotation.x += dt * rotSpd;
+            this.modelParts.core.rotation.y += dt * (rotSpd * 1.3);
+            let coreScale = this.radius * (isCharging ? (1.18 + Math.sin(Game.playTime * 35) * 0.25) : (1.0 + Math.sin(Game.playTime * 6) * 0.08));
+            this.modelParts.core.scale.setScalar(coreScale);
+        }
+
+        // Instabilità Crescente dei Cristalli Viola quando il giocatore si avvicina
+        if (this.type === 'crystal') {
+            let distSq = Game.player ? MathUtils.distanceSq(this, Game.player) : 999999;
+            let prox = distSq < 62500 ? (1.0 - Math.sqrt(distSq) / 250) : 0; // Entro 250 unità diventa instabile
+            let spinMult = 1.0 + prox * 4.5;
+            this.modelParts.ring.rotation.x += dt * spinMult;
+            this.modelParts.ring.rotation.y += dt * (prox * 3.0);
+            this.modelParts.gem.rotation.y -= dt * spinMult;
+            let baseH = this.radius * 1.8;
+            let hoverOffset = prox > 0 ? (prox * 8.0 + Math.sin(Game.playTime * 30) * prox * 2.5) : Math.sin(Game.playTime * 3 + this.thinkOffset) * 1.5;
+            this.modelParts.gem.position.y = baseH + hoverOffset;
+            this.modelParts.ring.position.y = baseH + hoverOffset;
+            this.mat.emissiveIntensity = 1.0 + prox * (1.2 + Math.sin(Game.playTime * 28) * 0.8);
+            this.mesh.updateMatrix();
+        }
         
         // --- ANIMAZIONE SLIME: Squash & Stretch basato sul tempo ---
         if (this.type === 'slime' || this.type === 'slime_mini') {
@@ -13046,7 +13114,19 @@ class Enemy extends Entity {
                 // FIX AI: I nemici smettono di attaccare se il giocatore è morto
                 if (!Game.player || Game.player.dead) return; 
                 
+                // Compressione a molla del Saltatore negli ultimi 0.35s prima del balzo
+                if (this.type === 'leaper' && this.leapCooldown > 0 && this.leapCooldown < 0.35) {
+                    let vScale = this.isElite ? 1.5 : 1.0;
+                    let compress = 1.0 - (this.leapCooldown / 0.35); // Va da 0 a 1
+                    this.mesh.scale.set(vScale * (1.0 + compress * 0.32), vScale * (1.0 - compress * 0.42), vScale * (1.0 + compress * 0.32));
+                    this.mesh.position.y = 0;
+                    this.mesh.rotation.z = Math.sin(Game.playTime * 55) * 0.14 * compress;
+                }
+
                 if (this.type === 'leaper' && this.leapCooldown <= 0) { 
+                    let vScale = this.isElite ? 1.5 : 1.0;
+                    this.mesh.scale.setScalar(vScale);
+                    this.mesh.rotation.z = 0;
                     this.state = 'leaping'; this.leapTimer = 0; this.leapDuration = 0.5; 
                     
                     // ANTI-KITING: Calcola dove starà il giocatore tra 0.5 secondi
@@ -13168,6 +13248,7 @@ class Enemy extends Entity {
         if (this.isProphetBuffed) {
             amount *= 0.05; 
             isCrit = false; 
+            this._shieldClang = true;
             if (Game.frameCount % 4 === 0) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteWhite, 'spark');
         }
         
@@ -13197,6 +13278,7 @@ class Enemy extends Entity {
             if (Math.abs(diff) < Math.PI / 1.5) {
                 amount *= 0.2;  // Mitiga l'80% dei danni
                 isCrit = false; // Impossibile fare critici frontalmente
+                this._shieldClang = true;
                 
                 // Feedback particellare (scintilla azzurra sullo scudo)
                 Game.getParticle().spawn(this.x + Math.cos(angleToSource)*this.radius, 15, this.y + Math.sin(angleToSource)*this.radius, SharedMat.spriteBlue, 'spark');
@@ -13606,11 +13688,12 @@ class BossEnemy extends Enemy {
       if (this.fightTimer === undefined) this.fightTimer = 0;
        this.fightTimer += dt;
        
-       // FASE ENRAGED (Sotto il 50% HP oppure dopo 45 secondi di combattimento - DPS Check)
+      // FASE ENRAGED (Sotto il 50% HP oppure dopo 45 secondi di combattimento - DPS Check)
         if (!this.isEnraged && (this.stats.hp <= this.stats.maxHp * 0.5 || this.fightTimer > 45.0)) {
-            this.isEnraged = true;
-            this.baseSpeed *= 1.35; 
-            this.speed = this.baseSpeed;
+            this.isEnraged = true;
+            Game.arenaEvolution = true; // Trasforma gradualmente luci e nebbia dell'arena in rosso abissale!
+            this.baseSpeed *= 1.35; 
+            this.speed = this.baseSpeed;
             
             // Cambia i colori per mostrare la furia
             if (this.bossElement === 'red') { this.mat.color.setHex(0xff1100); if (this.modelParts.crown) this.modelParts.crown.material.emissive.setHex(0xffaa00); }
