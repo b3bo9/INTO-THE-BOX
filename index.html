@@ -2871,8 +2871,8 @@ const RelicSystem = {
         { id: 'l5', name: "Maestria del Flow", desc: "Cap Combo raddoppiata. Se >50: +15% danni fatti/subiti e colpi perforano 1 bersaglio. Se <50: -15% danni.", rarity: "legendary", image: "icona_maestria_del_flow.png", icon: "fa-infinity", apply: (p) => { p.modifiers.flowMastery = true; p.modifiers.comboDecayRate *= 0.5; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
         { id: 'e6', name: "Batteria a Ioni", desc: "Lo Scudo dura +1s, riduce i danni del 65% e folgora i nemici vicini.", rarity: "legendary", image: "icona_batteria_ioni.png", icon: "fa-battery-full", apply: (p) => { p.modifiers.shieldDurationAdd += 1.0; p.modifiers.ionBattery = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
         { id: 'e8', name: "Patto dell'Avaro", desc: "Le monete non spariscono e donano +4% Vel. Mov/Atk e +3% Danno per 3s (max 5 stack).", rarity: "legendary", image: "icona_patto_avaro.png", icon: "fa-sack-dollar", apply: (p) => { p.modifiers.miserPact = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
-        { id: 'l2', name: "Lama del Giudizio", desc: "+75% danni ai nemici sotto il 30% HP (+25% ai Boss sotto il 20% HP) ignorando gli scudi.", rarity: "legendary", image: "icona_lama_del_giudizio.png", icon: "fa-gavel", apply: (p) => { p.modifiers.executioner = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
-        { id: 'l4', name: "Sete di Sangue Eterna", desc: "Ogni kill cura 1% HP (cd 0.4s, fino a +10% Scudo Sangue a vita piena). Perdi 0.6% HP/s.", rarity: "legendary", image: "icona_sete_di_sangue_eterna.png", icon: "fa-droplet", apply: (p) => { p.modifiers.bloodthirst = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
+       { id: 'l2', name: "Lama del Giudizio", desc: "[Mietitore d'Anime] +75% danni ai nemici sotto il 30% HP (+25% ai Boss <20% HP) e penetra il 50% degli scudi.", rarity: "legendary", image: "icona_lama_del_giudizio.png", icon: "fa-gavel", apply: (p) => { p.modifiers.executioner = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
+        { id: 'l4', name: "Sete di Sangue Eterna", desc: "[Esplosione Cremisi] Ogni kill cura 1% HP (cd 0,5s, fino a +8% Scudo Sangue a vita piena), ma -15% HP Massimi.", rarity: "legendary", image: "icona_sete_di_sangue_eterna.png", icon: "fa-droplet", apply: (p) => { p.modifiers.bloodthirst = true; p.stats.maxHp = Math.floor(p.stats.maxHp * 0.85); if (p.stats.hp > p.stats.maxHp) p.stats.hp = p.stats.maxHp; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
         { id: 'e3', name: "Passo Infernale", desc: "Lo scatto lascia fuoco che brucia i nemici (+20% danni subiti). Atterraggio meteorico a inizio piano.", rarity: "legendary", image: "icona_passo_infernale.png", icon: "fa-fire-flame-curved", apply: (p) => { p.modifiers.fireTrail = true; p.modifiers.fireTrailDebuff = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
         { id: 'l7', name: "Impatto Tonante", desc: "Lo scatto scatena 3 fulmini che danneggiato e stordiscono i nemici. Atterraggio elettrico a inizio piano.", rarity: "legendary", image: "icona_impatto_tonante.png", icon: "fa-bolt", apply: (p) => { p.modifiers.dashLightning = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
         { id: 'l6', name: "Aegis del Guardiano", desc: "Lo Scudo esplode al termine in una Nova Arcana (max 12 stack, fino a 2.5x Danno Base).", rarity: "legendary", image: "fa_shieldx.png", icon: "fa-shield", apply: (p) => { p.modifiers.explosiveShield = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } }
@@ -9874,31 +9874,29 @@ class Entity {
             this.stats.hp = 0; 
             this.dead = true; 
             
-            // SETE DI SANGUE ETERNA: Cura 1% HP (cooldown 0.4s) e fino a +10% Temp HP se a vita piena
+            // SETE DI SANGUE ETERNA: Cura 1% HP (cooldown 0.5s) e fino a +8% Temp HP se a vita piena
             if (this !== Game.player && Game.player && Game.player.modifiers.bloodthirst) {
                 let p = Game.player;
-                if (!p._lastBloodHealTime || Game.playTime - p._lastBloodHealTime >= 0.4) {
+                if (!p._lastBloodHealTime || Game.playTime - p._lastBloodHealTime >= 0.6) {
                     p._lastBloodHealTime = Game.playTime;
                     let heal = p.stats.maxHp * 0.01;
+                    let maxBloodShield = p.stats.maxHp * 0.08;
                     let missingHp = p.stats.maxHp - p.stats.hp;
                     if (missingHp > 0) {
                         let actualHeal = Math.min(missingHp, heal);
                         p.stats.hp += actualHeal;
                         let overflow = heal - actualHeal;
                         if (overflow > 0) {
-                            p.tempHp = Math.min(p.stats.maxHp * 0.10, (p.tempHp || 0) + overflow);
+                            p.tempHp = Math.min(maxBloodShield, (p.tempHp || 0) + overflow);
                             p.glacialShieldMesh.material.color.setHex(0xff1133);
                             p.glacialShieldMesh.visible = true;
                         }
-                        Game.getFloatingText().spawn(this.x, this.y, `+${Math.max(1, Math.floor(heal))}`, '#FF1133', 18);
-                    } else {
-                        let maxBloodShield = p.stats.maxHp * 0.10;
-                        if ((p.tempHp || 0) < maxBloodShield) {
-                            p.tempHp = Math.min(maxBloodShield, (p.tempHp || 0) + heal);
-                            p.glacialShieldMesh.material.color.setHex(0xff1133);
-                            p.glacialShieldMesh.visible = true;
-                            Game.getFloatingText().spawn(this.x, this.y, `+SCUDO SANGUE`, '#FF1133', 16);
-                        }
+                        Game.getFloatingText().spawn(this.x, this.y, `+${Math.max(1, Math.round(heal))} HP`, '#FF1133', 20, true);
+                    } else if ((p.tempHp || 0) < maxBloodShield) {
+                        p.tempHp = Math.min(maxBloodShield, (p.tempHp || 0) + heal);
+                        p.glacialShieldMesh.material.color.setHex(0xff1133);
+                        p.glacialShieldMesh.visible = true;
+                        Game.getFloatingText().spawn(this.x, this.y, `+SCUDO SANGUE`, '#FF1133', 18, true);
                     }
                 }
             }
@@ -10112,49 +10110,54 @@ class Player extends Entity {
     }
 
     _buildRelicPetModels() {
-        // 1. Grimorio Arcano (Riciclo Magico)
+        // 1. Grimorio Arcano (Riciclo Magico) - Più grande con anello runico dorato
         let grimoire = new THREE.Group();
-        let coverMat = new THREE.MeshStandardMaterial({ color: 0x4c1d95, roughness: 0.6 });
+        let coverMat = new THREE.MeshStandardMaterial({ color: 0x581c87, emissive: 0x3b0764, roughness: 0.4 });
         let pageMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
         let coverL = new THREE.Mesh(SharedGeo.box, coverMat);
-        coverL.scale.set(4.5, 0.8, 6.5); coverL.position.set(-2.0, 0, 0); coverL.rotation.z = 0.35;
+        coverL.scale.set(6.2, 1.1, 8.8); coverL.position.set(-2.8, 0, 0); coverL.rotation.z = 0.32;
         let coverR = new THREE.Mesh(SharedGeo.box, coverMat);
-        coverR.scale.set(4.5, 0.8, 6.5); coverR.position.set(2.0, 0, 0); coverR.rotation.z = -0.35;
+        coverR.scale.set(6.2, 1.1, 8.8); coverR.position.set(2.8, 0, 0); coverR.rotation.z = -0.32;
         let pages = new THREE.Mesh(SharedGeo.box, pageMat);
-        pages.scale.set(6.8, 0.9, 5.8); pages.position.set(0, 0.6, 0);
-        let gGlow = new THREE.Sprite(SharedMat.spriteYellow); gGlow.scale.set(16, 16, 1);
-        grimoire.add(coverL, coverR, pages, gGlow);
+        pages.scale.set(9.2, 1.2, 7.8); pages.position.set(0, 0.8, 0);
+        let gRing = new THREE.Mesh(SharedGeo.torus, new THREE.MeshBasicMaterial({ color: 0xfbbf24, wireframe: true }));
+        gRing.scale.set(7.5, 7.5, 1.5); gRing.rotation.x = Math.PI / 2;
+        let gGlow = new THREE.Sprite(SharedMat.spriteYellow); gGlow.scale.set(28, 28, 1);
+        grimoire.add(coverL, coverR, pages, gRing, gGlow);
         grimoire.visible = false;
 
-        // 2. Teschio Sussurrante (Follia Omicida)
+        // 2. Teschio Sussurrante (Follia Omicida) - Più grande con corona d'ombra e occhi incandescenti
         let skull = new THREE.Group();
-        let boneMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.7 });
-        let cranium = new THREE.Mesh(SharedGeo.sphere, boneMat); cranium.scale.set(3.8, 3.8, 4.2);
-        let jaw = new THREE.Mesh(SharedGeo.box, boneMat); jaw.scale.set(3.5, 2.2, 3.5); jaw.position.set(0, -2.8, 0.8);
-        let eyeL = new THREE.Mesh(SharedGeo.box, SharedMat.enemyEye); eyeL.scale.set(1.2, 1.2, 1.2); eyeL.position.set(-1.3, 0.2, 3.4);
-        let eyeR = new THREE.Mesh(SharedGeo.box, SharedMat.enemyEye); eyeR.scale.set(1.2, 1.2, 1.2); eyeR.position.set(1.3, 0.2, 3.4);
-        let sGlow = new THREE.Sprite(SharedMat.spriteRed); sGlow.scale.set(16, 16, 1);
+        let boneMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, emissive: 0x330505, roughness: 0.5 });
+        let cranium = new THREE.Mesh(SharedGeo.sphere, boneMat); cranium.scale.set(5.2, 5.2, 5.8);
+        let jaw = new THREE.Mesh(SharedGeo.box, boneMat); jaw.scale.set(4.6, 3.0, 4.6); jaw.position.set(0, -3.8, 1.0);
+        let eyeL = new THREE.Mesh(SharedGeo.box, SharedMat.enemyEye); eyeL.scale.set(1.7, 1.7, 1.7); eyeL.position.set(-1.8, 0.4, 4.6);
+        let eyeR = new THREE.Mesh(SharedGeo.box, SharedMat.enemyEye); eyeR.scale.set(1.7, 1.7, 1.7); eyeR.position.set(1.8, 0.4, 4.6);
+        let sGlow = new THREE.Sprite(SharedMat.spriteRed); sGlow.scale.set(30, 30, 1);
         skull.add(cranium, jaw, eyeL, eyeR, sGlow);
         skull.userData.glow = sGlow;
         skull.visible = false;
 
-        // 3. Mini-Box "Il Cubo" (Maestria del Flow)
+        // 3. Mini-Box "Il Cubo" (Maestria del Flow) - Doppia gabbia energetica controrotante
         let box = new THREE.Group();
-        let cubeMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.7, roughness: 0.3 });
+        let cubeMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x082f49, metalness: 0.8, roughness: 0.2 });
         let wireMat = new THREE.MeshBasicMaterial({ color: 0x00ddff, wireframe: true });
-        let cube = new THREE.Mesh(SharedGeo.box, cubeMat); cube.scale.set(5.8, 5.8, 5.8);
-        let wire = new THREE.Mesh(SharedGeo.box, wireMat); wire.scale.set(6.5, 6.5, 6.5);
-        let bGlow = new THREE.Sprite(SharedMat.spriteBlue); bGlow.scale.set(18, 18, 1);
-        box.add(cube, wire, bGlow);
-        box.userData = { wireMat, bGlow };
+        let cube = new THREE.Mesh(SharedGeo.box, cubeMat); cube.scale.set(7.5, 7.5, 7.5);
+        let wire = new THREE.Mesh(SharedGeo.box, wireMat); wire.scale.set(9.0, 9.0, 9.0);
+        let outerRing = new THREE.Mesh(SharedGeo.torus, wireMat); outerRing.scale.set(7.8, 7.8, 2.0);
+        let bGlow = new THREE.Sprite(SharedMat.spriteBlue); bGlow.scale.set(28, 28, 1);
+        box.add(cube, wire, outerRing, bGlow);
+        box.userData = { wireMat, bGlow, outerRing };
         box.visible = false;
 
-        // 4. Fuoco Fatuo Elettrico (Batteria a Ioni)
+        // 4. Fuoco Fatuo Elettrico (Batteria a Ioni) - Nucleo al plasma con doppio giroscopio
         let wisp = new THREE.Group();
-        let wCore = new THREE.Mesh(SharedGeo.icosahedron, new THREE.MeshBasicMaterial({ color: 0x00ddff })); wCore.scale.setScalar(3.2);
-        let wRing = new THREE.Mesh(SharedGeo.torus, new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true })); wRing.scale.set(5.0, 5.0, 1.8); wRing.rotation.x = Math.PI / 3;
-        let wGlow = new THREE.Sprite(SharedMat.spriteBlue); wGlow.scale.set(20, 20, 1);
-        wisp.add(wCore, wRing, wGlow);
+        let wCore = new THREE.Mesh(SharedGeo.icosahedron, new THREE.MeshBasicMaterial({ color: 0xffffff })); wCore.scale.setScalar(4.4);
+        let wRing1 = new THREE.Mesh(SharedGeo.torus, new THREE.MeshBasicMaterial({ color: 0x00ddff, wireframe: true })); wRing1.scale.set(7.2, 7.2, 2.2); wRing1.rotation.x = Math.PI / 3;
+        let wRing2 = new THREE.Mesh(SharedGeo.torus, new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true })); wRing2.scale.set(6.2, 6.2, 2.0); wRing2.rotation.y = Math.PI / 3;
+        let wGlow = new THREE.Sprite(SharedMat.spriteBlue); wGlow.scale.set(32, 32, 1);
+        wisp.add(wCore, wRing1, wRing2, wGlow);
+        wisp.userData = { wRing1, wRing2 };
         wisp.visible = false;
 
         this.relicPetMeshes = { grimoire, skull, box, wisp };
@@ -10188,7 +10191,13 @@ class Player extends Entity {
             p.spawn(this.x, this.y, a, 750, baseDmg, 'player', 'homing_arrow', false, false);
             p.canInfect = false;
         }
-        Game.getParticle().spawn(this.x, 28, this.y, SharedMat.spriteYellow, 'spark');
+        // Flash arcano dorato sul Grimorio quando spara i 2 dardi
+        this._grimoireCastPop = 0.3;
+        let gNova = Game.getParticle();
+        gNova.spawn(this.x, 30, this.y, SharedMat.spriteYellow, 'nova');
+        gNova.baseSize = 70;
+        Game.spawnLightFlash(this.x, this.y, 0xffd700, 4.5, 350, 0.18);
+        for (let s = 0; s < 6; s++) Game.getParticle().spawn(this.x, 28, this.y, SharedMat.spriteYellow, 'spark');
     }
 
     updatePetModel() {
@@ -10735,17 +10744,12 @@ class Player extends Entity {
                 Game.getParticle().spawn(this.x + MathUtils.randomRange(-10, 10), 15, this.y + MathUtils.randomRange(-10, 10), SharedMat.spriteGreen, 'spark');
             }
         }
-       // --- EMORRAGIA (SETE DI SANGUE ETERNA: 0.6% HP/s) ---
-        if (this.modifiers.bloodthirst && !Game.isBossFloor) {
-            let bleedAmount = this.stats.maxHp * 0.006 * dt; // 0.6% al secondo fluido
-            
-            // Il sanguinamento ti porta fino a 1 HP, ma non ti uccide in modo diretto
-            this.stats.hp = Math.max(1, this.stats.hp - bleedAmount);
-            
-            // Dettaglio visivo succoso: il mago lascia cadere gocce di sangue mentre corre
-            if (Game.frameCount % 25 === 0 && !isTouchDevice && this.speed > 0) {
-                Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteBlood, 'dust');
-            }
+      // --- AURA CREMISI (SETE DI SANGUE ETERNA - Senza perdita di HP/s) ---
+        if (this.modifiers.bloodthirst && Game.frameCount % (isTouchDevice ? 18 : 10) === 0) {
+            let bSpark = Game.getParticle();
+            bSpark.spawn(this.x + MathUtils.randomRange(-12, 12), 14, this.y + MathUtils.randomRange(-12, 12), SharedMat.spriteRed, 'trail');
+            bSpark.baseSize = 14;
+            bSpark.vy = 45;
         }
       // FIX BUG IMMORTALITÀ: Ripristinato il timer di 3 secondi per la reliquia Cristallo Rigenerante
       // FIX: Nuovo Cristallo Rigenerante Out of Combat
@@ -10818,19 +10822,37 @@ class Player extends Entity {
             }
 
 
-            // BATTERIA A IONI: Folgora 1 nemico vicino ogni secondo mentre lo scudo è attivo (80% Danno Base)
+           // AEGIS DEL GUARDIANO: Spire viola del vuoto che ruotano attorno allo scudo attivo
+            if (this.modifiers.explosiveShield && Game.frameCount % (isTouchDevice ? 6 : 3) === 0) {
+                let va = Game.playTime * 8.0;
+                let vp = Game.getParticle();
+                vp.spawn(this.x + Math.cos(va) * 26, 16, this.y + Math.sin(va) * 26, SharedMat.spritePink, 'trail');
+                vp.baseSize = 18;
+            }
+
+            // BATTERIA A IONI: Folgora 1 nemico vicino ogni secondo con un vero Fulmine 3D!
             if (this.modifiers.ionBattery) {
                 this.ionZapTimer = (this.ionZapTimer || 0) + dt;
                 if (this.ionZapTimer >= 1.0) {
                     this.ionZapTimer = 0;
-                    let nearby = Game.enemyGrid.findNearby(this, 240);
+                    let nearby = Game.enemyGrid.findNearby(this, 260);
                     for (let k = 0; k < nearby.length; k++) {
                         let e = nearby[k];
                         if (!e.dead && !e.isPursuer && e.type !== 'crystal') {
                             let zapDmg = ((this.stats.minDmg + this.stats.maxDmg) * 0.5) * 0.80 * this.modifiers.dmgMult;
                             e.takeDamage(zapDmg, this, false, false);
-                            Game.getParticle().spawn(e.x, 22, e.y, SharedMat.spriteBlue, 'nova');
-                            for (let s = 0; s < 3; s++) Game.getParticle().spawn(e.x, 18, e.y, SharedMat.spriteWhite, 'electric');
+
+                            // Traccia il fulmine 3D tra il Fuoco Fatuo e il bersaglio
+                            let dx = e.x - this.x, dy = e.y - this.y;
+                            let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                            let angle = Math.atan2(dy, dx);
+                            Game.getDashLine().spawn(this.x + dx * 0.5, this.y + dy * 0.5, dist, angle, 0x00eeff, 7.5, 0.18);
+                            Game.spawnLightFlash(e.x, e.y, 0x00eeff, 4.5, 320, 0.15);
+
+                            let zNova = Game.getParticle();
+                            zNova.spawn(e.x, 22, e.y, SharedMat.spriteWhite, 'nova');
+                            zNova.baseSize = 65;
+                            for (let s = 0; s < 5; s++) Game.getParticle().spawn(e.x, 18, e.y, SharedMat.spriteBlue, 'spark');
                             AudioEngine.playShoot('chain_lightning');
                             break;
                         }
@@ -11265,12 +11287,16 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
                 this.speed = currentSpeed; 
                 this.move(dx, dy, dt); 
                 
-              // --- EFFETTI VISIVI CAMMINATA (Sovrapposizione Armonica Multi-Reliquia) ---
-                if (Game.frameCount % 6 === 0) {
+             // --- EFFETTI VISIVI CAMMINATA (Potenziati e ben visibili per le Reliquie Leggendarie) ---
+                let hasRelicStep = (this.modifiers.miserPact || this.modifiers.fireTrail || this.modifiers.dashLightning || this.modifiers.explosiveShield);
+                let stepRate = hasRelicStep ? (isTouchDevice ? 4 : 3) : 6;
+                if (Game.frameCount % stepRate === 0) {
                     if (inPit) {
                         if (Game.currentThemeIndex === 0) Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteBlue, 'dust');
                         else if (Game.currentThemeIndex === 1) Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteRed, 'spark');
                         else Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteWhite, 'dust');
+                    } else if (!hasRelicStep) {
+                        Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteDust, 'dust');
                     } else {
                         let stepEffects = [];
                         if (this.modifiers.miserPact) stepEffects.push('gold');
@@ -11278,20 +11304,22 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
                         if (this.modifiers.dashLightning) stepEffects.push('glitch');
                         if (this.modifiers.explosiveShield) stepEffects.push('void');
 
-                        if (stepEffects.length === 0) {
-                            Game.getParticle().spawn(this.x, 2, this.y, SharedMat.spriteDust, 'dust');
-                        } else {
-                            this._stepFxIdx = ((this._stepFxIdx || 0) + 1) % stepEffects.length;
-                            let fx = stepEffects[this._stepFxIdx];
-                            if (fx === 'gold') {
-                                let p = Game.getParticle(); p.spawn(this.x, 4, this.y, SharedMat.spriteYellow, 'trail'); p.baseSize = 9;
-                            } else if (fx === 'embers') {
-                                Game.getParticle().spawn(this.x, 4, this.y, (Math.random() > 0.4 ? SharedMat.spriteRed : SharedMat.spriteYellow), 'spark');
-                            } else if (fx === 'glitch') {
-                                Game.getParticle().spawn(this.x, 6, this.y, (Game.frameCount % 12 === 0 ? SharedMat.spriteBlue : SharedMat.spritePink), 'electric');
-                            } else if (fx === 'void') {
-                                let p = Game.getParticle(); p.spawn(this.x, 4, this.y, SharedMat.spriteBlackSmoke, 'dust'); p.baseSize = 20;
-                            }
+                        this._stepFxIdx = ((this._stepFxIdx || 0) + 1) % stepEffects.length;
+                        let fx = stepEffects[this._stepFxIdx];
+                        let ox = MathUtils.randomRange(-8, 8), oz = MathUtils.randomRange(-8, 8);
+
+                        if (fx === 'gold') {
+                            let p = Game.getParticle(); p.spawn(this.x + ox, 5, this.y + oz, SharedMat.spriteYellow, 'trail');
+                            p.baseSize = 20; p.vy = 35;
+                        } else if (fx === 'embers') {
+                            let f = Game.getParticle(); f.spawn(this.x + ox, 5, this.y + oz, (Math.random() > 0.35 ? SharedMat.spriteRed : SharedMat.spriteYellow), 'flame');
+                            f.baseSize = 22; f.vy = 55; f.vx *= 0.2; f.vz *= 0.2;
+                        } else if (fx === 'glitch') {
+                            let e = Game.getParticle(); e.spawn(this.x + ox, 8, this.y + oz, (this._stepFxIdx % 2 === 0 ? SharedMat.spriteBlue : SharedMat.spritePink), 'nova');
+                            e.baseSize = 26; e.life = 0.12; e.maxLife = 0.12;
+                        } else if (fx === 'void') {
+                            let s = Game.getParticle(); s.spawn(this.x + ox, 4, this.y + oz, SharedMat.spriteBlackSmoke, 'dust'); s.baseSize = 26;
+                            let v = Game.getParticle(); v.spawn(this.x, 6, this.y, SharedMat.spritePink, 'trail'); v.baseSize = 15;
                         }
                     }
                 }
@@ -11445,6 +11473,12 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
 
                     for(let k=0; k<3; k++) {
                         let pt = Game._dashImpactPoints[k];
+                        let nextPt = Game._dashImpactPoints[(k + 1) % 3];
+                        let arcDx = nextPt.x - pt.x, arcDy = nextPt.y - pt.y;
+                        let arcDist = Math.sqrt(arcDx * arcDx + arcDy * arcDy);
+                        if (arcDist > 5) {
+                            Game.getDashLine().spawn(pt.x + arcDx * 0.5, pt.y + arcDy * 0.5, arcDist, Math.atan2(arcDy, arcDx), (k % 2 === 0 ? 0x00eeff : 0xff00aa), 6.0, 0.22);
+                        }
                         let baseSpark = Game.getParticle();
                         baseSpark.spawn(pt.x, 10, pt.y, SharedMat.spriteBlue, 'nova');
                         baseSpark.baseSize = 160;
@@ -11517,33 +11551,59 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
             this.modelParts.accentMesh.rotation.y += dt * 2.5;
         }
 
-        // --- ORBITA ARMONICA MULTI-FAMIGLIO 3D (Senza collisioni tra più reliquie) ---
+       // --- ORBITA ARMONICA MULTI-FAMIGLIO 3D (Con scie dedicate e reazioni agli attacchi) ---
         if (this.activePetList && this.activePetList.length > 0) {
             let count = this.activePetList.length;
-            let baseOrbit = Game.playTime * 2.0;
+            let baseOrbit = Game.playTime * 2.2;
             for (let i = 0; i < count; i++) {
                 let pet = this.activePetList[i];
                 let a = baseOrbit + (Math.PI * 2 / count) * i;
-                pet.position.set(
-                    Math.cos(a) * 20,
-                    26 + Math.sin(Game.playTime * 4.2 + i * 1.5) * 3.0,
-                    Math.sin(a) * 20
-                );
-                pet.rotation.y += dt * 2.2;
+                let px = Math.cos(a) * 24;
+                let py = 28 + Math.sin(Game.playTime * 4.5 + i * 1.5) * 3.5;
+                let pz = Math.sin(a) * 24;
+                pet.position.set(px, py, pz);
+                pet.rotation.y += dt * 2.6;
             }
-            // Reazione dinamica del Mini-Box (Maestria del Flow) sopra le 50 Combo
+
+            // 1. Grimorio Arcano: pulsa quando lancia i dardi
+            if (this._grimoireCastPop > 0) {
+                this._grimoireCastPop -= dt;
+                this.relicPetMeshes.grimoire.scale.setScalar(1.0 + (this._grimoireCastPop / 0.3) * 0.65);
+            } else if (this.relicPetMeshes.grimoire.visible) {
+                this.relicPetMeshes.grimoire.scale.setScalar(1.0);
+            }
+
+            // 2. Teschio Sussurrante: si ingrandisce e ruggisce di rosso ad ogni Colpo Critico!
+            if (this._skullCritPop > 0) {
+                this._skullCritPop -= dt;
+                this.relicPetMeshes.skull.scale.setScalar(1.0 + (this._skullCritPop / 0.22) * 0.75);
+            } else if (this.relicPetMeshes.skull.visible) {
+                this.relicPetMeshes.skull.scale.setScalar(1.0);
+            }
+
+            // 3. Mini-Box (Maestria del Flow): si infiamma d'oro sopra le 50 Combo
             if (this.modifiers.flowMastery && this.relicPetMeshes.box) {
                 let isHighFlow = Game.combo > 50;
                 let boxData = this.relicPetMeshes.box.userData;
                 boxData.wireMat.color.setHex(isHighFlow ? 0xfbbf24 : 0x00ddff);
                 boxData.bGlow.material = isHighFlow ? SharedMat.spriteYellow : SharedMat.spriteBlue;
+                if (boxData.outerRing) boxData.outerRing.rotation.x += dt * (isHighFlow ? 9.0 : 3.0);
+                this.relicPetMeshes.box.scale.setScalar(isHighFlow ? 1.25 : 1.0);
                 if (isHighFlow) {
-                    this.relicPetMeshes.box.rotation.x += dt * 5.0;
-                    this.relicPetMeshes.box.rotation.y += dt * 5.0;
-                    if (Game.frameCount % 8 === 0) {
-                        Game.getParticle().spawn(this.x, 28, this.y, SharedMat.spriteYellow, 'spark');
+                    this.relicPetMeshes.box.rotation.x += dt * 5.5;
+                    if (Game.frameCount % (isTouchDevice ? 8 : 5) === 0) {
+                        let fp = Game.getParticle();
+                        fp.spawn(this.x + MathUtils.randomRange(-16, 16), 26, this.y + MathUtils.randomRange(-16, 16), SharedMat.spriteYellow, 'spark');
+                        fp.baseSize = 14;
                     }
                 }
+            }
+
+            // 4. Fuoco Fatuo Elettrico: doppi anelli giroscopici rapidi
+            if (this.modifiers.ionBattery && this.relicPetMeshes.wisp) {
+                let wData = this.relicPetMeshes.wisp.userData;
+                if (wData.wRing1) wData.wRing1.rotation.z += dt * 8.0;
+                if (wData.wRing2) wData.wRing2.rotation.x -= dt * 8.0;
             }
         }
 
@@ -11704,9 +11764,13 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
         if (Game.ultimateActive) baseDmg *= 2.0;
         if (isCrit) {
             baseDmg *= this.modifiers.critDmgMult;
-            // Follia Omicida: il Teschio Sussurrante brilla ad ogni colpo critico
+            // Follia Omicida: il Teschio Sussurrante si ingrandisce ed emette un flash cremisi a ogni critico
             if (this.modifiers.homicidalFrenzy && this.relicPetMeshes && this.relicPetMeshes.skull) {
-                Game.getParticle().spawn(this.x, 30, this.y, SharedMat.spriteRed, 'spark');
+                this._skullCritPop = 0.22;
+                let sNova = Game.getParticle();
+                sNova.spawn(this.x, 30, this.y, SharedMat.spriteRed, 'nova');
+                sNova.baseSize = 48;
+                sNova.life = 0.1; sNova.maxLife = 0.1;
             }
         }
 
@@ -13225,7 +13289,7 @@ class Enemy extends Entity {
         let aura = Game.getAuraAt(this.x, this.y);
         if (aura === 'green') amount *= 0.6;
 
-        // 1. LAMA DEL GIUDIZIO: +75% danni ai nemici <30% HP, +25% ai Boss <20% HP + Dardo di luce
+        // 1. LAMA DEL GIUDIZIO: +75% danni ai nemici <30% HP, +25% ai Boss <20% HP + Pilastro Celeste
         let executionTriggered = false;
         if (source === Game.player && Game.player.modifiers.executioner) {
             let hpRatio = this.stats.hp / this.stats.maxHp;
@@ -13238,9 +13302,13 @@ class Enemy extends Entity {
             }
             if (executionTriggered && (!this._lastExecFx || Game.playTime - this._lastExecFx > 0.25)) {
                 this._lastExecFx = Game.playTime;
-                let ray = Game.getParticle();
-                ray.spawn(this.x, 38, this.y, SharedMat.spriteWhite, 'nova');
-                ray.baseSize = 55;
+                // Pilastro verticale di luce celeste/dorata sul bersaglio giustiziato
+                for (let j = 0; j < 3; j++) {
+                    let ray = Game.getParticle();
+                    ray.spawn(this.x, 18 + j * 24, this.y, (j === 0 ? SharedMat.spriteYellow : SharedMat.spriteWhite), 'nova');
+                    ray.baseSize = 85 - j * 20;
+                }
+                Game.spawnLightFlash(this.x, this.y, 0xffe680, 4.0, 260, 0.14);
             }
         }
         if (source === Game.player && Game.player.modifiers.openerDmg && (this.stats.hp / this.stats.maxHp) >= 0.8) amount *= 1.2;
@@ -13266,8 +13334,8 @@ class Enemy extends Entity {
         // PASSO INFERNALE: +20% danni ai nemici bruciati
         if (this.fireDebuffTimer > 0 && Game.player.modifiers.fireTrailDebuff) amount *= 1.20;
         
-        // --- LOGICA SCUDO GOLEM (Ignorato se il giocatore possiede Lama del Giudizio) ---
-        if (this.type === 'golem' && source && !(source === Game.player && Game.player.modifiers.executioner)) {
+        // --- LOGICA SCUDO GOLEM (Con Lama del Giudizio penetra il 50% dello scudo: mitiga il 40% invece dell'80%) ---
+        if (this.type === 'golem' && source) {
             let angleToSource = Math.atan2(source.y - this.y, source.x - this.x);
             let golemFacingAngle = -this.mesh.rotation.y + Math.PI / 2; 
             
@@ -13277,8 +13345,9 @@ class Enemy extends Entity {
             
             // Se colpito frontalmente (Cono di ~120 gradi davanti al Golem)
             if (Math.abs(diff) < Math.PI / 1.5) {
-                amount *= 0.2;  // Mitiga l'80% dei danni
-                isCrit = false; // Impossibile fare critici frontalmente
+                let hasJudgment = (source === Game.player && Game.player.modifiers.executioner);
+                amount *= hasJudgment ? 0.60 : 0.20; // 50% penetrazione scudo (60% danno inflitto invece del 20%)
+                if (!hasJudgment) isCrit = false;
                 this._shieldClang = true;
                 
                 // Feedback particellare (scintilla azzurra sullo scudo)
@@ -13436,24 +13505,42 @@ class Enemy extends Entity {
             }
         });
 
-        // KILL FX SOVRAPPONIBILI DELLE RELIQUIE LEGGENDARIE (Zero riferimenti a killFx)
+        // KILL FX POTENZIATI E SOVRAPPONIBILI DELLE RELIQUIE LEGGENDARIE
         if (pMods.miserPact) {
-            for (let i = 0; i < 5; i++) Game.getParticle().spawn(this.x, 18, this.y, SharedMat.spriteYellow, 'spark');
+            // Tocco di Mida: Flash dorato + fontana di pepite luminose
+            let gNova = Game.getParticle();
+            gNova.spawn(this.x, 20, this.y, SharedMat.spriteYellow, 'nova');
+            gNova.baseSize = 85;
+            for (let i = 0; i < 8; i++) {
+                let sp = Game.getParticle();
+                sp.spawn(this.x, 18, this.y, SharedMat.spriteYellow, 'spark');
+                sp.baseSize = 18;
+            }
         }
         if (pMods.executioner) {
-            for (let i = 0; i < 3; i++) {
+            // Mietitore d'Anime: Colonna spirituale celeste/bianca che ascende verso il cielo
+            let sRing = Game.getParticle();
+            sRing.spawn(this.x, 15, this.y, SharedMat.spriteWhite, 'nova');
+            sRing.baseSize = 90;
+            for (let i = 0; i < 4; i++) {
                 let soul = Game.getParticle();
-                soul.spawn(this.x + MathUtils.randomRange(-5, 5), 18 + i * 8, this.y + MathUtils.randomRange(-5, 5), (i === 0 ? SharedMat.spriteWhite : SharedMat.spriteBlue), 'trail');
-                soul.vy = 165 + i * 35;
+                soul.spawn(this.x + MathUtils.randomRange(-4, 4), 16 + i * 12, this.y + MathUtils.randomRange(-4, 4), (i % 2 === 0 ? SharedMat.spriteWhite : SharedMat.spriteBlue), 'trail');
+                soul.vy = 210 + i * 45;
                 soul.vx = 0; soul.vz = 0;
-                soul.baseSize = 19 - i * 4;
-                soul.life = 0.65; soul.maxLife = 0.65;
+                soul.baseSize = 28 - i * 4;
+                soul.life = 0.75; soul.maxLife = 0.75;
             }
         }
         if (pMods.bloodthirst) {
+            // Esplosione Cremisi: Doppia Nova di sangue + globi cremisi
             let bNova = Game.getParticle();
             bNova.spawn(this.x, 22, this.y, SharedMat.spriteRed, 'nova');
-            bNova.baseSize = 75;
+            bNova.baseSize = 115;
+            for (let i = 0; i < 6; i++) {
+                let bp = Game.getParticle();
+                bp.spawn(this.x, 20, this.y, SharedMat.spriteRed, 'spark');
+                bp.baseSize = 20;
+            }
         }
 
         // --- SPLIT E POZZA DELLO SLIME ---
