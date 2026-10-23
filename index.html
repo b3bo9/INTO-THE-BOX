@@ -1860,23 +1860,23 @@ const MathUtils = {
 const TILE_SIZE = 64; const CHUNK_SIZE = 30; const FIXED_TIME_STEP = 1 / 60; const MAX_TIME_STEP = 0.1;
  
   const MAP_THEMES = [
-    // TEMA 1: FORESTA SMERALDO (Fiabesco: muschio vivo, smeraldo saturo e luce lunare menta)
+    // TEMA 1: FORESTA INCANTATA (Verde foglia caldo, muschio dorato e luce fatata)
     { 
-        dirt: 0x243b29, grass: 0x247a44, rock: 0x244d40, wall: 0x1a382d, 
-        grassShader: 0x164a2b, tree: 0x0b2117,
-        ambient: 0x16353d, dirLight: 0x99ffdd, fog: 0x071c17
+        dirt: 0x383322, grass: 0x3f8f29, rock: 0x3d4a35, wall: 0x283322, 
+        grassShader: 0x2d6e1e, tree: 0x1a1812,
+        ambient: 0x2d3b22, dirLight: 0xe8ffbb, fog: 0x0b1409
     },
-    // TEMA 2: ABISSO INFERNALE (Magma vivo: terra vulcanica calda e rosso cremisi intenso)
+    // TEMA 2: FUCINA INFERNALE (Bilanciato: ossidiana calda, brace ambrata e luce vulcanica morbida)
     { 
-        dirt: 0x52181b, grass: 0xad1f24, rock: 0x471417, wall: 0x290b0d, 
-        grassShader: 0x660b0e, tree: 0x1f0606,
-        ambient: 0x240b18, dirLight: 0xff6633, fog: 0x0c0205
+        dirt: 0x54201c, grass: 0xb52b20, rock: 0x50211e, wall: 0x361210, 
+        grassShader: 0x781b14, tree: 0x240908,
+        ambient: 0x381614, dirLight: 0xff8547, fog: 0x120506
     },
-    // TEMA 3: CAVERNA GLACIALE (Cristallo arcano: azzurro profondo e riflessi ciano/viola)
+    // TEMA 3: CAVERNA CRISTALLINA (Azzurro fiabesco limpido e luce d'aurora)
     { 
-        dirt: 0x10243d, grass: 0x1b6ca8, rock: 0x14385c, wall: 0x09192e, 
-        grassShader: 0x0e3b6e, tree: 0x041226,
-        ambient: 0x1e0e38, dirLight: 0x66ffff, fog: 0x050712
+        dirt: 0x18304d, grass: 0x287ec4, rock: 0x204970, wall: 0x112640, 
+        grassShader: 0x16508a, tree: 0x081930,
+        ambient: 0x241945, dirLight: 0x88f0ff, fog: 0x060b18
     }
 ];
 
@@ -6246,63 +6246,61 @@ loop(timestamp) {
             this.mistMat1.color.copy(baseColor);
             this.mistMat2.color.copy(baseColor);
         }
- // --- ATMOSFERA E VISIBILITÀ DINAMICA ---
+ // --- ATMOSFERA E VISIBILITÀ DINAMICA FIABESCA ---
         if (this.currentThemeIndex === 2) {
-            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 90, camDist + 430);
+            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 70, camDist + 470);
             if (this.bloomPass) {
-                this.bloomPass.strength = AppSettings.isUltraPC ? 0.24 : 0.16;
-                this.bloomPass.threshold = 0.75;
+                this.bloomPass.strength = AppSettings.isUltraPC ? 0.25 : 0.17;
+                this.bloomPass.threshold = 0.74;
             }
         } else if (this.currentThemeIndex === 1) {
-            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 260, camDist + 300);
+            // Nebbia allontanata per rendere il tema Lava luminoso, caldo e mai opprimente
+            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 90, camDist + 460);
             if (this.bloomPass) {
-                this.bloomPass.strength = AppSettings.isUltraPC ? 0.26 : 0.18;
-                this.bloomPass.threshold = 0.72;
+                this.bloomPass.strength = AppSettings.isUltraPC ? 0.28 : 0.20;
+                this.bloomPass.threshold = 0.70;
             }
-       } else {
-            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 130, camDist + 460);
+        } else {
+            this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 100, camDist + 480);
             if (this.bloomPass) {
                 this.bloomPass.strength = AppSettings.isUltraPC ? 0.28 : 0.20;
                 this.bloomPass.threshold = 0.70;
             }
         }
-        Game.arenaEvolution = false; // DEVE ESSERE FALSE ALL'INIZIO!
+        Game.arenaEvolution = false;
         
-        // Illuminazione nitida e vivace per esaltare i colori delle texture senza slavarle
+        // Illuminazione uniforme e bilanciata su tutti e 3 i biomi
         if (this.dirLight) { 
-            this.dirLight.intensity = 1.35; 
+            this.dirLight.intensity = 1.38; 
             this.dirLight.color.setHex(currentTheme.dirLight); 
         }
         if (this.ambientLight) { 
-            this.ambientLight.intensity = 0.75; 
+            this.ambientLight.intensity = 0.82; 
             this.ambientLight.color.setHex(currentTheme.dirLight);
             if (this.ambientLight.groundColor) {
                 this.ambientLight.groundColor.setHex(currentTheme.dirt);
             }
         }
-        // Sincronizza il colore dell'erba 3D interattiva con il bioma corrente (Foresta, Lava, Ghiaccio)
         if (InteractiveGrassSystem.mat) {
             InteractiveGrassSystem.mat.color.setHex(currentTheme.grassShader);
         }
         this.difficultyMult = this.baseDifficultyMult;
         
-        // Recuperiamo l'elemento vignette e applichiamo un vignetting leggero ai bordi lontani in base al bioma
         let vignetteEl = document.getElementById('vignette');
         if (vignetteEl) {
             vignetteEl.classList.remove('vignette-darkness-active');
             vignetteEl.style.opacity = '1';
             if (this.currentThemeIndex === 0) {
-                // Foresta Smeraldo: bordi lontani verde abisso/ottanio delicato
-                vignetteEl.style.background = 'radial-gradient(circle at center, transparent 65%, rgba(4, 24, 18, 0.25) 86%, rgba(2, 10, 8, 0.55) 100%)';
+                // Foresta Incantata: bordi lontani verde bosco caldo
+                vignetteEl.style.background = 'radial-gradient(circle at center, transparent 68%, rgba(14, 24, 8, 0.22) 88%, rgba(5, 10, 3, 0.48) 100%)';
             } else if (this.currentThemeIndex === 1) {
-                // Abisso Infernale: bordi lontani cremisi/prugna delicato
-                vignetteEl.style.background = 'radial-gradient(circle at center, transparent 65%, rgba(28, 5, 12, 0.28) 86%, rgba(12, 2, 5, 0.58) 100%)';
+                // Fucina Infernale: bordi lontani ambra/cremisi morbido
+                vignetteEl.style.background = 'radial-gradient(circle at center, transparent 68%, rgba(38, 10, 8, 0.22) 88%, rgba(16, 4, 4, 0.48) 100%)';
             } else {
-                // Caverna Glaciale: bordi lontani indaco/notte polare delicato
-                vignetteEl.style.background = 'radial-gradient(circle at center, transparent 65%, rgba(8, 14, 34, 0.28) 86%, rgba(3, 5, 16, 0.58) 100%)';
+                // Caverna Cristallina: bordi lontani indaco/aurora
+                vignetteEl.style.background = 'radial-gradient(circle at center, transparent 68%, rgba(8, 16, 38, 0.24) 88%, rgba(3, 6, 16, 0.50) 100%)';
             }
         }
-
         if (this.isCorrupted && !this.isBossFloor) {
             this.difficultyMult *= 1.20; // REWORK: Difficoltà ridotta da 1.25 a 1.20
             if (this.corruptedType === 'darkness') { 
@@ -7986,17 +7984,17 @@ const InteractiveGrassSystem = {
                 // Colore base prelevato da Three.js
                 vec3 baseAlbedo = diffuseColor.rgb;
                 
-                // Radici molto più scure per simulare l'ombra (Ambient Occlusion)
-                vec3 rootColor = baseAlbedo * 0.15;
+                // Radici morbide (evita l'effetto macchia nera sul pavimento)
+                vec3 rootColor = baseAlbedo * 0.32;
                 
-               // Punte leggermente più chiare, ma naturali (moltiplicatore abbassato)
-                vec3 tipColor = baseAlbedo * 1.3 + vec3(0.05, 0.08, 0.0); 
+                // Punte luminose e vellutate in stile fiabesco
+                vec3 tipColor = baseAlbedo * 1.42 + vec3(0.09, 0.09, 0.02); 
                 
-                // Ciuffi secchi più spenti (marrone/oliva invece di giallo acceso)
-                vec3 dryTipColor = vec3(0.35, 0.35, 0.20);
+                // Sfumatura dorata/calda sulle punte casuali
+                vec3 dryTipColor = baseAlbedo * 1.15 + vec3(0.18, 0.14, 0.04);
                 
-                // Mischiamo la punta verde rigogliosa con la punta secca in base al fattore casuale
-                vec3 finalTipColor = mix(tipColor, dryTipColor, vColorRandom * 0.6);
+                // Mischiamo la punta principale con la sfumatura dorata
+                vec3 finalTipColor = mix(tipColor, dryTipColor, vColorRandom * 0.55);
                 
                 // Gradiente finale dalla radice alla punta
                 vec3 finalGrassColor = mix(rootColor, finalTipColor, vHeight);
@@ -8321,26 +8319,28 @@ class GameMap {
         activeMats.grass.color.setHex(currentTheme.grass);
         activeMats.rock.color.setHex(currentTheme.rock);
         activeMats.wall.color.setHex(currentTheme.rock);
-   // --- DIFFERENZIAZIONE FISICA DEI MATERIALI (COSTO ZERO) ---
+  // --- DIFFERENZIAZIONE FISICA DEI MATERIALI (COSTO ZERO) ---
         if (Game.currentThemeIndex === 2) { 
-            // TEMA GHIACCIO: Riflessi ammorbiditi e attenuati (evita i cluster di pixel bianchi)
+            // TEMA GHIACCIO: Riflessi cristallini morbidi
             activeMats.rock.shininess = 35;
-            activeMats.rock.specular.setHex(0x112233); // Speculare scuro e ciano, previene le sbavature bloom
-            activeMats.rock.emissive.setHex(0x000000);
+            activeMats.rock.specular.setHex(0x162c42);
+            activeMats.rock.emissive.setHex(0x051020);
+            activeMats.dirt.emissive.setHex(0x040b16);
+            activeMats.grass.emissive.setHex(0x061528);
         } else if (Game.currentThemeIndex === 1) {
-            // TEMA LAVA: Rocce opache ma incandescenti alla base
-            activeMats.rock.shininess = 5;
-            activeMats.rock.emissive.setHex(0x220505);
-            if (AppSettings.isLow) {
-                activeMats.dirt.emissive.setHex(0x220505);
-                activeMats.dirt.emissiveIntensity = 0.5;
-            }
-        } else { 
-            // TEMA FORESTA: Umido, organico, con riflessi stile muschio bagnato
-            activeMats.rock.shininess = 25;
-            activeMats.rock.specular.setHex(0x113322); // Leggero riflesso smeraldo
-            activeMats.rock.emissive.setHex(0x000000);
-            activeMats.dirt.emissive.setHex(0x000000);
+            // TEMA LAVA: Calore emissivo attenuato e bilanciato
+            activeMats.rock.shininess = 10;
+            activeMats.rock.specular.setHex(0x26100c);
+            activeMats.rock.emissive.setHex(0x160504);
+            activeMats.dirt.emissive.setHex(0x120403);
+            activeMats.grass.emissive.setHex(0x1c0604);
+        } else {
+            // TEMA FORESTA: Sottobosco caldo con riflessi dorati/muschio (zero dominante blu)
+            activeMats.rock.shininess = 20;
+            activeMats.rock.specular.setHex(0x283318);
+            activeMats.rock.emissive.setHex(0x070d04);
+            activeMats.dirt.emissive.setHex(0x080704);
+            activeMats.grass.emissive.setHex(0x0a1405);
         }
         // --- FINE SISTEMA TEMI ---
         
@@ -8646,53 +8646,54 @@ class GameMap {
         if (!window.GLOBAL_PIT_BOULDER_GEO) {
             window.GLOBAL_PIT_BOULDER_GEO = new THREE.DodecahedronGeometry(8, 0); 
         }
-// --- MATERIALI BORDI UNIFICATI AL 100% CON IL PAVIMENTO ---
+// --- MATERIALI BORDI FOSSA (Con compensazione luminosa per le facce inclinate 3D) ---
+        let moundSlopeBoost = (Game.currentThemeIndex === 1) ? 1.32 : 1.18;
 
         // Materiale 1: Sassi Decorativi Piccoli
         const borderRockMat = activeMats.rock.clone();
-        borderRockMat.color.copy(activeMats.rock.color);
-        borderRockMat.emissive.setHex(0x000000);
+        borderRockMat.color.copy(activeMats.rock.color).multiplyScalar(moundSlopeBoost);
+        borderRockMat.emissive.copy(activeMats.rock.emissive);
         borderRockMat.shininess = activeMats.rock.shininess;
         borderRockMat.specular.copy(activeMats.rock.specular);
         borderRockMat.transparent = false;
         borderRockMat.depthWrite = true;
-        borderRockMat.alphaMap = GLOBAL_ALPHA_TEX; 
+        borderRockMat.alphaMap = null;
         borderRockMat.flatShading = false;
         borderRockMat.needsUpdate = true;
 
         // Materiale 2: Zolle di Terra
         const borderDirtMat = activeMats.dirt.clone();
-        borderDirtMat.color.copy(activeMats.dirt.color);
-        borderDirtMat.emissive.setHex(0x000000);
+        borderDirtMat.color.copy(activeMats.dirt.color).multiplyScalar(moundSlopeBoost);
+        borderDirtMat.emissive.copy(activeMats.dirt.emissive);
         borderDirtMat.shininess = activeMats.dirt.shininess || 0;
         borderDirtMat.specular.copy(activeMats.dirt.specular || new THREE.Color(0x000000));
         borderDirtMat.transparent = false;
         borderDirtMat.depthWrite = true;
-        borderDirtMat.alphaMap = GLOBAL_ALPHA_TEX;
+        borderDirtMat.alphaMap = null;
         borderDirtMat.flatShading = false;
         borderDirtMat.needsUpdate = true;
 
-        // Materiale 3: Zolle di Erba
+        // Materiale 3: Zolle di Erba / Magma
         const borderGrassMat = activeMats.grass.clone();
-        borderGrassMat.color.copy(activeMats.grass.color);
-        borderGrassMat.emissive.setHex(0x000000); 
+        borderGrassMat.color.copy(activeMats.grass.color).multiplyScalar(moundSlopeBoost);
+        borderGrassMat.emissive.copy(activeMats.grass.emissive);
         borderGrassMat.shininess = activeMats.grass.shininess || 0;
         borderGrassMat.specular.copy(activeMats.grass.specular || new THREE.Color(0x000000));
         borderGrassMat.transparent = false;
         borderGrassMat.depthWrite = true;
-        borderGrassMat.alphaMap = GLOBAL_ALPHA_TEX; 
+        borderGrassMat.alphaMap = null;
         borderGrassMat.flatShading = false;
         borderGrassMat.needsUpdate = true;
 
-        // Materiale 4: Zolle di Pietra (Copia esatta delle proprietà di activeMats.rock)
+        // Materiale 4: Zolle di Pietra
         const borderFloorRockMat = activeMats.rock.clone();
-        borderFloorRockMat.color.copy(activeMats.rock.color);
-        borderFloorRockMat.emissive.setHex(0x000000); 
+        borderFloorRockMat.color.copy(activeMats.rock.color).multiplyScalar(moundSlopeBoost);
+        borderFloorRockMat.emissive.copy(activeMats.rock.emissive);
         borderFloorRockMat.shininess = activeMats.rock.shininess;
         borderFloorRockMat.specular.copy(activeMats.rock.specular);
         borderFloorRockMat.transparent = false;
         borderFloorRockMat.depthWrite = true;
-        borderFloorRockMat.alphaMap = GLOBAL_ALPHA_TEX; 
+        borderFloorRockMat.alphaMap = null;
         borderFloorRockMat.flatShading = false;
         borderFloorRockMat.needsUpdate = true;
 
@@ -14529,10 +14530,10 @@ class Debris {
         this.rotY = Math.random() * Math.PI;
         this.rotZ = Math.random() * Math.PI;
 
-        // Dimensione contenuta e variazione organica per non coprire mai drop o proiettili
+        // Dimensione bilanciata con variazione organica: ben visibili ma senza coprire i drop
         let rawScale = Math.max(Math.abs(scaleVec.x), Math.abs(scaleVec.y), Math.abs(scaleVec.z));
-        let capScale = isElite ? 10.5 : Math.min(enemyRadius * 0.65, 8.5);
-        this.baseScale = Math.max(2.5, Math.min(rawScale * 0.50, capScale) * MathUtils.randomRange(0.75, 1.05));
+        let capScale = isElite ? 14.0 : Math.min(enemyRadius * 0.85, 11.5);
+        this.baseScale = Math.max(3.5, Math.min(rawScale * 0.68, capScale) * MathUtils.randomRange(0.85, 1.15));
         this.initialScale = this.baseScale;
 
         // Parabola esplosiva più bassa e reattiva (non invade mai la visuale della telecamera)
