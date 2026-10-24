@@ -209,27 +209,29 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .stagger-enter { animation: slide-in-bottom 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
-/* --- STILE TITOLO 3D ELEMENTALE --- */
-        @keyframes title-rgb-glow {
-            0%, 100% {
-                filter: drop-shadow(0px 4px 0px #1e293b) drop-shadow(0px 10px 25px rgba(255, 17, 51, 0.7));
-            }
-            33% {
-                filter: drop-shadow(0px 4px 0px #1e293b) drop-shadow(0px 10px 25px rgba(0, 170, 255, 0.7));
-            }
-            66% {
-                filter: drop-shadow(0px 4px 0px #1e293b) drop-shadow(0px 10px 25px rgba(51, 255, 0, 0.7));
-            }
-        }
+/* --- STILE TITOLO 3D E SIGILLI ELEMENTALI --- */
         @keyframes title-float {
             0%, 100% { transform: perspective(800px) rotateX(8deg) translateY(0px); }
-            50% { transform: perspective(800px) rotateX(4deg) translateY(-8px); }
+            50% { transform: perspective(800px) rotateX(3deg) translateY(-7px); }
         }
-       .title-3d-text {
-            background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 45%, #64748b 80%, #334155 100%);
+        @keyframes rune-spin-slow {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.04); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+        @keyframes essence-pill-pulse {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-3px) scale(1.06); }
+        }
+        @keyframes tri-border-flow {
+            0%, 100% { border-color: rgba(255, 24, 56, 0.65); box-shadow: 0 0 25px rgba(255, 24, 56, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15); }
+            33% { border-color: rgba(0, 204, 255, 0.65); box-shadow: 0 0 25px rgba(0, 204, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15); }
+            66% { border-color: rgba(34, 255, 68, 0.65); box-shadow: 0 0 25px rgba(34, 255, 68, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15); }
+        }
+        .title-3d-text {
+            background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 40%, #94a3b8 78%, #1e293b 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            /* Effetto Blocco 3D massiccio */
             text-shadow: 
                 0px 1px 0px #94a3b8,
                 0px 2px 0px #64748b,
@@ -239,9 +241,23 @@
                 0px 6px 0px #0f172a,
                 0px 7px 0px #020617,
                 0px 8px 0px #000000,
-                0px 15px 30px rgba(0,0,0,0.9),
-                0px 20px 60px rgba(220, 38, 38, 0.6);
+                0px 16px 32px rgba(0,0,0,0.95);
             animation: title-float 4s ease-in-out infinite;
+        }
+        .menu-rune-ring {
+            animation: rune-spin-slow 28s linear infinite;
+        }
+        .essence-badge-red {
+            animation: essence-pill-pulse 3s ease-in-out infinite;
+        }
+        .essence-badge-blue {
+            animation: essence-pill-pulse 3s ease-in-out infinite 1s;
+        }
+        .essence-badge-green {
+            animation: essence-pill-pulse 3s ease-in-out infinite 2s;
+        }
+        .tri-element-console {
+            animation: tri-border-flow 7s ease-in-out infinite;
         }
    /* Vignetting leggero e soffuso sui bordi lontani */
     #vignette { 
@@ -444,41 +460,94 @@ body.colorblind-mode #opt-colorblind-text {
         <h1 id="startText" class="hidden text-[6vw] sm:text-4xl font-display font-black text-red-600 tracking-widest animate-pulse text-center px-4 drop-shadow-[0_0_15px_rgba(220,38,38,0.8)] z-10 uppercase">Tocca per Entrare</h1>
     </div>
 
- <!-- MAIN MENU -->
+<!-- MAIN MENU -->
     <div id="mainMenu" class="absolute inset-0 z-[200] pointer-events-auto hidden flex-col justify-between overflow-y-auto overflow-x-hidden bg-cover bg-center bg-no-repeat" style="background-image: url('bg.png');">
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_15%,_rgba(5,5,10,0.88)_100%)] pointer-events-none"></div>
-        <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/95 pointer-events-none"></div>
+        <!-- Vignettatura profonda che lascia libero il centro dello sfondo -->
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_15%,_rgba(4,5,12,0.90)_100%)] pointer-events-none"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/95 pointer-events-none"></div>
 
-        <div class="w-full h-full flex flex-col justify-between items-center z-10 px-4 py-6 sm:py-8">
-            <!-- TITOLO 3D INTERATTIVO IN ALTO (Senza Definitive Edition) -->
-            <div class="relative w-full flex flex-col items-center justify-center -mt-6 sm:-mt-10 min-h-[200px] sm:min-h-[260px] pointer-events-none">
-                <div id="title-3d-canvas-container" class="absolute inset-0 w-full h-[260px] sm:h-[340px] -top-6 flex items-center justify-center z-0"></div>
+        <!-- Luci d'ambiente periferiche dei 3 Elementi -->
+        <div class="absolute top-0 left-1/4 w-72 h-40 bg-[#FF1838]/15 blur-3xl pointer-events-none animate-pulse"></div>
+        <div class="absolute top-0 right-1/4 w-72 h-40 bg-[#00CCFF]/15 blur-3xl pointer-events-none animate-pulse" style="animation-delay: 1s;"></div>
+
+        <div class="w-full h-full flex flex-col justify-between items-center z-10 px-4 py-5 sm:py-7">
+            
+            <!-- HEADER: CUBO 3D, CERCHIO RUNICO E TRIADE DELLE ESSENZE -->
+            <div class="relative w-full flex flex-col items-center justify-center -mt-4 sm:-mt-8 min-h-[235px] sm:min-h-[295px] pointer-events-none">
                 
-                <div class="relative z-10 flex flex-col items-center">
-                    <div class="relative">
-                        <div class="absolute -inset-4 bg-gradient-to-r from-red-600/30 via-blue-600/30 to-green-600/30 blur-2xl rounded-full animate-pulse"></div>
+                <!-- Cerchio Runico Arcano SVG in rotazione dietro al Cubo 3D -->
+                <svg class="menu-rune-ring absolute w-[220px] h-[220px] sm:w-[290px] sm:h-[290px] -top-2 opacity-25 pointer-events-none z-0" viewBox="0 0 200 200">
+                    <defs>
+                        <linearGradient id="triGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#FF1838"/>
+                            <stop offset="50%" stop-color="#00CCFF"/>
+                            <stop offset="100%" stop-color="#22FF44"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="100" cy="100" r="92" fill="none" stroke="url(#triGrad)" stroke-width="1.5" stroke-dasharray="8 6"/>
+                    <circle cx="100" cy="100" r="78" fill="none" stroke="url(#triGrad)" stroke-width="1"/>
+                    <polygon points="100,14 174,143 26,143" fill="none" stroke="#FF1838" stroke-width="1" stroke-opacity="0.6"/>
+                    <polygon points="100,186 174,57 26,57" fill="none" stroke="#00CCFF" stroke-width="1" stroke-opacity="0.6"/>
+                    <circle cx="100" cy="14" r="4" fill="#FF1838"/>
+                    <circle cx="174" cy="143" r="4" fill="#00CCFF"/>
+                    <circle cx="26" cy="143" r="4" fill="#22FF44"/>
+                </svg>
+
+                <!-- Canvas 3D Interattivo (Tocca il cubo per sprigionare le essenze) -->
+                <div id="title-3d-canvas-container" class="absolute inset-0 w-full h-[250px] sm:h-[320px] -top-6 flex items-center justify-center z-0"></div>
+                
+                <!-- Titolo 3D + Triade Elementale -->
+                <div class="relative z-10 flex flex-col items-center mt-12 sm:mt-16">
+                    <div class="relative flex flex-col items-center">
+                        <div class="absolute -inset-6 bg-gradient-to-r from-[#FF1838]/30 via-[#00CCFF]/30 to-[#22FF44]/30 blur-2xl rounded-full animate-pulse"></div>
                         <h1 class="title-3d-text font-black italic tracking-tighter leading-none text-[11vw] sm:text-7xl md:text-8xl whitespace-nowrap select-none m-0">INTO THE BOX</h1>
+                    </div>
+
+                    <!-- BARRA DELLE 3 ESSENZE ARCANE (Comunica subito il cuore del gameplay) -->
+                    <div class="hud-panel tri-element-console mt-3 sm:mt-4 px-3.5 sm:px-5 py-1.5 sm:py-2 flex items-center gap-3 sm:gap-5 border bg-black/80">
+                        <!-- Essenza Rossa: Inferno -->
+                        <div class="essence-badge-red flex items-center gap-1.5 sm:gap-2">
+                            <span class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-[#FF1838] border border-white shadow-[0_0_12px_#FF1838,inset_0_0_4px_#fff]"></span>
+                            <span class="text-[9px] sm:text-[11px] font-display font-black tracking-widest text-[#ff4d67] uppercase">Inferno</span>
+                        </div>
+
+                        <span class="text-white/20 text-xs font-black">•</span>
+
+                        <!-- Essenza Blu: Tempesta -->
+                        <div class="essence-badge-blue flex items-center gap-1.5 sm:gap-2">
+                            <span class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-[#00CCFF] border border-white shadow-[0_0_12px_#00CCFF,inset_0_0_4px_#fff]"></span>
+                            <span class="text-[9px] sm:text-[11px] font-display font-black tracking-widest text-[#33d6ff] uppercase">Tempesta</span>
+                        </div>
+
+                        <span class="text-white/20 text-xs font-black">•</span>
+
+                        <!-- Essenza Verde: Pandemia -->
+                        <div class="essence-badge-green flex items-center gap-1.5 sm:gap-2">
+                            <span class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-[#22FF44] border border-white shadow-[0_0_12px_#22FF44,inset_0_0_4px_#fff]"></span>
+                            <span class="text-[9px] sm:text-[11px] font-display font-black tracking-widest text-[#55ff70] uppercase">Pandemia</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ZONA CENTRALE: VUOTA PER LASCIAR VEDERE LO SFONDO -->
-            <div class="flex-1 w-full min-h-[40px]"></div>
+            <!-- ZONA CENTRALE: VUOTA PER LASCIAR VEDERE L'ILLUSTRAZIONE DI SFONDO -->
+            <div class="flex-1 w-full min-h-[25px]"></div>
 
             <!-- CONSOLE COMANDI IN BASSO -->
-            <div class="w-full max-w-[440px] flex flex-col gap-2.5 pointer-events-auto shrink-0 relative z-20 mb-2 sm:mb-6">
+            <div class="w-full max-w-[440px] flex flex-col gap-2.5 pointer-events-auto shrink-0 relative z-20 mb-1 sm:mb-4">
                 
-                <div class="absolute -inset-8 bg-gradient-to-t from-red-950/25 via-transparent to-transparent blur-2xl pointer-events-none"></div>
+                <!-- Bagliore Tri-Elementale Sotto la Console -->
+                <div class="absolute -inset-6 bg-gradient-to-r from-[#FF1838]/15 via-[#00CCFF]/15 to-[#22FF44]/15 blur-2xl pointer-events-none"></div>
 
                 <!-- RIGA SUPERIORE: SKIN IN USO (Elegante) + CAMPO CRISTALLI (Separato) -->
                 <div class="flex items-stretch gap-2.5 w-full relative z-10">
                     
-                    <!-- Box Skin Selezionata (Cliccabile per cambiare Skin) -->
-                    <button id="btn-menu-skins" onclick="UIManager.showModal('skinModal')" onmouseenter="AudioEngine.playHover()" class="hud-panel flex-1 px-3 py-2.5 flex items-center justify-between gap-3 cursor-pointer group hover:border-purple-400/50 transition-all text-left relative">
+                    <!-- Box Skin Selezionata -->
+                    <button id="btn-menu-skins" onclick="UIManager.showModal('skinModal')" onmouseenter="AudioEngine.playHover()" class="hud-panel flex-1 px-3 py-2.5 flex items-center justify-between gap-3 cursor-pointer group hover:border-purple-400/60 transition-all text-left relative">
                         <span id="skin-new-badge" class="hidden absolute -top-1.5 -right-1.5 w-3 h-3 bg-amber-400 rounded-full animate-ping"></span>
                         
                         <div class="flex items-center gap-3 min-w-0">
-                            <div id="menu-skin-frame" class="w-11 h-11 rounded-lg bg-black/90 border-2 border-gray-600 flex items-center justify-center shrink-0 transition-colors">
+                            <div id="menu-skin-frame" class="w-11 h-11 rounded-lg bg-black/90 border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
                                 <svg id="menu-skin-svg" viewBox="0 0 40 40" class="w-9 h-9"></svg>
                             </div>
                             <div class="flex flex-col min-w-0">
@@ -496,16 +565,20 @@ body.colorblind-mode #opt-colorblind-text {
                     </button>
 
                     <!-- Box Cristalli (Modulo separato a parte) -->
-                    <div onclick="UIManager.showModal('skinModal')" onmouseenter="AudioEngine.playHover()" class="hud-panel px-4 py-2.5 flex items-center justify-center gap-2.5 shrink-0 cursor-pointer hover:border-purple-400/50 transition-all" title="Cristalli Viola">
+                    <div onclick="UIManager.showModal('skinModal')" onmouseenter="AudioEngine.playHover()" class="hud-panel px-4 py-2.5 flex items-center justify-center gap-2.5 shrink-0 cursor-pointer hover:border-purple-400/60 transition-all" title="Cristalli Viola">
                         <i class="fa-solid fa-gem text-purple-400 text-sm sm:text-base drop-shadow-[0_0_8px_rgba(192,132,252,0.8)]"></i>
                         <span id="menu-crystals-count" class="text-sm sm:text-base font-black text-purple-100 tracking-wider">0</span>
                     </div>
                 </div>
 
-                <!-- PULSANTE PRINCIPALE: GIOCA -->
+                <!-- PULSANTE PRINCIPALE: GIOCA (Con barra energetica tri-elementale alla base) -->
                 <button onmouseenter="AudioEngine.playHover()" onclick="AudioEngine.playClick(); startGameFromMenu()" class="anim-play-pulse btn-cyber box-glow-red bg-gradient-to-r from-red-950 via-red-600 to-red-950 text-white font-display font-black py-4 sm:py-5 rounded-xl text-2xl sm:text-3xl border border-red-400 overflow-hidden group z-10 relative">
                     <div class="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:animate-shimmer pointer-events-none"></div>
-                    <span class="relative z-10 flex justify-center items-center gap-3 tracking-wider drop-shadow-md"><i class="fa-solid fa-play text-xl sm:text-2xl"></i> GIOCA</span>
+                    <!-- Linea energetica RGB sul bordo inferiore del tasto -->
+                    <div class="absolute bottom-0 inset-x-0 h-1 bg-gradient-to-r from-[#FF1838] via-[#00CCFF] to-[#22FF44] opacity-90"></div>
+                    <span class="relative z-10 flex justify-center items-center gap-3 tracking-wider drop-shadow-md">
+                        <i class="fa-solid fa-play text-xl sm:text-2xl"></i> GIOCA
+                    </span>
                 </button>
 
                 <!-- BARRA TATTICA SECONDARIA: OPZIONI, CLASSIFICA, INFO -->
@@ -524,7 +597,7 @@ body.colorblind-mode #opt-colorblind-text {
                 </div>
 
                 <!-- CREDITS -->
-                <div class="text-center mt-1 relative z-10">
+                <div class="text-center mt-0.5 relative z-10">
                     <p class="text-white/40 text-[10px] sm:text-xs font-bold tracking-[0.3em] uppercase pointer-events-none whitespace-nowrap m-0">b3bo 2026 - Build 150</p>
                 </div>
             </div>
@@ -2408,11 +2481,11 @@ const SkinSystem = {
         this.el.style.clipPath = 'circle(0% at 50% 50%)';
     }
 };
-   const TitleSystem = {
+  const TitleSystem = {
     scene: null, camera: null, renderer: null, container: null,
-    boxGroup: null, orbs: [], particles: [], time: 0, initialized: false, active: false,
-    isExploding: false, explosionTime: 0, // <-- NUOVE VARIABILI ESPLOSIONE
-    spinBoost: 0, raycaster: new THREE.Raycaster(), mouse: new THREE.Vector2(), // <-- VARIABILI CLICK CUBO
+    boxGroup: null, wireMat: null, rings: [], orbs: [], particles: [], time: 0, initialized: false, active: false,
+    isExploding: false, explosionTime: 0,
+    spinBoost: 0, colorCycle: 0, raycaster: new THREE.Raycaster(), mouse: new THREE.Vector2(),
     
     init() {
         this.container = document.getElementById('title-3d-canvas-container');
@@ -2423,118 +2496,126 @@ const SkinSystem = {
         
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(50, w / h, 1, 1000);
-        this.camera.position.set(0, 0, 180);
+        this.camera.position.set(0, 0, 185);
         
         this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: !isTouchDevice });
         this.renderer.setSize(w, h);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         this.container.appendChild(this.renderer.domElement);
         
-       // Nucleo Cubico Centrale (The Box)
+        // 1. Nucleo Cubico Centrale ("The Box") con gabbia arcana reattiva ai 3 elementi
         this.boxGroup = new THREE.Group();
-        
-        // RECUPERA LA TEXTURE DEL TERRENO DAL PRELOADER
-        let tex = null;
-        if (typeof Preloader !== 'undefined' && Preloader.textures['wall']) {
-            tex = Preloader.textures['wall'];
-        }
+        let tex = (typeof Preloader !== 'undefined' && Preloader.textures['wall']) ? Preloader.textures['wall'] : null;
 
-        // Materiale migliorato per reagire alle luci
         let boxMat = new THREE.MeshStandardMaterial({ 
-            color: 0x666677, // Schiarito per far prendere meglio la luce
+            color: 0x475569,
             map: tex,
             bumpMap: tex,
-            bumpScale: 0.1,
-            roughness: 0.6, 
-            metalness: 0.3 
+            bumpScale: 0.12,
+            roughness: 0.45, 
+            metalness: 0.45 
         });
 
-     // Box reso visivamente più massiccio e imponente (da 40 a 50)
-        let boxMesh = new THREE.Mesh(new THREE.BoxGeometry(50, 50, 50), boxMat);
-        let wireMat = new THREE.MeshBasicMaterial({ color: 0x8899cc, wireframe: true, transparent: true, opacity: 0.4 });
-        let wireMesh = new THREE.Mesh(new THREE.BoxGeometry(52, 52, 52), wireMat);
+        let boxMesh = new THREE.Mesh(new THREE.BoxGeometry(46, 46, 46), boxMat);
+        this.wireMat = new THREE.MeshBasicMaterial({ color: 0xFF1838, wireframe: true, transparent: true, opacity: 0.65 });
+        let wireMesh = new THREE.Mesh(new THREE.BoxGeometry(49, 49, 49), this.wireMat);
         this.boxGroup.add(boxMesh, wireMesh);
+
+        // 2. Tre Anelli Giroscopici Elementali attorno al Cubo (Rosso, Blu, Verde)
+        const elemColors = [0xFF1838, 0x00CCFF, 0x22FF44];
+        this.rings = [];
+        for (let i = 0; i < 3; i++) {
+            let rMat = new THREE.MeshBasicMaterial({ color: elemColors[i], wireframe: true, transparent: true, opacity: 0.35 });
+            let rMesh = new THREE.Mesh(SharedGeo.torus, rMat);
+            let rScale = 44 + i * 6;
+            rMesh.scale.set(rScale, rScale, 1.8);
+            rMesh.rotation.set(i * 1.1, i * 0.8, 0);
+            this.boxGroup.add(rMesh);
+            this.rings.push(rMesh);
+        }
+
         this.scene.add(this.boxGroup);
 
-        // OTTIMIZZAZIONE RAM: Pre-allochiamo la luce dell'esplosione spenta
-        // per evitare di creare nuovi oggetti (Memory Leak) ogni volta che si preme Gioca
         if (!this.explosionLight) {
             this.explosionLight = new THREE.PointLight(0xffffff, 0.0, 1000);
             this.scene.add(this.explosionLight);
         }
         
-        // 3 Sfere Elementali Orbitanti (Rossa, Blu, Verde)
-        const orbColors = [0xFF1133, 0x00AAFF, 0x33FF00];
+        // 3. Le 3 Essenze Arcane Orbitanti (Vero modello in-game: Icosaedro + Gabbia + Bagliore)
         const orbMats = [SharedMat.spriteRed, SharedMat.spriteBlue, SharedMat.spriteGreen];
-        
-        for(let i=0; i<3; i++) {
+        this.orbs = [];
+        for(let i = 0; i < 3; i++) {
             let orbGroup = new THREE.Group();
             let core = new THREE.Mesh(SharedGeo.icosahedron, new THREE.MeshBasicMaterial({ color: 0xffffff }));
-            core.scale.setScalar(4.5);
+            core.scale.setScalar(5.2);
+            let cage = new THREE.Mesh(SharedGeo.icosahedron, new THREE.MeshBasicMaterial({ color: elemColors[i], wireframe: true, transparent: true, opacity: 0.9 }));
+            cage.scale.setScalar(7.8);
             let halo = new THREE.Sprite(orbMats[i]);
-            halo.scale.set(35, 35, 1);
+            halo.scale.set(42, 42, 1);
             
-            // INTENSITÀ DELLA LUCE RADDOPPIATA PER ILLUMINARE BENE IL CUBO
-            let light = new THREE.PointLight(orbColors[i], 8.0, 300);
-            orbGroup.add(core, halo, light);
+            let light = new THREE.PointLight(elemColors[i], 9.0, 320);
+            orbGroup.add(core, cage, halo, light);
             this.scene.add(orbGroup);
             
             this.orbs.push({
                 group: orbGroup,
+                cage: cage,
                 angle: (Math.PI * 2 / 3) * i,
-                speed: 1.2 + i * 0.2,
-                radiusX: 75 + i * 8,
-                radiusY: 25 + i * 5
+                speed: 1.35,
+                radiusX: 82,
+                radiusY: 28,
+                tilt: (i - 1) * 0.35
             });
         }
         
-        // Vortice di Particelle Elementali RGB
+        // 4. Vortice di Particelle Elementali RGB
         let pCount = isTouchDevice ? 30 : 75;
-        for(let i=0; i<pCount; i++) {
+        this.particles = [];
+        for(let i = 0; i < pCount; i++) {
             let pMat = orbMats[i % 3];
             let p = new THREE.Sprite(pMat);
-            let size = MathUtils.randomRange(6, 14);
+            let size = MathUtils.randomRange(6, 15);
             p.scale.set(size, size, 1);
             
             let angle = Math.random() * Math.PI * 2;
-            let radius = MathUtils.randomRange(20, 120);
+            let radius = MathUtils.randomRange(25, 125);
             let y = MathUtils.randomRange(-80, 80);
             p.position.set(Math.cos(angle)*radius, y, Math.sin(angle)*radius);
             this.scene.add(p);
             
             this.particles.push({
                 mesh: p, angle: angle, radius: radius,
-                speed: MathUtils.randomRange(0.5, 1.5),
-                vy: MathUtils.randomRange(10, 25), y: y
+                speed: MathUtils.randomRange(0.6, 1.6),
+                vy: MathUtils.randomRange(12, 28), y: y
             });
         }
         
-        this.scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        this.scene.add(new THREE.AmbientLight(0xffffff, 0.5));
         
-        // --- INIZIO: GESTIONE CLICK SUL CUBO ---
-        this.container.style.pointerEvents = 'auto'; // Abilita fisicamente il tocco sul canvas 3D
+        // Interazione Touch/Click sul Cubo: cambia risonanza elementale e accelera gli anelli
+        this.container.style.pointerEvents = 'auto';
         this.container.addEventListener('pointerdown', (e) => {
             if (!this.active || this.isExploding) return;
-            
-            // Calcola le coordinate del tocco rispetto al contenitore
             let rect = this.container.getBoundingClientRect();
             this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
             this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
             
-            // Spara un raggio invisibile dalla telecamera al punto toccato
             this.raycaster.setFromCamera(this.mouse, this.camera);
             let intersects = this.raycaster.intersectObjects(this.boxGroup.children);
             
-            // Se ha colpito il cubo
             if (intersects.length > 0) {
-                this.spinBoost = 15.0; // Dà una violenta spinta rotazionale
-                this.boxGroup.scale.set(0.85, 0.85, 0.85); // Lo "schiaccia" per il feedback tattile
-                
-                if (typeof AudioEngine !== 'undefined') AudioEngine.playHover();
+                this.spinBoost = 16.0;
+                this.boxGroup.scale.set(0.82, 0.82, 0.82);
+                this.colorCycle = (this.colorCycle + 1) % 3;
+                if (this.wireMat) this.wireMat.color.setHex(elemColors[this.colorCycle]);
+                if (this.explosionLight) {
+                    this.explosionLight.color.setHex(elemColors[this.colorCycle]);
+                    this.explosionLight.intensity = 10.0;
+                }
+                if (typeof AudioEngine !== 'undefined') AudioEngine.playCollect();
                 if (typeof Haptics !== 'undefined') Haptics.vibrate(15);
             }
         });
-        // --- FINE: GESTIONE CLICK SUL CUBO ---
 
         window.addEventListener('resize', () => this.resize());
         this.initialized = true;
@@ -2552,10 +2633,9 @@ const SkinSystem = {
         }
     },
     
-  update(dt) {
+    update(dt) {
         if (!this.active || !this.initialized) return;
 
-        // --- NUOVA LOGICA ESPLOSIONE OTTIMIZZATA ---
         if (this.isExploding) {
             this.explosionTime += dt;
             let expForce = this.explosionTime * 15;
@@ -2563,15 +2643,14 @@ const SkinSystem = {
             if (this.boxGroup) {
                 this.boxGroup.rotation.x += dt * (2 + expForce);
                 this.boxGroup.rotation.y += dt * (3 + expForce);
-                this.boxGroup.scale.addScalar(dt * 4.5); // Esplosione di scala più violenta
+                this.boxGroup.scale.addScalar(dt * 4.5);
             }
 
-            // Fade della luce dell'esplosione per renderla fluida
             if (this.explosionLight && this.explosionLight.intensity > 0) {
                 this.explosionLight.intensity = Math.max(0, this.explosionLight.intensity - (dt * 40));
             }
 
-            for(let i=0; i<this.particles.length; i++) {
+            for(let i = 0; i < this.particles.length; i++) {
                 let p = this.particles[i];
                 p.radius += dt * 450; 
                 p.mesh.position.z += dt * 600; 
@@ -2579,7 +2658,7 @@ const SkinSystem = {
                 p.mesh.position.y = p.y;
             }
 
-            for(let i=0; i<this.orbs.length; i++) {
+            for(let i = 0; i < this.orbs.length; i++) {
                 let o = this.orbs[i];
                 o.radiusX += dt * 400;
                 o.radiusY += dt * 400;
@@ -2593,36 +2672,52 @@ const SkinSystem = {
             return;
         }
 
-       this.time += dt;
+        this.time += dt;
         
-        // Decadimento fluido dell'accelerazione del cubo
         if (this.spinBoost > 0) {
-            this.spinBoost -= dt * 10;
-            if (this.spinBoost < 0) this.spinBoost = 0;
+            this.spinBoost = Math.max(0, this.spinBoost - dt * 10);
+        }
+        if (this.explosionLight && this.explosionLight.intensity > 0) {
+            this.explosionLight.intensity = Math.max(0, this.explosionLight.intensity - dt * 25);
         }
         
         if (this.boxGroup) {
-            // Aggiungiamo lo spinBoost alla rotazione di base
-            this.boxGroup.rotation.x += dt * (0.4 + this.spinBoost);
-            this.boxGroup.rotation.y += dt * (0.6 + this.spinBoost * 1.5);
+            this.boxGroup.rotation.x += dt * (0.45 + this.spinBoost);
+            this.boxGroup.rotation.y += dt * (0.65 + this.spinBoost * 1.4);
             
-            // Ritorno elastico alla grandezza originale dopo il click/tocco
+            // Transizione cromatica morbida della gabbia tra Rosso, Blu e Verde
+            if (this.wireMat && this.spinBoost <= 0.1) {
+                let phase = (this.time * 0.4) % 3;
+                let cHex = phase < 1 ? 0xFF1838 : (phase < 2 ? 0x00CCFF : 0x22FF44);
+                this.wireMat.color.setHex(cHex);
+            }
+
+            for (let r = 0; r < this.rings.length; r++) {
+                let dir = r % 2 === 0 ? 1 : -1;
+                this.rings[r].rotation.z += dt * (1.2 + r * 0.4 + this.spinBoost * 0.5) * dir;
+                this.rings[r].rotation.x += dt * 0.6 * dir;
+            }
+
             if (this.boxGroup.scale.x < 1.0 && !this.isExploding) {
-                this.boxGroup.scale.addScalar(dt * 1.5);
+                this.boxGroup.scale.addScalar(dt * 1.8);
                 if (this.boxGroup.scale.x > 1.0) this.boxGroup.scale.set(1, 1, 1);
             }
         }
         
-        for(let i=0; i<this.orbs.length; i++) {
+        for(let i = 0; i < this.orbs.length; i++) {
             let o = this.orbs[i];
-            o.angle += o.speed * dt;
+            o.angle += (o.speed + this.spinBoost * 0.25) * dt;
             let x = Math.cos(o.angle) * o.radiusX;
             let z = Math.sin(o.angle) * o.radiusX;
-            let y = Math.sin(o.angle * 2) * o.radiusY;
+            let y = Math.sin(o.angle * 2) * o.radiusY + x * o.tilt;
             o.group.position.set(x, y, z);
+            if (o.cage) {
+                o.cage.rotation.x += dt * 3.0;
+                o.cage.rotation.y -= dt * 4.0;
+            }
         }
         
-        for(let i=0; i<this.particles.length; i++) {
+        for(let i = 0; i < this.particles.length; i++) {
             let p = this.particles[i];
             p.angle += p.speed * dt;
             p.y += p.vy * dt;
@@ -2636,31 +2731,28 @@ const SkinSystem = {
     triggerExplosion() {
         this.isExploding = true;
         this.explosionTime = 0;
-        // La luce esplode istantaneamente
-        if (this.explosionLight) this.explosionLight.intensity = 25.0; 
+        if (this.explosionLight) {
+            this.explosionLight.color.setHex(0xffffff);
+            this.explosionLight.intensity = 25.0;
+        }
     },
     
-    // FIX BUG RIENTRO AL MENU: Ora gli oggetti tornano perfettamente alla posizione di origine
-   reset() {
+    reset() {
         this.isExploding = false;
         this.explosionTime = 0;
         this.spinBoost = 0;
-        
         if (this.explosionLight) this.explosionLight.intensity = 0.0;
-        
         if (this.boxGroup) {
             this.boxGroup.scale.set(1, 1, 1);
             this.boxGroup.rotation.set(0, 0, 0);
         }
-        
-        for(let i=0; i<this.orbs.length; i++) {
-            this.orbs[i].radiusX = 75 + i * 8;
-            this.orbs[i].radiusY = 25 + i * 5;
+        for(let i = 0; i < this.orbs.length; i++) {
+            this.orbs[i].radiusX = 82;
+            this.orbs[i].radiusY = 28;
             this.orbs[i].group.position.z = 0;
         }
-        
-        for(let i=0; i<this.particles.length; i++) {
-            this.particles[i].radius = MathUtils.randomRange(20, 120);
+        for(let i = 0; i < this.particles.length; i++) {
+            this.particles[i].radius = MathUtils.randomRange(25, 125);
             let a = this.particles[i].angle;
             let r = this.particles[i].radius;
             this.particles[i].mesh.position.set(Math.cos(a) * r, this.particles[i].y, Math.sin(a) * r);
@@ -2680,6 +2772,8 @@ const SkinSystem = {
         this.scene = null;
         this.camera = null;
         this.boxGroup = null;
+        this.wireMat = null;
+        this.rings = [];
         this.orbs = [];
         this.particles = [];
         this.explosionLight = null;
@@ -5782,7 +5876,7 @@ pushDebris(px, pz, radius, force) {
             }
         }
         
-        // 5. Transizione cromatica della Boss Arena Evolutiva
+        // 5. Transizione cromatica della Boss Arena Evolutiva e Diradamento Oscurità alla vittoria
         if (Game.arenaEvolution) {
             if (!Game._colorDarkRed) {
                 Game._colorDarkRed = new THREE.Color(0x3a0010);
@@ -5797,6 +5891,39 @@ pushDebris(px, pz, radius, force) {
             }
             this.scene.background.lerp(Game._colorPitchBlack, dt * 0.4);
             if (this.scene.fog) this.scene.fog.color.lerp(Game._colorPitchBlack, dt * 0.4);
+        } else if (Game.bossLightClear) {
+            if (!Game._colorDawnLight) {
+                Game._colorDawnLight = new THREE.Color(0xfff5e0);
+                Game._colorClearSky = new THREE.Color();
+            }
+            let currentTheme = MAP_THEMES[this.currentThemeIndex || 0];
+            Game._colorClearSky.setHex(currentTheme.dirt).lerp(Game._colorDawnLight, 0.25);
+
+            if (this.ambientLight) {
+                this.ambientLight.intensity += (1.30 - this.ambientLight.intensity) * dt * 1.6;
+                this.ambientLight.color.lerp(Game._colorDawnLight, dt * 1.4);
+            }
+            if (this.dirLight) {
+                this.dirLight.intensity += (1.85 - this.dirLight.intensity) * dt * 1.6;
+                this.dirLight.color.lerp(Game._colorDawnLight, dt * 1.4);
+            }
+            if (this.scene.background) {
+                this.scene.background.lerp(Game._colorClearSky, dt * 1.2);
+            }
+            if (this.scene.fog) {
+                this.scene.fog.color.lerp(Game._colorClearSky, dt * 1.2);
+                this.scene.fog.near += (2400 - this.scene.fog.near) * dt * 1.5;
+                this.scene.fog.far += (4200 - this.scene.fog.far) * dt * 1.5;
+            }
+            if (this.mistMat1 && this.mistMat1.opacity > 0.001) {
+                this.mistMat1.opacity = Math.max(0, this.mistMat1.opacity - dt * 0.08);
+            }
+            if (this.mistMat2 && this.mistMat2.opacity > 0.001) {
+                this.mistMat2.opacity = Math.max(0, this.mistMat2.opacity - dt * 0.08);
+            }
+            if (window.GLOBAL_FOG_MAT && window.GLOBAL_FOG_MAT.opacity > 0.002) {
+                window.GLOBAL_FOG_MAT.opacity = Math.max(0, window.GLOBAL_FOG_MAT.opacity - dt * 0.20);
+            }
         }
         
         // 6. TELECAMERA COMFORT: Segue il giocatore con precisione ma filtra i micro-scatti,
@@ -6239,14 +6366,22 @@ loop(timestamp) {
         let currentTheme = MAP_THEMES[this.currentThemeIndex];
         // Impostiamo nebbia, sfondo e luci in base al tema corrente!
         this.scene.background = new THREE.Color(currentTheme.fog); 
-        // Tinge la nebbia 3D per farla amalgamare al mondo
-        if (this.mistSystem && this.mistMat1 && this.mistMat2) {
+        // Tinge e ripristina l'opacità della nebbia 3D per il nuovo piano
+        if (this.mistSystem) {
             let baseColor = new THREE.Color(currentTheme.fog);
-            baseColor.lerp(new THREE.Color(0xffffff), 0.25); // Schiarisce leggermente il fumo
-            this.mistMat1.color.copy(baseColor);
-            this.mistMat2.color.copy(baseColor);
+            baseColor.lerp(new THREE.Color(0xffffff), 0.25);
+            if (this.mistMat1) {
+                this.mistMat1.color.copy(baseColor);
+                this.mistMat1.opacity = isTouchDevice ? 0.08 : 0.12;
+            }
+            if (this.mistMat2) {
+                this.mistMat2.color.copy(baseColor);
+                this.mistMat2.opacity = 0.08;
+            }
         }
- // --- ATMOSFERA E VISIBILITÀ DINAMICA FIABESCA ---
+        if (window.GLOBAL_FOG_MAT) window.GLOBAL_FOG_MAT.opacity = 0.35;
+
+        // --- ATMOSFERA E VISIBILITÀ DINAMICA FIABESCA ---
         if (this.currentThemeIndex === 2) {
             this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 70, camDist + 470);
             if (this.bloomPass) {
@@ -6254,7 +6389,6 @@ loop(timestamp) {
                 this.bloomPass.threshold = 0.74;
             }
         } else if (this.currentThemeIndex === 1) {
-            // Nebbia allontanata per rendere il tema Lava luminoso, caldo e mai opprimente
             this.scene.fog = new THREE.Fog(currentTheme.fog, camDist - 90, camDist + 460);
             if (this.bloomPass) {
                 this.bloomPass.strength = AppSettings.isUltraPC ? 0.28 : 0.20;
@@ -6268,6 +6402,7 @@ loop(timestamp) {
             }
         }
         Game.arenaEvolution = false;
+        Game.bossLightClear = false;
         
         // Illuminazione uniforme e bilanciata su tutti e 3 i biomi
         if (this.dirLight) { 
@@ -6289,7 +6424,8 @@ loop(timestamp) {
         let vignetteEl = document.getElementById('vignette');
         if (vignetteEl) {
             vignetteEl.classList.remove('vignette-darkness-active');
-            vignetteEl.style.opacity = '1';
+            vignetteEl.style.transition = 'opacity 0.5s, background 0.6s ease';
+            vignetteEl.style.opacity = AppSettings.isLow ? '0' : '1';
             if (this.currentThemeIndex === 0) {
                 // Foresta Incantata: bordi lontani verde bosco caldo
                 vignetteEl.style.background = 'radial-gradient(circle at center, transparent 68%, rgba(14, 24, 8, 0.22) 88%, rgba(5, 10, 3, 0.48) 100%)';
@@ -7585,9 +7721,9 @@ startGame(diffMult) {
         let refX = this.player ? this.player.x : (this.camera ? this.camera.position.x : 0);
         let refY = this.player ? this.player.y : (this.camera ? this.camera.position.z : 0);
 
-       for (let i = 0, len = this.enemies.length; i < len; i++) {
+      for (let i = 0, len = this.enemies.length; i < len; i++) {
             let e = this.enemies[i];
-            if (e.type === 'crystal') continue; // I cristalli viola non mostrano mai icone obelisco o barre HP
+            if (e.type === 'crystal' || e.isDying) continue; // Cristalli e Boss in agonia non mostrano icone o barre HP
             
             // Culling preventivo: usa _lastAuraType già calcolato in update()
             let isDamaged = (e.stats.hp < e.stats.maxHp);
@@ -7732,7 +7868,7 @@ startGame(diffMult) {
        if(this.player) {
            for(let i=0; i<this.enemies.length; i++) {
                let e = this.enemies[i];
-               if (e.dead || e.type === 'crystal' || e.angle === undefined) continue;
+               if (e.dead || e.isDying || e.type === 'crystal' || e.angle === undefined) continue;
                
                let distSq = MathUtils.distanceSq(this.player, e);
                if(distSq < (e.aggroRangeSq || 1000000)) {
@@ -12815,20 +12951,24 @@ class Enemy extends Entity {
             this.moveX = Math.cos(this.angle);
             this.moveY = Math.sin(this.angle);
             
-            // --- AI: PROFETA OSCURO CON PRIORITÀ A 3 LIVELLI (Nemici -> Triangolini -> Casse/Anfore) ---
+            // --- AI: PROFETA OSCURO CON PRIORITÀ E RANGE CALIBRATO ---
             if (this.type === 'dark_prophet') {
+                const BEAM_ACQUIRE_RANGE = 380;
+                const BEAM_ACQUIRE_SQ = BEAM_ACQUIRE_RANGE * BEAM_ACQUIRE_RANGE;
+                const BEAM_MAX_RANGE_SQ = 520 * 520;
+
                 const getTargetPriority = (ent) => {
-                    if (!ent || ent.dead || !ent.active || ent.type === 'dark_prophet' || ent.type === 'crystal') return 0;
-                    if (ent.isBoss) return 4;                                  // Priorità Massima: Boss
+                    if (!ent || ent.dead || ent.isDying || !ent.active || ent.type === 'dark_prophet' || ent.type === 'crystal') return 0;
+                    if (ent.isBoss) return 4;                                 // Priorità Massima: Boss
                     if (ent.type === 'crate' || ent.type === 'urn') return 1; // Priorità 3: Casse e Anfore
-                    if (ent.type === 'goblin') return 2;                       // Priorità 2: Triangolini volanti
-                    return 3;                                                  // Priorità 1: Tutti gli altri nemici
+                    if (ent.type === 'goblin') return 2;                      // Priorità 2: Triangolini volanti
+                    return 3;                                                 // Priorità 1: Tutti gli altri nemici
                 };
 
-                // 1. Pulisce i target morti, distrutti o usciti fuori range
+                // 1. Pulisce i target morti, distrutti o usciti oltre il raggio massimo (520 unità)
                 for (let i = this.buffTargets.length - 1; i >= 0; i--) {
                     let target = this.buffTargets[i];
-                    if (!target.active || target.dead || MathUtils.distanceSq(this, target) > 1800*1800) {
+                    if (!target.active || target.dead || target.isDying || MathUtils.distanceSq(this, target) > BEAM_MAX_RANGE_SQ) {
                         let isStillBuffed = false;
                         for (let j = 0; j < Game.enemies.length; j++) {
                             let otherProphet = Game.enemies[j];
@@ -12843,20 +12983,23 @@ class Enemy extends Entity {
                     }
                 }
 
-                let nearby = Game.enemyGrid.findNearby(this, 600);
+                let nearby = Game.enemyGrid.findNearby(this, BEAM_ACQUIRE_RANGE);
 
-                // 2. Se gli slot sono pieni ma c'è un bersaglio di priorità superiore disponibile, sgancia quello inferiore
+                // 2. Se gli slot sono pieni ma c'è un bersaglio di priorità superiore entro 380 unità, sgancia quello inferiore
                 if (this.buffTargets.length >= this.maxLinks) {
                     let lowestIdx = -1, lowestPrio = 99;
                     for (let i = 0; i < this.buffTargets.length; i++) {
                         let p = getTargetPriority(this.buffTargets[i]);
                         if (p < lowestPrio) { lowestPrio = p; lowestIdx = i; }
                     }
-                    if (lowestPrio < 3) {
+                    if (lowestPrio < 4) {
                         let hasBetter = false;
                         for (let i = 0; i < nearby.length; i++) {
                             let e = nearby[i];
-                            if (!e.isProphetBuffed && getTargetPriority(e) > lowestPrio) { hasBetter = true; break; }
+                            if (!e.isProphetBuffed && getTargetPriority(e) > lowestPrio && MathUtils.distanceSq(this, e) <= BEAM_ACQUIRE_SQ) {
+                                hasBetter = true;
+                                break;
+                            }
                         }
                         if (hasBetter && lowestIdx !== -1) {
                             let dropped = this.buffTargets[lowestIdx];
@@ -12867,11 +13010,11 @@ class Enemy extends Entity {
                     }
                 }
 
-                // 3. Cerca nuovi target seguendo rigorosamente l'ordine: 3 (Nemici) -> 2 (Triangolini) -> 1 (Casse/Anfore)
-                for (let prio = 3; prio >= 1 && this.buffTargets.length < this.maxLinks; prio--) {
+                // 3. Cerca nuovi target entro il raggio circolare reale di 380 unità: 4 (Boss) -> 3 (Nemici) -> 2 (Goblin) -> 1 (Props)
+                for (let prio = 4; prio >= 1 && this.buffTargets.length < this.maxLinks; prio--) {
                     for (let i = 0; i < nearby.length && this.buffTargets.length < this.maxLinks; i++) {
                         let e = nearby[i];
-                        if (getTargetPriority(e) === prio && !e.isProphetBuffed && !this.buffTargets.includes(e)) {
+                        if (getTargetPriority(e) === prio && !e.isProphetBuffed && !this.buffTargets.includes(e) && MathUtils.distanceSq(this, e) <= BEAM_ACQUIRE_SQ) {
                             this.buffTargets.push(e);
                             e.isProphetBuffed = true;
                             let msg = (prio === 1) ? "PROTETTO!" : "FURENTE!";
@@ -12879,20 +13022,20 @@ class Enemy extends Entity {
                         }
                     }
                 }
-                
-                // 3. Kiting elastico (Seguono l'alleato per evitare di spezzare il legame)
-                if (this.distToTargetSq < 400*400) { 
-                    this.moveX = -this.moveX; this.moveY = -this.moveY; // Scappa dal player
+
+                // 4. Kiting elastico calibrato sul range massimo di 520 unità
+                if (this.distToTargetSq < 260 * 260) {
+                    this.moveX = -this.moveX; this.moveY = -this.moveY; // Scappa dal player solo se molto vicino
                 } else if (this.buffTargets.length > 0) {
                     let pTarget = this.buffTargets[0];
-                    if (MathUtils.distanceSq(this, pTarget) > 450*450) {
+                    if (MathUtils.distanceSq(this, pTarget) > 340 * 340) {
                         let a = Math.atan2(pTarget.y - this.y, pTarget.x - this.x);
                         this.moveX = Math.cos(a); this.moveY = Math.sin(a);
                     } else {
                         this.moveX = 0; this.moveY = 0;
                     }
-                } else { 
-                    this.moveX = -this.moveX; this.moveY = -this.moveY; 
+                } else {
+                    this.moveX = -this.moveX; this.moveY = -this.moveY;
                 }
             }
           // --- FINE AI PROFETA ---
@@ -13017,10 +13160,29 @@ class Enemy extends Entity {
        // --- AGGIORNAMENTO VISIVO A 60 FPS (Nessun Lag/Stuttering sui Raggi) ---
         if (this.type === 'dark_prophet' && this.buffTargets) {
             for (let i = 0; i < 3; i++) {
-                if (i < this.buffTargets.length && this.buffTargets[i] && !this.buffTargets[i].dead && this.buffTargets[i].active) {
+                if (i < this.buffTargets.length && this.buffTargets[i] && !this.buffTargets[i].dead && !this.buffTargets[i].isDying && this.buffTargets[i].active) {
                     let target = this.buffTargets[i];
                     let dx = target.x - this.x; let dz = target.y - this.y;
-                    let dist = Math.sqrt(dx*dx + dz*dz); let angle = Math.atan2(dz, dx);
+                    let dist = Math.sqrt(dx*dx + dz*dz);
+                    // Spezza il raggio al frame esatto in cui il bersaglio supera le 520 unità
+                    if (dist > 520) {
+                        let isStillBuffed = false;
+                        for (let j = 0; j < Game.enemies.length; j++) {
+                            let otherProphet = Game.enemies[j];
+                            if (otherProphet !== this && otherProphet.type === 'dark_prophet' && !otherProphet.dead && otherProphet.buffTargets.includes(target)) {
+                                isStillBuffed = true;
+                                break;
+                            }
+                        }
+                        target.isProphetBuffed = isStillBuffed;
+                        this.buffTargets.splice(i, 1);
+                        this.beams[i].visible = false;
+                        this.beamGlows[i].visible = false;
+                        this.targetShields[i].visible = false;
+                        i--;
+                        continue;
+                    }
+                    let angle = Math.atan2(dz, dx);
                     
                     // Raggio solido
                     this.beams[i].position.set(this.x + dx/2, 10, this.y + dz/2);
@@ -13765,6 +13927,8 @@ class BossEnemy extends Enemy {
 
         this.aggroRangeSq = this.aggroRange * this.aggroRange; this.attackRangeSq = this.attackRange * this.attackRange;
         this.isEnraged = false;
+        this.isDying = false;
+        this.deathTimer = 0;
         
         // Il blu scatta molto prima e più spesso
         this.bossLeapCooldown = level >= 10 ? (this.bossElement === 'blue' ? 3.0 : 6.0) : 999.0; 
@@ -13772,6 +13936,10 @@ class BossEnemy extends Enemy {
     
     update(dt) {
         if (this.dead) return;
+        if (this.isDying) {
+            this.updateDeathAnimation(dt);
+            return;
+        }
         
       if (this.fightTimer === undefined) this.fightTimer = 0;
        this.fightTimer += dt;
@@ -13986,55 +14154,262 @@ class BossEnemy extends Enemy {
             }
         }
     }
-   takeDamage(amount, source, isCrit = false, canInfect = true) {
-        // 1. Resistenza Dinamica: Il boss sviluppa una corazza maggiore man mano che scendi nei piani.
-        // Piano 5: Ignora il 25% dei danni. Piano 25+: Ignora fino al 60% dei danni.
+  takeDamage(amount, source, isCrit = false, canInfect = true) {
+        if (this.isDying || this.dead) return;
+
+        // 1. Resistenza Dinamica
         let dynamicResist = Math.max(0.40, 0.75 - (this.level * 0.015));
         amount *= dynamicResist;
         
-        // 2. Protezione Ascensione: Mitiga il picco di DPS dell'Ultimate del 50%
+        // 2. Protezione Ascensione
         if (Game.ultimateActive) {
             amount *= 0.50; 
         }
         
-        // 3. Anti-Burst Severo: Limite danni per hit basato sul livello.
-        // Ai piani alti il cap scende fino al 1.5% della salute massima per singolo colpo.
+        // 3. Anti-Burst Severo
         let burstCapPct = Math.max(0.015, 0.05 - (this.level * 0.0015));
         let burstCap = this.stats.maxHp * burstCapPct;
         
         if (amount > burstCap) {
-            // Il danno in eccesso al cap viene quasi annullato (10% rimanente) per stroncare build oneshot
             amount = burstCap + (amount - burstCap) * 0.10; 
-            
-            // Feedback visivo per farti capire che il Boss ha "parato" il colpo critico devastante
             if (Game.frameCount % 2 === 0) {
                 Game.getParticle().spawn(this.x, 40, this.y, SharedMat.spriteWhite, 'spark');
             }
         }
         
-        // Richiama la normale logica di ricezione danno della classe base
         super.takeDamage(amount, source, isCrit, canInfect);
+
+        // Intercetta la morte istantanea per avviare la sequenza animata di sconfitta
+        if (this.dead && !this.isDying) {
+            this.dead = false;
+            this.startDeathSequence();
+        }
     }
+
+    startDeathSequence() {
+        this.isDying = true;
+        this.deathTimer = 0;
+        this.deathDuration = 2.4;
+        this.deathExplosionTick = 0;
+        this.deathOriginX = this.x;
+        this.deathOriginY = this.y;
+        this.deathStartHeight = this.mesh.position.y || 0;
+        this.state = 'dying';
+        this.isProphetBuffed = false;
+        this.solarBurnTimer = 0;
+        this.obeliskBurnTimer = 0;
+        this.hideAuras();
+        if (!AppSettings.shadowsEnabled && this.shadowMesh) this.shadowMesh.visible = true;
+
+        // Scollega il Boss dalla griglia collisioni così i proiettili a ricerca non lo bersagliano più
+        if (Game.enemyGrid) Game.enemyGrid.remove(this);
+
+        // Spegne la musica del Boss e avvia il diradamento graduale dell'oscurità
+        AudioEngine.stopBossMusic();
+        Game.arenaEvolution = false;
+        Game.bossLightClear = true;
+
+        let vig = document.getElementById('vignette');
+        if (vig) {
+            vig.classList.remove('vignette-darkness-active');
+            vig.style.transition = 'opacity 2.2s ease-out';
+            vig.style.opacity = '0';
+        }
+
+        // Hit-Stop e lampo del colpo di grazia
+        Game.hitStop = 0.16;
+        Game.addTrauma(1.2);
+        AudioEngine.playShoot('explosive_arrow');
+        Haptics.vibrate([40, 20, 60]);
+
+        let elemHex = this.bossElement === 'blue' ? 0x00ddff : (this.bossElement === 'green' ? 0x33ff44 : 0xff3300);
+        Game.spawnLightFlash(this.x, this.y, elemHex, 14.0, 950, 0.45);
+        let initNova = Game.getParticle();
+        initNova.spawn(this.x, 35, this.y, SharedMat.spriteWhite, 'nova');
+        initNova.baseSize = 180;
+
+        // Ripulisce subito proiettili nemici, pozze ostili e minion/profeti rimasti
+        for (let i = 0; i < Game.projectiles.length; i++) {
+            let p = Game.projectiles[i];
+            if (p.active && p.owner !== 'player') p.destroy();
+        }
+        for (let i = 0; i < Game.hazards.length; i++) {
+            let h = Game.hazards[i];
+            if (h.active && (h.type === 'enemy_fire' || h.type === 'crystal_fire' || h.type === 'crystal_nova_ring' || h.type === 'snake_fire')) {
+                h.active = false;
+                h.group.visible = false;
+            }
+        }
+        for (let i = 0; i < Game.enemies.length; i++) {
+            let e = Game.enemies[i];
+            if (e !== this && !e.dead) {
+                e.isProphetBuffed = false;
+                if (e.beams) {
+                    for (let b = 0; b < 3; b++) {
+                        e.beams[b].visible = false;
+                        e.beamGlows[b].visible = false;
+                        e.targetShields[b].visible = false;
+                    }
+                }
+                e.takeDamage(999999, Game.player, false, false);
+            }
+        }
+    }
+
+    updateDeathAnimation(dt) {
+        if (dt === 0) return;
+        this.deathTimer += dt;
+        let progress = Math.min(1.0, this.deathTimer / this.deathDuration);
+
+        let elemMat = SharedMat.spriteRed;
+        let elemHex = 0xff3300;
+        if (this.bossElement === 'blue') { elemMat = SharedMat.spriteBlue; elemHex = 0x00ddff; }
+        else if (this.bossElement === 'green') { elemMat = SharedMat.spriteGreen; elemHex = 0x33ff44; }
+
+        // 1. Levitazione agonizzante e convulsioni crescenti sul posto
+        let targetHover = Math.sin(progress * Math.PI * 0.85) * 34;
+        let curHeight = MathUtils.lerp(this.deathStartHeight, targetHover, Math.min(1.0, progress * 4.0));
+        let shakeAmp = 1.5 + progress * 7.5;
+        this.x = this.deathOriginX + MathUtils.randomRange(-shakeAmp, shakeAmp);
+        this.y = this.deathOriginY + MathUtils.randomRange(-shakeAmp, shakeAmp);
+        this.mesh.position.set(this.x, curHeight, this.y);
+
+        // Torsione drammatica verso l'alto e avvitamento
+        this.mesh.rotation.y += dt * (2.5 + progress * 14.0);
+        this.mesh.rotation.x = -progress * 0.55 + Math.sin(this.deathTimer * 30) * 0.10;
+        this.mesh.rotation.z = Math.sin(this.deathTimer * 26) * (0.12 + progress * 0.22);
+
+        if (this.modelParts) {
+            if (this.modelParts.armL) {
+                this.modelParts.armL.rotation.x = -2.1 + Math.sin(this.deathTimer * 38) * 0.35;
+                this.modelParts.armL.rotation.z = 0.55;
+            }
+            if (this.modelParts.armR) {
+                this.modelParts.armR.rotation.x = -2.1 - Math.sin(this.deathTimer * 38) * 0.35;
+                this.modelParts.armR.rotation.z = -0.55;
+            }
+            if (this.modelParts.crown) {
+                this.modelParts.crown.rotation.z += dt * 22;
+                this.modelParts.crown.position.y = (this.radius * 3.2) + progress * 18;
+            }
+        }
+
+        // Rigonfiamento critico negli ultimi 0.7s prima del collasso
+        if (progress > 0.70) {
+            let p2 = (progress - 0.70) / 0.30;
+            let swell = 1.0 + (p2 * p2 * 0.45) + Math.sin(this.deathTimer * 55) * 0.08;
+            this.mesh.scale.setScalar(swell);
+        } else {
+            this.mesh.scale.setScalar(1.0 + Math.sin(this.deathTimer * 32) * 0.06);
+        }
+
+        // Pulsazione incandescente bianco/elementale
+        if (this.mat && this.mat.emissive) {
+            let flashWhite = Math.sin(this.deathTimer * (20 + progress * 40)) > 0;
+            this.mat.emissive.setHex(flashWhite ? 0xffffff : elemHex);
+            this.mat.emissiveIntensity = 1.5 + progress * 4.5;
+        }
+
+        if (this.shadowMesh && this.shadowMesh.visible) {
+            let sScale = Math.max(20, this.radius * 2.8 * (1.0 - progress * 0.4));
+            this.shadowMesh.position.set(this.deathOriginX, 0.2, this.deathOriginY);
+            this.shadowMesh.scale.set(sScale, 1, sScale);
+            this.shadowMesh.updateMatrix();
+        }
+
+        this.mesh.updateMatrix();
+
+        // 2. Esplosioni a catena con distacco di frammenti 3D
+        this.deathExplosionTick -= dt;
+        if (this.deathExplosionTick <= 0) {
+            this.deathExplosionTick = Math.max(0.08, 0.24 - progress * 0.15);
+
+            let ox = this.deathOriginX + MathUtils.randomRange(-this.radius * 0.9, this.radius * 0.9);
+            let oy = curHeight + MathUtils.randomRange(15, this.radius * 2.6);
+            let oz = this.deathOriginY + MathUtils.randomRange(-this.radius * 0.9, this.radius * 0.9);
+
+            let burst = Game.getParticle();
+            burst.spawn(ox, oy, oz, (Math.random() > 0.4 ? elemMat : SharedMat.spriteWhite), 'nova');
+            burst.baseSize = MathUtils.randomRange(65, 125) * (1 + progress * 0.5);
+
+            let sparkCount = AppSettings.isLow ? 2 : (isTouchDevice ? 4 : 8);
+            for (let s = 0; s < sparkCount; s++) {
+                Game.getParticle().spawn(ox, oy, oz, elemMat, 'spark');
+            }
+
+            let deb = Game.getDebris();
+            if (deb) {
+                Game._vec3.set(ox, oy, oz);
+                Game._dummyScale.set(10, 10, 10);
+                deb.spawn(Game._vec3, Game._dummyQuat, Game._dummyScale, 'boss', elemHex, this.radius, true, true);
+            }
+
+            Game.spawnLightFlash(ox, oz, elemHex, 6.0 + progress * 6.0, 550, 0.18);
+            Game.addTrauma(0.22 + progress * 0.18);
+            AudioEngine.playHit('crit');
+            Haptics.vibrate(15);
+        }
+
+        // 3. Detonazione finale al termine dell'agonia
+        if (this.deathTimer >= this.deathDuration) {
+            this.x = this.deathOriginX;
+            this.y = this.deathOriginY;
+            this.isDying = false;
+            this.dead = true;
+        }
+    }
+
     onDeath() {
-        this.shadowMesh.visible = false; // <-- FIX: Nascondi l'ombra del boss
-        AudioEngine.stopBossMusic();
-        AudioEngine.playEnemyDeath();
-        Game.pushDebris(this.x, this.y, 450, 800);
-        Game.player.gainXp(this.xpValue);
-        // OTTIMIZZAZIONE: Richiede meno particelle di base alla morte su Mobile
-        let pCount = AppSettings.isLow ? 5 : (isTouchDevice ? 15 : (AppSettings.isUltraPC ? 80 : 35)); 
-        
-        // Particelle di sangue del colore dell'elemento
-        // Particelle di sangue del colore dell'elemento
+        this.shadowMesh.visible = false;
+        AudioEngine.stopBossMusic();
+        AudioEngine.playEnemyDeath();
+        AudioEngine.playShoot('explosive_arrow');
+        setTimeout(() => AudioEngine.playShoot('chain_lightning'), 90);
+        Haptics.vibrate([60, 40, 120]);
+
+        let elemHex = this.bossElement === 'blue' ? 0x00ddff : (this.bossElement === 'green' ? 0x33ff44 : 0xff3300);
         let bloodMat = SharedMat.spriteBlood;
-        if(this.bossElement === 'blue') bloodMat = SharedMat.spriteBlue;
-        if(this.bossElement === 'green') bloodMat = SharedMat.spriteGreen;
-        
-        for(let i=0; i<pCount; i++) Game.getParticle().spawn(this.x, 30, this.y, bloodMat, 'blood');
-        
-        
-      this.mesh.traverse(child => {
-            // FIX VRAM: Assicuriamoci che anche i Boss distruggano eventuali Sprite assegnati
+        if (this.bossElement === 'blue') bloodMat = SharedMat.spriteBlue;
+        if (this.bossElement === 'green') bloodMat = SharedMat.spriteGreen;
+
+        // Onda d'urto luminosa, flash e bruciatura al centro dell'altare
+        Game.pushDebris(this.x, this.y, 500, 900);
+        Game.getHazard().spawn(this.x, this.y, 420, 0.55, 0, elemHex, 'nova_ring');
+        Game.spawnLightFlash(this.x, this.y, 0xffffff, 22.0, 1400, 0.9);
+        Game.spawnDecal(this.x, this.y, 'scorch');
+
+        let bigNova = Game.getParticle();
+        bigNova.spawn(this.x, 35, this.y, SharedMat.spriteWhite, 'nova');
+        bigNova.baseSize = 340;
+
+        let pCount = AppSettings.isLow ? 8 : (isTouchDevice ? 20 : (AppSettings.isUltraPC ? 80 : 40));
+        for (let i = 0; i < pCount; i++) {
+            Game.getParticle().spawn(this.x, 30, this.y, bloodMat, 'blood');
+            Game.getParticle().spawn(this.x, 35, this.y, SharedMat.spriteYellow, 'spark');
+        }
+
+        // Frantumazione fisica in detriti 3D di tutte le componenti del modello del Boss
+        this.mesh.updateMatrix();
+        this.mesh.updateMatrixWorld(true);
+        const _pos = Game._vec3;
+        const _quat = Game._dummyQuat;
+        const _scale = Game._dummyScale;
+        this.mesh.traverse((child) => {
+            if (child.isMesh && child.geometry) {
+                child.getWorldPosition(_pos);
+                _pos.y = Math.max(8, Math.min(85, _pos.y));
+                child.getWorldQuaternion(_quat);
+                child.getWorldScale(_scale);
+                for (let k = 0; k < 2; k++) {
+                    let deb = Game.getDebris();
+                    if (deb) deb.spawn(_pos, _quat, _scale, 'boss', elemHex, this.radius, true, true);
+                }
+            }
+        });
+
+        Game.player.gainXp(this.xpValue);
+
+        this.mesh.traverse(child => {
             if (child.isMesh || child.isSprite) {
                 if (child.geometry && !SharedGeoSet.has(child.geometry)) child.geometry.dispose();
                 if (child.material && !SharedMatSet.has(child.material)) {
@@ -14043,59 +14418,69 @@ class BossEnemy extends Enemy {
                 }
             }
         });
-        
-        this.mat.dispose(); 
-        Game.scene.remove(this.mesh); 
-        
-        // Scurisci la runa sotto il boss trasformandola in cenere (il Boss occupa sempre l'indice 0)
+
+        this.mat.dispose();
+        Game.scene.remove(this.mesh);
+
+        // Scurisce la runa sotto il boss trasformandola in cenere
         if (Game.map && Game.map.runesMesh) {
             Game.map.runesMesh.setColorAt(0, new THREE.Color(0x111111));
             Game.map.runesMesh.instanceColor.needsUpdate = true;
         }
 
-        // FIX SCENE GRAPH LEAK ALLA MORTE
         if (this.telegraphMesh) { this.telegraphMesh.visible = false; Game.scene.remove(this.telegraphMesh); }
         if (this.shadowMesh) { this.shadowMesh.visible = false; Game.scene.remove(this.shadowMesh); }
         if (this.auraRingMesh) { this.auraRingMesh.visible = false; Game.scene.remove(this.auraRingMesh); }
         if (this.auraGlow) { this.auraGlow.visible = false; Game.scene.remove(this.auraGlow); }
 
-        Game.addTrauma(2.0); AudioEngine.playShoot('explosive_arrow');
-        
-       // Esplosione di loot a fontana (Time-Slicing)
-        let bossLoot = ['life'];
-        for(let i=0; i<6; i++) bossLoot.push('essence');
-        for(let i=0; i<15; i++) bossLoot.push('coin');
+        Game.addTrauma(2.5);
 
-        for(let i=0; i<bossLoot.length; i++) {
-            // radius a 80. Passiamo true per attivare l'eruzione vulcanica delle monete!
-            Game.queueDrop(bossLoot[i], this.x, this.y, 80, true); 
+        // Esplosione di loot a fontana (Time-Slicing)
+        let bossLoot = ['life'];
+        for (let i = 0; i < 6; i++) bossLoot.push('essence');
+        for (let i = 0; i < 15; i++) bossLoot.push('coin');
+        for (let i = 0; i < bossLoot.length; i++) {
+            Game.queueDrop(bossLoot[i], this.x, this.y, 80, true);
         }
-        
-        Game.getFloatingText().spawn(this.x, this.y, "VITTORIA!", '#ffaa00', 80, true); Game.bossDefeatedTimer = 5.0;
-        // NUOVO: 10% Probabilità di Loot Estremo Extra
-        if (Math.random() < 0.10) {
-            // FIX: Peschiamo una singola reliquia direttamente dal pool globale per non sporcare i seed di fine livello
+
+        if (UI.showAnnouncer) UI.showAnnouncer("L'OSCURITÀ SI DIRADA!", '#fde047');
+        Game.getFloatingText().spawn(this.x, this.y, "VITTORIA!", '#ffaa00', 80, true);
+        Game.bossDefeatedTimer = 5.0;
+
+        // 10% Probabilità di Reliquia Extra
+        if (Math.random() < 0.10) {
             let availablePool = RelicSystem.allRelics.filter(r => !Game.player.relics.some(pr => pr.id === r.id));
             if (availablePool.length > 0) {
-                let targetRarity = RelicSystem.getRandomRarity(); 
+                let targetRarity = RelicSystem.getRandomRarity();
                 let poolForRarity = availablePool.filter(r => r.rarity === targetRarity);
                 if (poolForRarity.length === 0) poolForRarity = availablePool;
-                
                 let extraRelic = poolForRarity[Math.floor(Math.random() * poolForRarity.length)];
-                
-                setTimeout(() => {
-                    if (Game.player && !Game.player.dead) {
-                        extraRelic.apply(Game.player); 
-                        Game.player.relics.push(extraRelic);
-                        Game.getFloatingText().spawn(this.x, this.y + 40, "DROP BONUS: " + extraRelic.name.toUpperCase(), '#fbbf24', 45, true);
-                        AudioEngine.playRelicDrop();
-                        let pCount = AppSettings.isLow ? 10 : 40;
-                        for(let i=0; i<pCount; i++) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteLevel, 'spark');
-                    }
-                }, 1000); 
-            }
-        }
-        for(let i=0, len=Game.enemies.length; i<len; i++) { let e = Game.enemies[i]; if (!e.isBoss && !e.dead) { e.takeDamage(99999, Game.player, false, false); } }
+
+                setTimeout(() => {
+                    if (Game.player && !Game.player.dead) {
+                        extraRelic.apply(Game.player);
+                        Game.player.relics.push(extraRelic);
+                        Game.getFloatingText().spawn(this.x, this.y + 40, "DROP BONUS: " + extraRelic.name.toUpperCase(), '#fbbf24', 45, true);
+                        AudioEngine.playRelicDrop();
+                        let bonusParticles = AppSettings.isLow ? 10 : 40;
+                        for (let i = 0; i < bonusParticles; i++) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteLevel, 'spark');
+                    }
+                }, 1000);
+            }
+        }
+
+        // Pulizia finale di eventuali mini-slime o pozze residue
+        for (let i = 0, len = Game.enemies.length; i < len; i++) {
+            let e = Game.enemies[i];
+            if (!e.isBoss && !e.dead) e.takeDamage(999999, Game.player, false, false);
+        }
+        for (let i = 0; i < Game.hazards.length; i++) {
+            let h = Game.hazards[i];
+            if (h.active && (h.type === 'enemy_fire' || h.type === 'crystal_fire' || h.type === 'crystal_nova_ring')) {
+                h.active = false;
+                h.group.visible = false;
+            }
+        }
     }
 }
 
