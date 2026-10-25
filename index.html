@@ -6750,10 +6750,7 @@ startGame(diffMult) {
                 this.map.pitMat.map.offset.y -= safeVisualDt * 0.08; 
                 this.map.pitMat.map.offset.x -= safeVisualDt * 0.04; 
             }
-            if (this.map.iceMat && this.map.iceMat.map) {
-                this.map.iceMat.map.offset.y -= safeVisualDt * 0.005; 
-                this.map.iceMat.map.offset.x -= safeVisualDt * 0.002; 
-            }
+           // La crosta di ghiaccio resta immobile per esaltare la parallasse con l'acqua che scorre sotto
         }
 
      // --- GESTIONE "KING OF THE HILL" DEGLI OBELISCHI ---
@@ -8708,13 +8705,13 @@ class GameMap {
         let pitColor, pitEmissive, pitOpacity, pitRoughness, pitMetalness, baseTexImage;
 
         if (themeIdx === 0) {
-            pitColor = 0x18cfc2; pitEmissive = 0x0c565e; pitOpacity = 0.90; pitRoughness = 0.12; pitMetalness = 0.78;
+            pitColor = 0x159a80; pitEmissive = 0x093b34; pitOpacity = 0.90; pitRoughness = 0.22; pitMetalness = 0.52;
             baseTexImage = Preloader.textures.water;
         } else if (themeIdx === 1) {
             pitColor = 0xffffff; pitEmissive = 0xff7b29; pitOpacity = 0.98; pitRoughness = 0.36; pitMetalness = 0.12;
             baseTexImage = Preloader.textures.waterLava;
         } else {
-            pitColor = 0x16528e; pitEmissive = 0x0e3b6e; pitOpacity = 0.94; pitRoughness = 0.12; pitMetalness = 0.85;
+            pitColor = 0x1e6bb8; pitEmissive = 0x14508c; pitOpacity = 0.96; pitRoughness = 0.14; pitMetalness = 0.65;
             baseTexImage = Preloader.textures.water;
         }
 
@@ -8730,14 +8727,13 @@ class GameMap {
 
         this.pitMat = new THREE.MeshStandardMaterial({
             color: pitColor, emissive: pitEmissive,
-            emissiveIntensity: themeIdx === 1 ? 1.15 : 0.78,
+            emissiveIntensity: themeIdx === 1 ? 1.15 : (themeIdx === 0 ? 0.55 : 0.92),
             roughness: pitRoughness, metalness: pitMetalness,
             map: liquidTex, emissiveMap: liquidTex,
             transparent: true, opacity: pitOpacity,
             depthWrite: false
         });
 
-        // Shader GPU per Caustiche Acqua, Convezione Magma e Correnti Sub-Glaciali (0 costo CPU)
         this.pitMat.onBeforeCompile = (shader) => {
             shader.uniforms.uTime = InteractiveGrassSystem.uniforms.uTime;
             shader.vertexShader = `
@@ -8763,9 +8759,9 @@ class GameMap {
                 ${themeIdx === 0 ? `
                     float w1 = sin(vPitWPos.x * 0.052 + uTime * 1.5 + sin(vPitWPos.y * 0.041 - uTime * 1.1));
                     float w2 = cos(vPitWPos.y * 0.058 - uTime * 1.3 + cos(vPitWPos.x * 0.047 + uTime * 0.9));
-                    float caustic = pow(clamp(0.5 + 0.5 * w1 * w2, 0.0, 1.0), 2.5);
-                    diffuseColor.rgb = mix(vec3(0.03, 0.19, 0.25), vec3(0.16, 0.82, 0.75), clamp(texLum * 0.75 + caustic * 0.60, 0.0, 1.0));
-                    totalEmissiveRadiance = mix(vec3(0.02, 0.13, 0.17), vec3(0.20, 0.95, 0.82), caustic) * (0.52 + caustic * 0.72);
+                    float caustic = pow(clamp(0.5 + 0.5 * w1 * w2, 0.0, 1.0), 3.0);
+                    diffuseColor.rgb = mix(vec3(0.03, 0.16, 0.14), vec3(0.11, 0.55, 0.45), clamp(texLum * 0.48 + caustic * 0.38, 0.0, 1.0));
+                    totalEmissiveRadiance = mix(vec3(0.02, 0.08, 0.07), vec3(0.10, 0.52, 0.40), caustic) * (0.34 + caustic * 0.40);
                 ` : (themeIdx === 1 ? `
                     float m1 = sin(vPitWPos.x * 0.044 + uTime * 0.85 + sin(vPitWPos.y * 0.048 - uTime * 0.65) * 1.5);
                     float m2 = cos(vPitWPos.y * 0.046 - uTime * 0.75 + cos(vPitWPos.x * 0.039 + uTime * 0.55) * 1.5);
@@ -8777,9 +8773,21 @@ class GameMap {
                     diffuseColor.rgb = mix(crustCol, magmaCol, veinMask);
                     totalEmissiveRadiance = mix(vec3(0.06, 0.01, 0.005), magmaCol * 1.32, veinMask);
                 ` : `
-                    float aur = 0.5 + 0.5 * sin(vPitWPos.x * 0.035 + vPitWPos.y * 0.025 + uTime * 1.1);
-                    diffuseColor.rgb = mix(vec3(0.03, 0.12, 0.26), vec3(0.10, 0.42, 0.68), aur * 0.6 + texLum * 0.4);
-                    totalEmissiveRadiance = mix(vec3(0.02, 0.08, 0.18), vec3(0.08, 0.38, 0.62), aur) * 0.68;
+                    vec2 dirFlow = vec2(0.4472, -0.8944);
+                    vec2 dirCross = vec2(0.8944, 0.4472);
+                    float along = dot(vPitWPos, dirFlow);
+                    float across = dot(vPitWPos, dirCross);
+                    float waveA = sin(across * 0.095 + sin(along * 0.032 - uTime * 2.2) * 1.6 - uTime * 0.8);
+                    float waveB = cos(along * 0.055 - uTime * 2.8 + sin(across * 0.07) * 1.3);
+                    float stream = pow(clamp(0.5 + 0.5 * waveA * waveB, 0.0, 1.0), 1.8);
+                    float subFoam = pow(clamp(0.5 + 0.5 * sin(across * 0.16 + sin(along * 0.045 - uTime * 3.1) * 2.0), 0.0, 1.0), 5.0)
+                                  * smoothstep(0.32, 0.78, texLum);
+                    float flowMix = clamp(texLum * 0.65 + stream * 0.60, 0.0, 1.0);
+                    vec3 deepWater = vec3(0.02, 0.08, 0.18);
+                    vec3 midCurrent = vec3(0.07, 0.45, 0.80);
+                    vec3 brightStreak = vec3(0.62, 0.95, 1.0);
+                    diffuseColor.rgb = mix(deepWater, midCurrent, flowMix) + brightStreak * (subFoam * 0.68 + pow(stream, 3.0) * 0.32);
+                    totalEmissiveRadiance = mix(vec3(0.02, 0.09, 0.20), vec3(0.28, 0.84, 1.0), clamp(flowMix * 0.72 + subFoam * 0.85, 0.0, 1.0)) * 0.98;
                 `)}
                 `
             );
@@ -8828,7 +8836,7 @@ class GameMap {
         }
 
         if (pitAreaGeo) {
-            const bedHex = (themeIdx === 0) ? 0x031619 : ((themeIdx === 1) ? 0x1e0402 : 0x030c1c);
+            const bedHex = (themeIdx === 0) ? 0x031512 : ((themeIdx === 1) ? 0x1e0402 : 0x030c1c);
             const pitBedMat = new THREE.MeshBasicMaterial({ color: bedHex });
             const meshPitBed = new THREE.Mesh(pitAreaGeo, pitBedMat);
             meshPitBed.position.set(0, -24.2, 0);
@@ -8850,16 +8858,15 @@ class GameMap {
                 iceTex.needsUpdate = true;
 
                 this.iceMat = new THREE.MeshStandardMaterial({
-                    color: 0xd8f4ff, emissive: 0x2468a8,
-                    emissiveIntensity: 0.36,
-                    roughness: 0.08, metalness: 0.72,
+                    color: 0xd8f4ff, emissive: 0x205b94,
+                    emissiveIntensity: 0.30,
+                    roughness: 0.10, metalness: 0.42,
                     map: iceTex, emissiveMap: iceTex,
-                    transparent: true, opacity: 0.66,
+                    transparent: true, opacity: 0.85,
                     depthWrite: false
                 });
 
                 this.iceMat.onBeforeCompile = (shader) => {
-                    shader.uniforms.uTime = InteractiveGrassSystem.uniforms.uTime;
                     shader.vertexShader = `
                         varying vec2 vIceWPos;
                     ` + shader.vertexShader.replace(
@@ -8870,18 +8877,23 @@ class GameMap {
                         `
                     );
                     shader.fragmentShader = `
-                        uniform float uTime;
                         varying vec2 vIceWPos;
                     ` + shader.fragmentShader.replace(
                         '#include <emissivemap_fragment>',
                         `
                         #include <emissivemap_fragment>
                         float iceTex = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
-                        float aur = 0.5 + 0.5 * sin(vIceWPos.x * 0.022 - vIceWPos.y * 0.018 + uTime * 0.9 + sin(vIceWPos.y * 0.035) * 1.2);
-                        float crack = smoothstep(0.60, 0.88, iceTex);
-                        diffuseColor.rgb = mix(vec3(0.46, 0.79, 0.97), vec3(0.90, 0.98, 1.0), crack);
-                        totalEmissiveRadiance = mix(vec3(0.06, 0.28, 0.52), vec3(0.22, 0.78, 0.96), aur) * (0.42 + crack * 0.45);
-                        diffuseColor.a = clamp(0.52 + crack * 0.24, 0.0, 0.84);
+                        float sheetNoise = 0.5 + 0.5 * sin(vIceWPos.x * 0.026 + sin(vIceWPos.y * 0.029) * 1.5) * cos(vIceWPos.y * 0.024 - cos(vIceWPos.x * 0.027) * 1.4);
+                        float frostPatch = smoothstep(0.55, 0.86, sheetNoise * 0.55 + iceTex * 0.60);
+                        float veinWave = abs(sin(vIceWPos.x * 0.042 + vIceWPos.y * 0.036 + iceTex * 3.8));
+                        float crackVein = (1.0 - smoothstep(0.0, 0.09, veinWave)) * 0.60;
+                        float iceThickness = clamp(frostPatch + crackVein, 0.0, 1.0);
+
+                        vec3 clearIceCol = vec3(0.24, 0.56, 0.78);
+                        vec3 frostCol = vec3(0.90, 0.98, 1.0);
+                        diffuseColor.rgb = mix(clearIceCol, frostCol, iceThickness);
+                        totalEmissiveRadiance = mix(vec3(0.01, 0.04, 0.09), vec3(0.22, 0.65, 0.90), iceThickness) * (0.16 + iceThickness * 0.42);
+                        diffuseColor.a = mix(0.20, 0.74, iceThickness);
                         `
                     );
                 };
@@ -8893,6 +8905,7 @@ class GameMap {
                 this.mapGroup.add(this.meshIceFloor);
             }
         }
+        
 
         if (pitFloorCount > 0 && pitAreaGeo) {
             const isPitAt = (tx, ty) => (tx >= 0 && tx < this.width && ty >= 0 && ty < this.height && this.grid[tx][ty] === 5);
@@ -9230,16 +9243,20 @@ class GameMap {
                             }
                         }
 
-                        // Ciuffi di vegetazione reattiva sulla sponda (0 Draw Call extra, usa interactiveGrassMesh)
-                        if (k % 3 === 1 && h2 < (themeIdx === 0 ? 0.58 : 0.26) && idxInteractiveGrass < maxGrassClusters) {
-                            const blades = (themeIdx === 0 && h1 > 0.45) ? 3 : 2;
+                        // Piccoli ciuffi bassi sulla sponda (scala uniforme ridotta e inclinazione minima anti-distorsione)
+                        if (k % 3 === 1 && h2 < (themeIdx === 0 ? 0.54 : 0.24) && idxInteractiveGrass < maxGrassClusters) {
+                            const blades = (themeIdx === 0 && h1 > 0.50) ? 3 : 2;
                             for (let b = 0; b < blades && idxInteractiveGrass < maxGrassClusters; b++) {
-                                const dGr = -4.2 - ((h1 + b * 0.29) % 1) * 7.5;
-                                const tGr = (b - 1) * 3.8 + (h2 - 0.5) * 3.0;
-                                reedDummy.position.set(p.px + p.mx * dGr + tx * tGr, 0.22, p.pz + p.mz * dGr + tz * tGr);
-                                const gScale = (themeIdx === 0 ? 1.05 : 0.78) + ((h1 + b * 0.19) % 1) * 0.45;
-                                reedDummy.scale.set(gScale * 0.85, gScale * 1.22, gScale * 0.85);
-                                reedDummy.rotation.set(p.nz * 0.22, h1 * Math.PI * 2 + b, -p.nx * 0.22);
+                                const dGr = -5.2 - ((h1 + b * 0.29) % 1) * 8.0;
+                                const tGr = (b - 1) * 3.0 + (h2 - 0.5) * 2.4;
+                                reedDummy.position.set(p.px + p.mx * dGr + tx * tGr, 0.48, p.pz + p.mz * dGr + tz * tGr);
+                                const gScale = (themeIdx === 0 ? 0.38 : 0.32) + ((h1 + b * 0.19) % 1) * 0.18;
+                                reedDummy.scale.set(gScale, gScale, gScale);
+                                reedDummy.rotation.set(
+                                    (h1 - 0.5) * 0.08,
+                                    h1 * Math.PI * 2 + b,
+                                    (h2 - 0.5) * 0.08
+                                );
                                 reedDummy.updateMatrix();
                                 interactiveGrassMesh.setMatrixAt(idxInteractiveGrass++, reedDummy.matrix);
                             }
@@ -9439,9 +9456,9 @@ class GameMap {
                             float rimLine = smoothstep(0.05, 0.13, d) * (1.0 - smoothstep(0.13, 0.26, d));
                             float ripWave = sin(d * 24.0 - uTime * 2.5 + sin(uArc * 3.0) * 0.8);
                             float ripples = smoothstep(0.55, 0.95, ripWave) * smoothstep(0.14, 0.26, d) * (1.0 - smoothstep(0.36, 0.88, d));
-                            float foamAlpha = clamp(contactAO + rimLine * 0.70 + ripples * 0.42, 0.0, 0.88) * deepFade;
+                            float foamAlpha = clamp(contactAO + rimLine * 0.52 + ripples * 0.30, 0.0, 0.82) * deepFade;
                             float brightMix = clamp((rimLine + ripples) / max(0.001, contactAO + rimLine + ripples), 0.0, 1.0);
-                            vec3 foamCol = mix(vec3(0.02, 0.09, 0.11), vec3(0.70, 1.0, 0.95), brightMix);
+                            vec3 foamCol = mix(vec3(0.02, 0.08, 0.08), vec3(0.55, 0.86, 0.74), brightMix);
                             diffuseColor = vec4(foamCol, foamAlpha);
                         ` : (themeIdx === 1 ? `
                             float pulse = 0.84 + 0.16 * sin(uTime * 2.6 + uArc * 2.0);
@@ -9831,8 +9848,8 @@ class GameMap {
                                     let gx = (x * TILE_SIZE + TILE_SIZE / 2) + MathUtils.randomRange(-32, 32);
                                     let gz = (y * TILE_SIZE + TILE_SIZE / 2) + MathUtils.randomRange(-32, 32);
                                     if (nearPit) {
-                                        let txA = Math.floor((gx - 3) / TILE_SIZE), txB = Math.floor((gx + 3) / TILE_SIZE);
-                                        let tzA = Math.floor((gz - 3) / TILE_SIZE), tzB = Math.floor((gz + 3) / TILE_SIZE);
+                                        let txA = Math.floor((gx - 8) / TILE_SIZE), txB = Math.floor((gx + 8) / TILE_SIZE);
+                                        let tzA = Math.floor((gz - 8) / TILE_SIZE), tzB = Math.floor((gz + 8) / TILE_SIZE);
                                         if ((this.grid[txA] && this.grid[txA][tzA] === 5) ||
                                             (this.grid[txB] && this.grid[txB][tzA] === 5) ||
                                             (this.grid[txA] && this.grid[txA][tzB] === 5) ||
@@ -9846,14 +9863,16 @@ class GameMap {
                                             if (d2x * d2x + d2z * d2z < 441) continue;
                                         }
                                     }
-                                    dummy.position.set(gx, 0.2, gz);
+                                    dummy.position.set(gx, nearPit ? 0.45 : 0.2, gz);
                                     let sizeMod = 0.5 + (intensity * 0.7);
                                     let scaleG = MathUtils.randomRange(0.8, 1.5) * sizeMod;
+                                    if (nearPit) scaleG = Math.min(scaleG * 0.55, 0.60);
+                                    let maxTilt = nearPit ? 0.06 : 0.2;
                                     dummy.scale.set(scaleG, scaleG, scaleG);
                                     dummy.rotation.set(
-                                        MathUtils.randomRange(-0.2, 0.2),
+                                        MathUtils.randomRange(-maxTilt, maxTilt),
                                         Math.random() * Math.PI * 2,
-                                        MathUtils.randomRange(-0.2, 0.2)
+                                        MathUtils.randomRange(-maxTilt, maxTilt)
                                     );
                                     dummy.updateMatrix();
                                     if (idxInteractiveGrass < maxGrassClusters) {
