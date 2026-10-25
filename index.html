@@ -153,9 +153,6 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00DDFF; }
         
         #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        #game-container canvas {
-            filter: saturate(1.18) contrast(1.04);
-        }
         /* uiCanvas sopra la vignetta così la barra del Boss e i testi sono sempre brillanti */
         #uiCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 7; pointer-events: none; }
         
@@ -1218,6 +1215,7 @@ const AppSettings = {
             }
             Game.renderer.setPixelRatio(pr);
             if (Game.composer) Game.composer.setSize(window.innerWidth, window.innerHeight);
+            if (Game.bloomPass) Game.bloomPass.setSize(Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.floor(window.innerHeight / 2)));
             Game.updateShadowConfig();
 
             let showFakeShadows = !this.shadowsEnabled;
@@ -3779,6 +3777,7 @@ const GLOBAL_ALPHA_TEX = createOrganicAlphaMap();
    const ProjMatClass = isTouchDevice ? THREE.MeshBasicMaterial : THREE.MeshPhongMaterial;
     function createOrbMaterial(hexColor) {
         const mat = new THREE.MeshBasicMaterial({ color: hexColor });
+        mat.customProgramCacheKey = () => 'orb_plasma_v1';
         mat.onBeforeCompile = (shader) => {
             shader.vertexShader = `
                 varying float vOrbRim;
@@ -3930,6 +3929,7 @@ SharedMat.urn = new THREE.MeshPhongMaterial({ map: createPatternTexture('urn'), 
 const SharedGeoSet = new Set(Object.values(SharedGeo));
 const SharedMatSet = new Set(Object.values(SharedMat));
 function applyCharacterShader(material, rimStrength = 0.65) {
+    material.customProgramCacheKey = () => 'char_rim_' + rimStrength.toFixed(2);
     material.onBeforeCompile = (shader) => {
         // Calcola Altezza e Rim Light nel Vertex Shader: 100% compatibile con MeshLambertMaterial (Mobile) e MeshPhongMaterial (PC)
         shader.vertexShader = `
@@ -4892,6 +4892,7 @@ const UI = {
         document.getElementById('hud').appendChild(annDiv);
         this.els.announcer = annDiv;
         this.els.announcerText = document.getElementById('announcer-text');
+        this.els.gameContainer = document.getElementById('game-container');
         // --- FINE ANNUNCIATORE ARCADE ---
     },
     update() {
@@ -5200,7 +5201,7 @@ const UI = {
         }
         
      // DESATURAZIONE DINAMICA E DISSOLVENZA ALLA MORTE
-        let container = document.getElementById('game-container');
+        let container = this.els.gameContainer;
         if (hpRatio <= 0.30 && hpRatio > 0 && !Game.player.dead) {
             let grayVal = 1.0 - (hpRatio / 0.30);
             let roundedGray = Math.round(grayVal * 10) / 10; // Arrotondamento per limitare le chiamate CSS
@@ -5394,6 +5395,7 @@ getEnemy() {
         this.renderer.shadowMap.enabled = AppSettings.shadowsEnabled; 
 this.renderer.shadowMap.type = isTouchDevice ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
         container.appendChild(this.renderer.domElement);
+       
         
         // Luce globale quasi inesistente (notte fonda), esalta la luce del giocatore
       // Luce Emisferica Bicolore (Costo GPU identico ad AmbientLight, ma dona vero volume 3D su mobile)
@@ -5863,6 +5865,7 @@ pushDebris(px, pz, radius, force) {
         }
         
         if (this.composer) this.composer.setSize(this.width, this.height);
+        if (this.bloomPass) this.bloomPass.setSize(Math.max(1, Math.floor(this.width / 2)), Math.max(1, Math.floor(this.height / 2)));
         this.updateShadowConfig();
     },
     setupInputs() {
@@ -6372,7 +6375,7 @@ loop(timestamp) {
             
             this.frameCount++;
             this.updateCamera(frameTime);
-            UI.update();
+            
 
             if (this.warpTimer <= 0) {
                 if (this.portalGroup) this.portalGroup.visible = false; // Nascondi portale
@@ -6432,11 +6435,13 @@ loop(timestamp) {
             this.accumulator -= FIXED_TIME_STEP;
             
             updateCount++;
+            updateCount++;
             if (updateCount >= (isTouchDevice ? 3 : 5)) {
                 this.accumulator = 0; 
                 break;
             }
         }
+        UI.update();
         this.draw();
         requestAnimationFrame(this._boundLoop);
     },
@@ -6772,7 +6777,7 @@ startGame(diffMult) {
         for (let i = 0, len = this.particles.length; i < len; i++) if(this.particles[i].active) this.particles[i].update(safeVisualDt);
         for (let i = 0, len = this.floatingTexts.length; i < len; i++) if(this.floatingTexts[i].active) this.floatingTexts[i].update(safeVisualDt);
 
-        UI.update();
+        
 
         // --- AGGIORNA LE LUCI ESPLOSIVE ---
         if (this.flashLights) {
@@ -7804,7 +7809,7 @@ startGame(diffMult) {
         
        
 
-        UI.update();
+
     },
     
    // OTTIMIZZAZIONE GC: Metodo spostato fuori dal loop di Draw per non allocare memoria
@@ -8161,14 +8166,15 @@ const InteractiveGrassSystem = {
                 // Genera un valore pseudo-casuale (da 0.0 a 1.0) basato sulle coordinate nel mondo
                 vColorRandom = fract(sin(dot(basePos.xz, vec2(12.9898, 78.233))) * 43758.5453);
 
-         // CULLING ESTREMO MA SICURO: Ampliamo il raggio basandoci direttamente sulla telecamera.
-                // 2500.0 unità coprono abbondantemente l'intera mappa visibile (Nord e Sud), prevenendo glitch.
-                float distToCam = distance(basePos.xz, cameraPosition.xz);
-                
+         // Scarta istantaneamente i fili d'erba fuori dall'inquadratura prima di vento, trigonometria e luci Lambert
+                if (abs(basePos.x - cameraPosition.x) > 1300.0 || basePos.z > cameraPosition.z + 120.0 || basePos.z < cameraPosition.z - 1600.0) {
+                    gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                    return;
+                }
+
                 vec2 windDir = vec2(0.0);
                 vec2 interactDir = vec2(0.0);
-
-                if (distToCam < 2500.0) { 
+                {
                     // 1. Vento ambientale morbido
                     float windWave = sin(uTime * 3.0 + basePos.x * 0.015 + basePos.z * 0.015) * cos(uTime * 1.5 + basePos.x * 0.01 - basePos.z * 0.01);
                     windDir = vec2(windWave * 6.0, windWave * 4.0);
@@ -8494,12 +8500,13 @@ class GameMap {
             }
         }
 
-       // 2. ALLOCHIAMO LA MEMORIA PER L'ERBA (OTTIMIZZATA PER MOBILE)
-        const maxGrassClusters = floorCount * (isTouchDevice ? 50 : 200);
+       // 2. ALLOCHIAMO LA MEMORIA PER L'ERBA (Scalata su modalità grafica, 0 costo nella Shadow Map)
+        const grassModeMult = AppSettings.isLow ? 0.35 : (AppSettings.isUltra ? 1.0 : 0.68);
+        const maxGrassClusters = Math.ceil(floorCount * (isTouchDevice ? 45 : 150) * grassModeMult);
         const interactiveGrassMesh = new THREE.InstancedMesh(InteractiveGrassSystem.geo, InteractiveGrassSystem.mat, maxGrassClusters);
         interactiveGrassMesh.receiveShadow = true;
-        interactiveGrassMesh.castShadow = !isTouchDevice; 
-        interactiveGrassMesh.frustumCulled = false; 
+        interactiveGrassMesh.castShadow = false;
+        interactiveGrassMesh.frustumCulled = false;
         let idxInteractiveGrass = 0;
 
        // --- 2.5 ALLOCHIAMO I DETRITI ---
@@ -8753,9 +8760,9 @@ class GameMap {
         let pitColor, pitEmissive, pitOpacity, pitRoughness, pitMetalness, baseTexImage;
         this.pitPolys = [];
 
-        if (themeIdx === 0) {
-            // Bianco neutro di base per preservare il 100% del contrasto di water.jpg prima della tinta azzurra nello shader
-            pitColor = 0xffffff; pitEmissive = 0x0d4780; pitOpacity = 0.92; pitRoughness = 0.78; pitMetalness = 0.04;
+       if (themeIdx === 0) {
+            // Sorgente boschiva: bianco neutro per leggere water.jpg, ruvidità alta anti-abbagliamento ai bordi schermo
+            pitColor = 0xffffff; pitEmissive = 0x082a38; pitOpacity = 0.92; pitRoughness = 0.84; pitMetalness = 0.02;
             baseTexImage = Preloader.textures.water;
         } else if (themeIdx === 1) {
             pitColor = 0xffffff; pitEmissive = 0xff7b29; pitOpacity = 0.98; pitRoughness = 0.36; pitMetalness = 0.12;
@@ -8777,13 +8784,14 @@ class GameMap {
 
         this.pitMat = new THREE.MeshStandardMaterial({
             color: pitColor, emissive: pitEmissive,
-            emissiveIntensity: themeIdx === 1 ? 1.15 : (themeIdx === 0 ? 0.50 : 0.62),
+            emissiveIntensity: themeIdx === 1 ? 1.15 : (themeIdx === 0 ? 0.34 : 0.62),
             roughness: pitRoughness, metalness: pitMetalness,
             map: liquidTex, emissiveMap: liquidTex,
             transparent: true, opacity: pitOpacity,
             depthWrite: false
         });
 
+        this.pitMat.customProgramCacheKey = () => 'pit_liquid_v4_' + themeIdx;
         this.pitMat.onBeforeCompile = (shader) => {
             shader.uniforms.uTime = InteractiveGrassSystem.uniforms.uTime;
             const hasMapDecode = THREE.ShaderChunk && THREE.ShaderChunk.map_fragment && THREE.ShaderChunk.map_fragment.includes('mapTexelToLinear');
@@ -8798,7 +8806,7 @@ class GameMap {
                 #include <begin_vertex>
                 vec4 wpPit = modelMatrix * vec4(transformed, 1.0);
                 vPitWPos = wpPit.xz;
-                transformed.y += sin(wpPit.x * 0.055 + uTime * 1.8) * cos(wpPit.z * 0.055 - uTime * 1.5) * 0.35;
+                transformed.y += sin(wpPit.x * 0.058 + uTime * 2.0) * cos(wpPit.z * 0.058 - uTime * 1.6) * 0.36;
                 `
             );
             shader.fragmentShader = `
@@ -8812,11 +8820,11 @@ class GameMap {
                 ${themeIdx === 0 ? `
                 #ifdef USE_MAP
                     vec2 wWarp = vec2(
-                        sin(vPitWPos.y * 0.055 + uTime * 1.8),
-                        cos(vPitWPos.x * 0.055 - uTime * 1.5)
-                    ) * 0.028;
-                    vec2 uvWaterA = vPitWPos / 210.0 + vec2(uTime * 0.042, uTime * 0.078) + wWarp;
-                    vec2 uvWaterB = vPitWPos / 145.0 + vec2(-uTime * 0.034, uTime * 0.048) - wWarp * 0.85;
+                        sin(vPitWPos.y * 0.058 + uTime * 2.1),
+                        cos(vPitWPos.x * 0.058 - uTime * 1.7)
+                    ) * 0.032;
+                    vec2 uvWaterA = vPitWPos / 200.0 + vec2(uTime * 0.052, uTime * 0.090) + wWarp;
+                    vec2 uvWaterB = vPitWPos / 138.0 + vec2(-uTime * 0.042, uTime * 0.058) - wWarp * 0.90;
                     vec3 wA = ${sampleWaterTex('uvWaterA')}.rgb;
                     vec3 wB = ${sampleWaterTex('uvWaterB')}.rgb;
                 #else
@@ -8825,18 +8833,32 @@ class GameMap {
                 #endif
                     float pA = sqrt(clamp(dot(wA, vec3(0.299, 0.587, 0.114)), 0.0, 1.0));
                     float pB = sqrt(clamp(dot(wB, vec3(0.299, 0.587, 0.114)), 0.0, 1.0));
-                    float rippleFactor = smoothstep(0.20, 0.78, pA * 0.68 + pB * 0.32);
-                    float crest = smoothstep(0.46, 0.82, pA * pB * 1.30);
+                    float rippleFactor = smoothstep(0.16, 0.78, pA * 0.65 + pB * 0.35);
+                    float crest = smoothstep(0.46, 0.82, pA * pB * 1.35);
 
-                    vec3 rawTex = mix(wA, wB, 0.35);
+                    // Reticolo vivo di caustiche che lega l'azzurro dell'acqua al verde-oro della foresta
+                    float c1 = sin(vPitWPos.x * 0.054 + uTime * 1.65 + sin(vPitWPos.y * 0.044 - uTime * 1.25));
+                    float c2 = cos(vPitWPos.y * 0.058 - uTime * 1.45 + cos(vPitWPos.x * 0.048 + uTime * 1.05));
+                    float caustic = pow(clamp(0.5 + 0.5 * c1 * c2, 0.0, 1.0), 2.6);
+
+                    vec3 rawTex = mix(wA, wB, 0.38);
                     vec3 tintedTex = vec3(
-                        rawTex.r * 0.25 + rawTex.b * 0.08,
-                        rawTex.g * 0.62 + rawTex.b * 0.18,
-                        max(rawTex.b, rawTex.g * 0.85) * 1.15 + 0.05
+                        rawTex.r * 0.12 + rawTex.b * 0.05,
+                        rawTex.g * 0.46 + rawTex.b * 0.16,
+                        max(rawTex.b, rawTex.g * 0.85) * 0.68 + 0.03
                     );
-                    vec3 rampCol = mix(vec3(0.02, 0.14, 0.44), vec3(0.30, 0.74, 1.00), rippleFactor);
-                    diffuseColor.rgb = mix(rampCol, tintedTex, 0.45) + vec3(0.10, 0.22, 0.28) * crest * 0.45;
-                    totalEmissiveRadiance = mix(vec3(0.015, 0.09, 0.26), vec3(0.12, 0.42, 0.78), rippleFactor) * 0.48;
+                    // Dal blu-ottanio profondo del sottobosco all'azzurro-turchese vivo delle increspature
+                    vec3 deepLagoon = vec3(0.018, 0.105, 0.195);
+                    vec3 midSpring  = vec3(0.095, 0.435, 0.620);
+                    vec3 rampCol = mix(deepLagoon, midSpring, rippleFactor);
+
+                    diffuseColor.rgb = mix(rampCol, tintedTex, 0.45)
+                                     + vec3(0.14, 0.44, 0.48) * (crest * 0.48 + caustic * 0.32);
+                    totalEmissiveRadiance = mix(
+                        vec3(0.012, 0.055, 0.095),
+                        vec3(0.065, 0.250, 0.340),
+                        clamp(rippleFactor * 0.72 + caustic * 0.48, 0.0, 1.0)
+                    ) * 0.38;
                 ` : (themeIdx === 1 ? `
                     float m1 = sin(vPitWPos.x * 0.044 + uTime * 0.85 + sin(vPitWPos.y * 0.048 - uTime * 0.65) * 1.5);
                     float m2 = cos(vPitWPos.y * 0.046 - uTime * 0.75 + cos(vPitWPos.x * 0.039 + uTime * 0.55) * 1.5);
@@ -8864,9 +8886,10 @@ class GameMap {
                 '#include <dithering_fragment>',
                 `
                 ${themeIdx !== 1 ? `
+                    float capLim = ${themeIdx === 0 ? '0.66' : '0.68'};
                     float maxC = max(gl_FragColor.r, max(gl_FragColor.g, gl_FragColor.b));
-                    if (maxC > 0.85) {
-                        float compressed = 0.85 + (maxC - 0.85) / (1.0 + (maxC - 0.85) * 3.0);
+                    if (maxC > capLim) {
+                        float compressed = capLim + (maxC - capLim) / (1.0 + (maxC - capLim) * 3.0);
                         gl_FragColor.rgb *= (compressed / maxC);
                     }
                 ` : ''}
@@ -8947,7 +8970,7 @@ class GameMap {
                     transparent: true, opacity: 0.92,
                     depthWrite: false
                 });
-
+                this.iceMat.customProgramCacheKey = () => 'pit_ice_v4';
                 this.iceMat.onBeforeCompile = (shader) => {
                     shader.vertexShader = `
                         varying vec2 vIceWPos;
@@ -9062,7 +9085,7 @@ class GameMap {
             const cWall = new THREE.Color(currentTheme.wall);
             const cDeep = (themeIdx === 1)
                 ? { r: 1.50, g: 0.40, b: 0.08 }
-                : ((themeIdx === 0) ? { r: 0.20, g: 0.85, b: 1.05 } : { r: 0.16, g: 0.46, b: 0.72 });
+                : ((themeIdx === 0) ? { r: 0.09, g: 0.42, b: 0.52 } : { r: 0.16, g: 0.46, b: 0.72 });
 
             const sampleTileColor = (tx, ty) => {
                 if (tx < 0 || tx >= this.width || ty < 0 || ty >= this.height) return cDirt;
@@ -9525,6 +9548,7 @@ class GameMap {
                     polygonOffsetUnits: -1
                 });
 
+                shoreMat.customProgramCacheKey = () => 'pit_shore_v4_' + themeIdx;
                 shoreMat.onBeforeCompile = (shader) => {
                     shader.uniforms.uTime = InteractiveGrassSystem.uniforms.uTime;
                     shader.vertexShader = `
@@ -9547,27 +9571,26 @@ class GameMap {
                         float uArc = vShoreUV.x * 6.2831853;
                         float sDist = vShoreUV.y;
                         float deepFade = 1.0 - smoothstep(0.52, 1.0, sDist);
-                        float wob = sin(uArc * 2.0 + uTime * 0.9) * 0.03 + cos(uArc * 5.0 - uTime * 0.6) * 0.015;
+                        float wob = sin(uArc * 2.0 + uTime * 1.15) * 0.032 + cos(uArc * 5.0 - uTime * 0.85) * 0.018;
                         float d = clamp(sDist + wob, 0.0, 1.0);
                         ${themeIdx === 0 ? `
-                            float haloFade = pow(1.0 - smoothstep(0.03, 1.0, sDist), 1.55);
-                            float fairyBreath = 0.88 + 0.12 * sin(uArc * 3.0 - uTime * 1.15) * cos(uArc * 5.0 + uTime * 0.85);
+                            float haloFade = pow(1.0 - smoothstep(0.02, 1.0, sDist), 1.58);
+                            float fairyBreath = 0.86 + 0.14 * sin(uArc * 3.0 - uTime * 1.35) * cos(uArc * 5.0 + uTime * 0.95);
                             float haloBody = haloFade * fairyBreath;
 
-                            // Bordino luminoso acquamarina a contatto con la roccia + onde concentriche soffuse
-                            float rimGlow = smoothstep(0.01, 0.07, d) * (1.0 - smoothstep(0.07, 0.22, d));
-                            float ripWave = sin(d * 24.0 - uTime * 1.45 + sin(uArc * 4.0) * 0.7);
-                            float ripples = smoothstep(0.62, 0.96, ripWave) * smoothstep(0.08, 0.20, d) * (1.0 - smoothstep(0.42, 0.92, sDist));
+                            float rimGlow = smoothstep(0.01, 0.075, d) * (1.0 - smoothstep(0.075, 0.23, d));
+                            float ripWave = sin(d * 26.0 - uTime * 1.85 + sin(uArc * 4.0) * 0.75);
+                            float ripples = smoothstep(0.58, 0.95, ripWave) * smoothstep(0.07, 0.19, d) * (1.0 - smoothstep(0.42, 0.92, sDist));
 
-                            // Sfumatura fiabesca: turchese-menta brillante a riva -> ciano cristallino -> azzurro laguna
-                            vec3 innerAqua = vec3(0.34, 0.96, 0.92);
-                            vec3 midCyan   = vec3(0.14, 0.76, 0.98);
-                            vec3 outerBlue = vec3(0.08, 0.48, 0.90);
+                            // Alone acquamarina-turchese che raccorda il muschio della riva con l'acqua azzurra
+                            vec3 innerAqua = vec3(0.20, 0.68, 0.70);
+                            vec3 midCyan   = vec3(0.10, 0.46, 0.64);
+                            vec3 outerBlue = vec3(0.04, 0.23, 0.40);
                             vec3 haloCol = mix(outerBlue, midCyan, smoothstep(0.18, 0.62, haloFade));
                             haloCol = mix(haloCol, innerAqua, smoothstep(0.58, 0.96, haloFade));
-                            haloCol = mix(haloCol, vec3(0.76, 0.99, 1.0), clamp(rimGlow * 0.72 + ripples * 0.45, 0.0, 0.85));
+                            haloCol = mix(haloCol, vec3(0.46, 0.86, 0.86), clamp(rimGlow * 0.65 + ripples * 0.45, 0.0, 0.80));
 
-                            float haloAlpha = clamp(haloBody * 0.64 + rimGlow * 0.28 + ripples * 0.18, 0.0, 0.82) * (1.0 - smoothstep(0.82, 1.0, sDist));
+                            float haloAlpha = clamp(haloBody * 0.52 + rimGlow * 0.24 + ripples * 0.16, 0.0, 0.66) * (1.0 - smoothstep(0.80, 1.0, sDist));
                             diffuseColor = vec4(haloCol, haloAlpha);
                         ` : (themeIdx === 1 ? `
                             float pulse = 0.84 + 0.16 * sin(uTime * 2.6 + uArc * 2.0);
@@ -9944,10 +9967,10 @@ class GameMap {
                             dummy.updateMatrix();
                             meshGrass.setMatrixAt(idxGrass++, dummy.matrix);
 
-                            if (noiseSafe > 0.45) {
+                          if (noiseSafe > 0.45) {
                                 let intensity = (noiseSafe - 0.45) / 0.55;
-                                let baseMax = isTouchDevice ? 100 : 300;
-                                let maxBlades = MathUtils.randomInt(baseMax - 50, baseMax);
+                                let baseMax = Math.ceil((isTouchDevice ? 85 : 220) * grassModeMult);
+                                let maxBlades = MathUtils.randomInt(Math.max(16, baseMax - 35), Math.max(24, baseMax));
                                 let numBlades = Math.floor(maxBlades * Math.pow(intensity, 1.1));
 
                                 for (let g = 0; g < numBlades; g++) {
@@ -10398,15 +10421,14 @@ this.fogMesh.renderOrder = -1; // Assicura che venga disegnato DOPO il terreno (
             return out;
         }
 
-        let nearAny = false;
-        for (let p = 0; p < this.pitPolys.length; p++) {
-            const poly = this.pitPolys[p];
-            if (wx >= poly.minX - 16 && wx <= poly.maxX + 16 && wz >= poly.minZ - 16 && wz <= poly.maxZ + 16) {
-                nearAny = true;
-                break;
-            }
+        // Fast-exit O(1): se nessuna cella 3x3 attorno al player è una fossa (5), salta ogni calcolo poligonale
+        const gx = Math.floor(wx / TILE_SIZE), gz = Math.floor(wz / TILE_SIZE);
+        let nearPitTile = false;
+        for (let dx = -1; dx <= 1 && !nearPitTile; dx++) {
+            const col = this.grid[gx + dx];
+            if (col && (col[gz - 1] === 5 || col[gz] === 5 || col[gz + 1] === 5)) nearPitTile = true;
         }
-        if (!nearAny) {
+        if (!nearPitTile) {
             out.groundY = 0; out.inPit = false; out.sDist = -999;
             return out;
         }
@@ -10415,6 +10437,7 @@ this.fogMesh.renderOrder = -1; // Assicura che venga disegnato DOPO il terreno (
         let minDistSq = Infinity;
         for (let p = 0; p < this.pitPolys.length; p++) {
             const poly = this.pitPolys[p];
+            if (wx < poly.minX - 16 || wx > poly.maxX + 16 || wz < poly.minZ - 16 || wz > poly.maxZ + 16) continue;
             const c = poly.coords;
             const n = c.length;
             const checkRay = (wz >= poly.minZ && wz <= poly.maxZ && wx <= poly.maxX);
@@ -10885,25 +10908,22 @@ class Entity {
 
         if (isCrit && source === Game.player) {Game.addTrauma(0.5); Game.addCombo(); } else if (source === Game.player) { Game.addCombo(); }
         
-        // CONSOLIDAMENTO DANNI A SCHERMO (Se attivo nelle opzioni)
+       // CONSOLIDAMENTO DANNI A SCHERMO O(1) (Zero scansione array)
         if (AppSettings.damageNumbers) {
-            let foundText = null;
-            for(let i=0; i<Game.floatingTexts.length; i++) {
-                let ft = Game.floatingTexts[i];
-                if (ft.active && ft.targetId === this.id) { foundText = ft; break; }
-            }
+            let foundText = (this._activeDmgText && this._activeDmgText.active && this._activeDmgText.targetId === this.id) ? this._activeDmgText : null;
             if (foundText) {
                 foundText.accumulated += amount;
-                foundText.text = Math.floor(foundText.accumulated).toString() + (isCrit || foundText.isCrit ? "!" : "");
-                foundText.life = foundText.maxLife; 
-                foundText.vy = isCrit || foundText.isCrit ? 60 : 30;
-                foundText.scalePop = 1.6;
+                foundText.text = Math.floor(foundText.accumulated).toString();
+                foundText.life = foundText.maxLife;
+                foundText.vy = isCrit || foundText.isCrit ? 55 : 28;
+                foundText.scalePop = 1.45;
                 if (isCrit) { foundText.color = '#ffff00'; foundText.isCrit = true; }
-                foundText.size = Math.min(foundText.size + 4, 50); 
+                foundText.size = Math.min(foundText.size + 3, 44);
             } else {
                 let ft = Game.getFloatingText();
-                ft.spawn(this.x, this.y, Math.floor(amount).toString() + (isCrit ? "!" : ""), isCrit ? '#ffff00' : '#ffffff', isCrit ? 28 : 20, isCrit);
+                ft.spawn(this.x, this.y, Math.floor(amount).toString(), isCrit ? '#ffff00' : '#ffffff', isCrit ? 28 : 20, isCrit);
                 ft.targetId = this.id; ft.accumulated = amount;
+                this._activeDmgText = ft;
             }
         }
 
@@ -10955,11 +10975,12 @@ class Entity {
             this.stats.hp = 0; 
             this.dead = true; 
             
-            // SETE DI SANGUE ETERNA: Cura 1% HP (cooldown 0.5s) e fino a +8% Temp HP se a vita piena
+           // SETE DI SANGUE ETERNA: Cura 1% HP (cooldown 0.5s) e fino a +8% Temp HP se a vita piena
             if (this !== Game.player && Game.player && Game.player.modifiers.bloodthirst) {
                 let p = Game.player;
                 if (!p._lastBloodHealTime || Game.playTime - p._lastBloodHealTime >= 0.6) {
                     p._lastBloodHealTime = Game.playTime;
+                    p._bloodHaloPulse = 0.30;
                     let heal = p.stats.maxHp * 0.01;
                     let maxBloodShield = p.stats.maxHp * 0.08;
                     let missingHp = p.stats.maxHp - p.stats.hp;
@@ -11243,6 +11264,120 @@ class Player extends Entity {
 
         this.relicPetMeshes = { grimoire, skull, box, wisp };
         this.relicPetsContainer.add(grimoire, skull, box, wisp);
+
+        // 5. Aureola Infuocata sopra la testa (Sete di Sangue Eterna) - 100% GPU Shader
+        if (!window._bloodHaloAssets) {
+            const ringGeo = new THREE.TorusGeometry(7.8, 0.85, 8, 28);
+            ringGeo.rotateX(Math.PI / 2);
+
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            ringMat.onBeforeCompile = (shader) => {
+                shader.uniforms.uTime = InteractiveGrassSystem.uniforms.uTime;
+                shader.vertexShader = `
+                    uniform float uTime;
+                    varying vec2 vRingUv;
+                ` + shader.vertexShader.replace(
+                    '#include <begin_vertex>',
+                    `
+                    #include <begin_vertex>
+                    vRingUv = uv;
+                    float rAng = uv.x * 6.2831853;
+                    transformed.y += sin(rAng * 5.0 - uTime * 8.0) * 0.28;
+                    `
+                );
+                shader.fragmentShader = `
+                    uniform float uTime;
+                    varying vec2 vRingUv;
+                ` + shader.fragmentShader.replace(
+                    '#include <color_fragment>',
+                    `
+                    #include <color_fragment>
+                    float rAng = vRingUv.x * 6.2831853;
+                    float pulse = 0.5 + 0.5 * sin(rAng * 6.0 - uTime * 9.0 + cos(rAng * 3.0 + uTime * 5.0));
+                    vec3 darkCrimson = vec3(0.75, 0.03, 0.04);
+                    vec3 moltenGold  = vec3(1.0, 0.72, 0.20);
+                    diffuseColor.rgb = mix(darkCrimson, moltenGold, pow(pulse, 1.4));
+                    `
+                );
+            };
+
+            const flameGeo = new THREE.CylinderGeometry(7.0, 8.1, 8.2, 28, 4, true);
+            flameGeo.translate(0, 3.6, 0);
+
+            const flameMat = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                side: THREE.DoubleSide
+            });
+            flameMat.onBeforeCompile = (shader) => {
+                shader.uniforms.uTime = InteractiveGrassSystem.uniforms.uTime;
+                shader.vertexShader = `
+                    uniform float uTime;
+                    varying vec2 vFlameUv;
+                ` + shader.vertexShader.replace(
+                    '#include <begin_vertex>',
+                    `
+                    #include <begin_vertex>
+                    vFlameUv = uv;
+                    float fAng = uv.x * 6.2831853;
+                    float sway = sin(fAng * 7.0 + uTime * 9.5) * 0.6 + cos(fAng * 13.0 - uTime * 12.0) * 0.4;
+                    transformed.xz *= 1.0 + sway * 0.11 * uv.y;
+                    `
+                );
+                shader.fragmentShader = `
+                    uniform float uTime;
+                    varying vec2 vFlameUv;
+                ` + shader.fragmentShader.replace(
+                    '#include <color_fragment>',
+                    `
+                    #include <color_fragment>
+                    float ang = vFlameUv.x * 6.2831853;
+                    float h = vFlameUv.y;
+                    float n1 = sin(ang * 8.0 - uTime * 6.8 + sin(h * 5.0 - uTime * 10.5) * 1.4);
+                    float n2 = cos(ang * 13.0 + uTime * 8.4 - cos(h * 6.0 - uTime * 12.5) * 1.2);
+                    float n3 = sin(ang * 21.0 - uTime * 11.5 + h * 8.0);
+                    float flameNoise = clamp(0.5 + 0.26 * n1 + 0.16 * n2 + 0.08 * n3, 0.0, 1.0);
+
+                    float tongueH = 0.30 + pow(flameNoise, 1.30) * 0.70;
+                    float alpha = smoothstep(tongueH, tongueH * 0.16, h) * smoothstep(0.0, 0.10, h);
+
+                    float heat = clamp((1.0 - h / max(0.05, tongueH)) * 0.85 + flameNoise * 0.22, 0.0, 1.0);
+                    vec3 bloodRed   = vec3(0.82, 0.02, 0.06);
+                    vec3 fireOrange = vec3(1.0, 0.30, 0.02);
+                    vec3 hotCore    = vec3(1.0, 0.86, 0.32);
+                    vec3 col = mix(bloodRed, fireOrange, smoothstep(0.16, 0.60, heat));
+                    col = mix(col, hotCore, smoothstep(0.68, 0.96, heat));
+
+                    diffuseColor = vec4(col, alpha * 0.92);
+                    `
+                );
+            };
+
+            window._bloodHaloAssets = { ringGeo, ringMat, flameGeo, flameMat };
+        }
+
+        this.bloodHaloGroup = new THREE.Group();
+        this.bloodHaloGroup.position.set(0, 12.2, 0);
+
+        let haloRing = new THREE.Mesh(window._bloodHaloAssets.ringGeo, window._bloodHaloAssets.ringMat);
+        let haloFlames = new THREE.Mesh(window._bloodHaloAssets.flameGeo, window._bloodHaloAssets.flameMat);
+        let haloGlow = new THREE.Sprite(SharedMat.spriteRed);
+        haloGlow.scale.set(28, 15, 1);
+        haloGlow.position.set(0, 1.8, 0);
+
+        haloRing.castShadow = false; haloRing.receiveShadow = false;
+        haloFlames.castShadow = false; haloFlames.receiveShadow = false;
+
+        this.bloodHaloGroup.add(haloRing, haloFlames, haloGlow);
+        this.bloodHaloGroup.visible = false;
+        if (this.modelParts && this.modelParts.head) {
+            this.modelParts.head.add(this.bloodHaloGroup);
+        } else {
+            this.bloodHaloGroup.position.set(0, 41, 0);
+            this.mesh.add(this.bloodHaloGroup);
+        }
     }
 
     syncRelicVisuals() {
@@ -11261,6 +11396,10 @@ class Player extends Entity {
 
         this.relicPetMeshes.wisp.visible = !!m.ionBattery;
         if (m.ionBattery) this.activePetList.push(this.relicPetMeshes.wisp);
+
+        if (this.bloodHaloGroup) {
+            this.bloodHaloGroup.visible = !!m.bloodthirst;
+        }
     }
 
     fireGrimoireBolts() {
@@ -11824,12 +11963,32 @@ class Player extends Entity {
                 Game.getParticle().spawn(this.x + MathUtils.randomRange(-10, 10), 15, this.y + MathUtils.randomRange(-10, 10), SharedMat.spriteGreen, 'spark');
             }
         }
-      // --- AURA CREMISI (SETE DI SANGUE ETERNA - Senza perdita di HP/s) ---
-        if (this.modifiers.bloodthirst && Game.frameCount % (isTouchDevice ? 18 : 10) === 0) {
-            let bSpark = Game.getParticle();
-            bSpark.spawn(this.x + MathUtils.randomRange(-12, 12), 14, this.y + MathUtils.randomRange(-12, 12), SharedMat.spriteRed, 'trail');
-            bSpark.baseSize = 14;
-            bSpark.vy = 45;
+      // --- AUREOLA INFUOCATA (SETE DI SANGUE ETERNA) ---
+        if (this.modifiers.bloodthirst && this.bloodHaloGroup) {
+            this.bloodHaloGroup.rotation.y += dt * 1.6;
+            if (this._bloodHaloPulse > 0) {
+                this._bloodHaloPulse = Math.max(0, this._bloodHaloPulse - dt);
+                let flare = 1.0 + (this._bloodHaloPulse / 0.30) * 0.32;
+                this.bloodHaloGroup.scale.set(flare, flare * 1.15, flare);
+            } else {
+                let idlePulse = 1.0 + Math.sin(Game.playTime * 6.0) * 0.04;
+                this.bloodHaloGroup.scale.setScalar(idlePulse);
+            }
+
+            if (Game.frameCount % (isTouchDevice ? 10 : 5) === 0) {
+                let ha = Math.random() * Math.PI * 2;
+                let hx = this.x + Math.cos(ha) * 7.8;
+                let hz = this.y + Math.sin(ha) * 7.8;
+                let hy = (this.mesh.position.y || 0) + 41;
+                let bSpark = Game.getParticle();
+                bSpark.spawn(hx, hy, hz, Math.random() > 0.35 ? SharedMat.spriteRed : SharedMat.spriteYellow, 'trail');
+                bSpark.baseSize = MathUtils.randomRange(8, 13);
+                bSpark.vx = MathUtils.randomRange(-8, 8);
+                bSpark.vz = MathUtils.randomRange(-8, 8);
+                bSpark.vy = MathUtils.randomRange(28, 55);
+                bSpark.life = 0.30;
+                bSpark.maxLife = 0.30;
+            }
         }
       // FIX BUG IMMORTALITÀ: Ripristinato il timer di 3 secondi per la reliquia Cristallo Rigenerante
       // FIX: Nuovo Cristallo Rigenerante Out of Combat
@@ -12406,23 +12565,20 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
                 }
             }
             
-            // 4. SPROFONDAMENTO E DANNI (LAVA, ACQUA E LASTRA GHIACCIATA) O VOLO DEL VIANDANTE DEL VUOTO
-            let targetDepth = isVoidWalker ? 8.0 : (inPit && isIce ? -8.5 : 0); 
-            if (inPit && !isIce) {
-                targetDepth = -28;
-                if (Game.currentThemeIndex === 1) {
-                    if (this.lavaTimer === undefined) this.lavaTimer = 0;
-                    this.lavaTimer += dt;
-                    if (this.lavaTimer >= 1.0) {
-                        this.takeDamage(this.stats.maxHp * 0.10, 'hazard', false, false);
-                        this.lavaTimer = 0;
-                        AudioEngine.playShoot('flame');
-                        for(let i=0; i<6; i++) {
-                            let p = Game.getParticle();
-                            p.spawn(this.x + MathUtils.randomRange(-6, 6), 10, this.y + MathUtils.randomRange(-6, 6), SharedMat.spriteRed, 'flame');
-                            p.baseSize = MathUtils.randomRange(25, 40);
-                            p.vy = MathUtils.randomRange(60, 150);
-                        }
+            // 4. QUOTA SEGUENTE IL PROFILO 3D REALE DELLA FOSSA (Zero sprofondamento sul perimetro)
+            let targetDepth = pitGroundY;
+            if (inPit && !isIce && Game.currentThemeIndex === 1) {
+                if (this.lavaTimer === undefined) this.lavaTimer = 0;
+                this.lavaTimer += dt;
+                if (this.lavaTimer >= 1.0) {
+                    this.takeDamage(this.stats.maxHp * 0.10, 'hazard', false, false);
+                    this.lavaTimer = 0;
+                    AudioEngine.playShoot('flame');
+                    for (let i = 0; i < 6; i++) {
+                        let p = Game.getParticle();
+                        p.spawn(this.x + MathUtils.randomRange(-6, 6), 4, this.y + MathUtils.randomRange(-6, 6), SharedMat.spriteRed, 'flame');
+                        p.baseSize = MathUtils.randomRange(25, 40);
+                        p.vy = MathUtils.randomRange(60, 150);
                     }
                 }
             } else {
@@ -12440,13 +12596,15 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
                 p.life = MathUtils.randomRange(0.35, 0.55); p.maxLife = p.life;
             }
 
-            let activeBounce = isVoidWalker ? (Math.sin(Game.playTime * 4.5) * 2.2) : (isMoving ? (Game.animBounce * 0.75) : (Math.sin(Game.playTime * 3.0) * 0.4));
-            this.mesh.position.y += ((targetDepth + activeBounce) - this.mesh.position.y) * dt * 10;
+            // Rimbalzo del passo sempre >= 0 così l'orlo della veste non compenetra mai il suolo o il ghiaccio
+            let stepLift = isMoving ? (Math.abs(Math.sin(Game.playTime * 9.5)) * 2.4 + 0.5) : 0.0;
+            let activeBounce = isVoidWalker ? (Math.sin(Game.playTime * 4.5) * 2.2) : stepLift;
+            this.mesh.position.y += ((targetDepth + activeBounce) - this.mesh.position.y) * dt * 12;
 
-            let targetPitch = isMoving ? 0.20 : 0.0;
+            let targetPitch = isMoving ? 0.14 : 0.0;
             let forwardX = Math.cos(displayAngle), forwardY = Math.sin(displayAngle);
             let strafeCross = (dx * forwardY) - (dy * forwardX);
-            let targetRoll = isMoving ? (strafeCross * 0.22) : 0.0;
+            let targetRoll = isMoving ? (strafeCross * 0.15) : 0.0;
 
             this.modelParts.body.rotation.x += (targetPitch - this.modelParts.body.rotation.x) * dt * 10;
             this.modelParts.body.rotation.z += (targetRoll - this.modelParts.body.rotation.z) * dt * 10;
@@ -14744,7 +14902,7 @@ class Enemy extends Entity {
                 else child.material.dispose();
             }
         };
-        this.mesh.traverse(cleanupChild);
+        if (this.isPursuer) this.mesh.traverse(cleanupChild);
         // NON puliamo telegraphMesh e shadowMesh: appartengono al Pool e vivono in eterno
         
         this.active = false; this.mesh.visible = false;
@@ -15473,8 +15631,12 @@ class Projectile {
         this.hitEnemies = new Set(); 
         this.updateOffset = Math.floor(Math.random() * 15); 
         Game.scene.add(this.group);
-        this.groundGlow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}));
-        this.groundGlow.rotation.x = -Math.PI / 2;
+        if (!window.GLOBAL_TELEGRAPH_GEO) {
+            window.GLOBAL_TELEGRAPH_GEO = new THREE.PlaneGeometry(1, 1);
+            window.GLOBAL_TELEGRAPH_GEO.rotateX(-Math.PI / 2);
+        }
+        this.groundGlow = new THREE.Mesh(window.GLOBAL_TELEGRAPH_GEO, new THREE.MeshBasicMaterial({map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}));
+        this.groundGlow.matrixAutoUpdate = false;
         this.groundGlow.visible = false;
         Game.scene.add(this.groundGlow);
 
@@ -15535,12 +15697,13 @@ if (type === 'arrow' || type === 'homing_arrow') {
             if (type === 'enemy_fireball' || type === 'fire_shape') { colorHex = 0xff3300; glowSize = 85; }
             if (type === 'enemy_bolt') { colorHex = 0x00aaff; glowSize = 60; }
 
-            this.groundGlow.material.color.setHex(colorHex);
-            this.groundGlow.scale.set(glowSize, glowSize, 1);
+           this.groundGlow.material.color.setHex(colorHex);
+            this.groundGlow.scale.setScalar(glowSize);
             
             // SOLUZIONE BUG: Alziamo l'alone a y = 1.5 per evitare che sprofondi sotto sassi ed erba
             this.groundGlow.position.set(x, 1.5, y);
             this.groundGlow.rotation.z = 0; 
+            this.groundGlow.updateMatrix();
             
             this.groundGlow.visible = true;
         } else {
@@ -15616,6 +15779,7 @@ if (type === 'arrow' || type === 'homing_arrow') {
             let baseScale = (this.type === 'explosive_arrow' || this.type === 'enemy_fireball' || this.type === 'fire_shape') ? 85 : 
                             (this.type === 'chain_lightning' || this.type === 'homing_arrow' || this.type === 'enemy_bolt') ? 65 : 50; 
             this.groundGlow.scale.setScalar(baseScale + (flicker * 15));
+            this.groundGlow.updateMatrix();
         } else {
             // Spegne il piano invisibile per salvare fill-rate
             this.groundGlow.visible = false;
