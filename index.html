@@ -1475,17 +1475,62 @@ const AudioEngine = {
             this.playNoise(0.05, 'high', 0.1);
         }
     },
-    playBreak(type) {
+   playBreak(type) {
         if (!this.ctx || this.sfxMuted || this.ctx.state === 'suspended') return;
         let t = this.ctx.currentTime;
-        
-        // UNIFICATO: Casse e vasi usano lo stesso rumore sordo e "croccante"
-        this.playNoise(0.15, 'low', 0.6); 
-        let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
-        osc.type = 'square'; osc.frequency.setValueAtTime(150, t); osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
-        gain.gain.setValueAtTime(0.4, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
-        osc.connect(gain); gain.connect(this.masterCompressor ? this.masterCompressor : this.ctx.destination);
-        osc.start(t); osc.stop(t + 0.1);
+        let dest = this.masterCompressor || this.ctx.destination;
+        let r = 0.92 + Math.random() * 0.16;
+
+        if (type === 'urn') {
+            // Risonanza cava dell'anfora + infrangersi di cocci in terracotta
+            let bodyOsc = this.ctx.createOscillator(); let bodyGain = this.ctx.createGain();
+            bodyOsc.type = 'triangle';
+            bodyOsc.frequency.setValueAtTime(420 * r, t);
+            bodyOsc.frequency.exponentialRampToValueAtTime(115, t + 0.09);
+            bodyGain.gain.setValueAtTime(0.32, t);
+            bodyGain.gain.exponentialRampToValueAtTime(0.005, t + 0.09);
+            bodyOsc.connect(bodyGain); bodyGain.connect(dest);
+            bodyOsc.start(t); bodyOsc.stop(t + 0.09);
+
+            this.playNoise(0.14, 'high', 0.28);
+            const shardFreqs = [1380, 1890, 2460];
+            for (let i = 0; i < 3; i++) {
+                let sOsc = this.ctx.createOscillator(); let sGain = this.ctx.createGain();
+                let st = t + i * 0.022;
+                sOsc.type = 'sine';
+                sOsc.frequency.setValueAtTime(shardFreqs[i] * r, st);
+                sOsc.frequency.exponentialRampToValueAtTime(shardFreqs[i] * 0.65, st + 0.065);
+                sGain.gain.setValueAtTime(0.12, st);
+                sGain.gain.exponentialRampToValueAtTime(0.003, st + 0.065);
+                sOsc.connect(sGain); sGain.connect(dest);
+                sOsc.start(st); sOsc.stop(st + 0.07);
+            }
+        } else {
+            // Impatto sordo + schianto secco delle assi di legno
+            this.playNoise(0.14, 'low', 0.55);
+            let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(165 * r, t);
+            osc.frequency.exponentialRampToValueAtTime(42, t + 0.11);
+            gain.gain.setValueAtTime(0.34, t);
+            gain.gain.exponentialRampToValueAtTime(0.008, t + 0.11);
+            osc.connect(gain); gain.connect(dest);
+            osc.start(t); osc.stop(t + 0.11);
+
+            if (this.noiseBuffer) {
+                for (let i = 0; i < 2; i++) {
+                    let st = t + i * 0.032;
+                    let nSrc = this.ctx.createBufferSource(); nSrc.buffer = this.noiseBuffer;
+                    let bp = this.ctx.createBiquadFilter(); bp.type = 'bandpass';
+                    bp.frequency.setValueAtTime((950 + i * 420) * r, st); bp.Q.value = 3.0;
+                    let nGain = this.ctx.createGain();
+                    nGain.gain.setValueAtTime(0.28, st);
+                    nGain.gain.exponentialRampToValueAtTime(0.005, st + 0.06);
+                    nSrc.connect(bp); bp.connect(nGain); nGain.connect(dest);
+                    nSrc.start(st); nSrc.stop(st + 0.065);
+                }
+            }
+        }
     },
     playEnemyDeath() {
         if (!this.ctx || this.sfxMuted) return;
@@ -3790,6 +3835,8 @@ const GLOBAL_ALPHA_TEX = createOrganicAlphaMap();
         spritePink: new THREE.SpriteMaterial({color: 0xff66bb, map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, alphaTest: 0.02}),
         spriteBlood: new THREE.SpriteMaterial({color: 0xaa0000, map: GLOW_TEX, transparent: true, depthWrite: false, alphaTest: 0.05}),
         spriteDust: new THREE.SpriteMaterial({color: 0x2a1e16, map: GLOW_TEX, transparent: true, opacity: 0.6, depthWrite: false, alphaTest: 0.02}),
+        spriteWoodDust: new THREE.SpriteMaterial({color: 0xd49452, map: GLOW_TEX, transparent: true, opacity: 0.55, blending: THREE.NormalBlending, depthWrite: false, alphaTest: 0.02}),
+        spriteClayDust: new THREE.SpriteMaterial({color: 0xc9643e, map: GLOW_TEX, transparent: true, opacity: 0.58, blending: THREE.NormalBlending, depthWrite: false, alphaTest: 0.02}),
         spriteBlackSmoke: new THREE.SpriteMaterial({color: 0x050505, map: GLOW_TEX, transparent: true, opacity: 0.95, blending: THREE.NormalBlending, depthWrite: false, alphaTest: 0.05}),
         arrow: new THREE.MeshPhongMaterial({color: 0x888888, emissive: 0x444444}),
         playerArrow: createOrbMaterial(0xffff00),
@@ -9015,7 +9062,7 @@ class GameMap {
             const cWall = new THREE.Color(currentTheme.wall);
             const cDeep = (themeIdx === 1)
                 ? { r: 1.50, g: 0.40, b: 0.08 }
-                : ((themeIdx === 0) ? { r: 0.06, g: 0.26, b: 0.48 } : { r: 0.16, g: 0.46, b: 0.72 });
+                : ((themeIdx === 0) ? { r: 0.20, g: 0.85, b: 1.05 } : { r: 0.16, g: 0.46, b: 0.72 });
 
             const sampleTileColor = (tx, ty) => {
                 if (tx < 0 || tx >= this.width || ty < 0 || ty >= this.height) return cDirt;
@@ -9268,9 +9315,9 @@ class GameMap {
                     bankUVs.push(uSeamless, 0.0);
                     bankCols.push(cDeep.r * 0.85, cDeep.g * 0.85, cDeep.b * 0.85);
 
-                    const shoreY = (themeIdx === 2) ? -8.38 : -17.35;
-                    const dShore0 = (themeIdx === 2) ? 3.5 : 6.6;
-                    const dShore1 = (themeIdx === 2) ? 19.5 : 21.5;
+                    const shoreY = (themeIdx === 2) ? -8.38 : (themeIdx === 0 ? -17.26 : -17.35);
+                    const dShore0 = (themeIdx === 2) ? 3.5 : (themeIdx === 0 ? 5.6 : 6.6);
+                    const dShore1 = (themeIdx === 2) ? 19.5 : (themeIdx === 0 ? 38.0 : 21.5);
                     shorePos.push(
                         p.px + p.mx * dShore0, shoreY, p.pz + p.mz * dShore0,
                         p.px + p.mx * dShore1, shoreY, p.pz + p.mz * dShore1
@@ -9503,14 +9550,25 @@ class GameMap {
                         float wob = sin(uArc * 2.0 + uTime * 0.9) * 0.03 + cos(uArc * 5.0 - uTime * 0.6) * 0.015;
                         float d = clamp(sDist + wob, 0.0, 1.0);
                         ${themeIdx === 0 ? `
-                            float contactAO = (1.0 - smoothstep(0.04, 0.22, d)) * 0.48;
-                            float rimLine = smoothstep(0.05, 0.14, d) * (1.0 - smoothstep(0.14, 0.28, d));
-                            float ripWave = sin(d * 20.0 - uTime * 1.3 + sin(uArc * 3.0) * 0.6);
-                            float ripples = smoothstep(0.65, 0.96, ripWave) * smoothstep(0.15, 0.28, d) * (1.0 - smoothstep(0.38, 0.85, d));
-                            float foamAlpha = clamp(contactAO + rimLine * 0.34 + ripples * 0.14, 0.0, 0.62) * deepFade;
-                            float brightMix = clamp((rimLine + ripples) / max(0.001, contactAO + rimLine + ripples), 0.0, 1.0);
-                            vec3 foamCol = mix(vec3(0.02, 0.08, 0.18), vec3(0.36, 0.64, 0.86), brightMix);
-                            diffuseColor = vec4(foamCol, foamAlpha);
+                            float haloFade = pow(1.0 - smoothstep(0.03, 1.0, sDist), 1.55);
+                            float fairyBreath = 0.88 + 0.12 * sin(uArc * 3.0 - uTime * 1.15) * cos(uArc * 5.0 + uTime * 0.85);
+                            float haloBody = haloFade * fairyBreath;
+
+                            // Bordino luminoso acquamarina a contatto con la roccia + onde concentriche soffuse
+                            float rimGlow = smoothstep(0.01, 0.07, d) * (1.0 - smoothstep(0.07, 0.22, d));
+                            float ripWave = sin(d * 24.0 - uTime * 1.45 + sin(uArc * 4.0) * 0.7);
+                            float ripples = smoothstep(0.62, 0.96, ripWave) * smoothstep(0.08, 0.20, d) * (1.0 - smoothstep(0.42, 0.92, sDist));
+
+                            // Sfumatura fiabesca: turchese-menta brillante a riva -> ciano cristallino -> azzurro laguna
+                            vec3 innerAqua = vec3(0.34, 0.96, 0.92);
+                            vec3 midCyan   = vec3(0.14, 0.76, 0.98);
+                            vec3 outerBlue = vec3(0.08, 0.48, 0.90);
+                            vec3 haloCol = mix(outerBlue, midCyan, smoothstep(0.18, 0.62, haloFade));
+                            haloCol = mix(haloCol, innerAqua, smoothstep(0.58, 0.96, haloFade));
+                            haloCol = mix(haloCol, vec3(0.76, 0.99, 1.0), clamp(rimGlow * 0.72 + ripples * 0.45, 0.0, 0.85));
+
+                            float haloAlpha = clamp(haloBody * 0.64 + rimGlow * 0.28 + ripples * 0.18, 0.0, 0.82) * (1.0 - smoothstep(0.82, 1.0, sDist));
+                            diffuseColor = vec4(haloCol, haloAlpha);
                         ` : (themeIdx === 1 ? `
                             float pulse = 0.84 + 0.16 * sin(uTime * 2.6 + uArc * 2.0);
                             float hotRim = (1.0 - smoothstep(0.06, 0.34, d)) * pulse;
@@ -10427,75 +10485,158 @@ this.fogMesh.renderOrder = -1; // Assicura che venga disegnato DOPO il terreno (
         this.id = 'prop_' + type + '_' + index;
         this.active = false;
         this.dead = false;
-        this.hitTimer = 0; // Timer animazione wobble
+        this.dying = false;
+        this.hitTimer = 0;
+        this.breakTimer = 0;
+        this.hitDirX = 0;
+        this.hitDirZ = 1;
         this.originalScale = 1.0;
         this.originalRotY = 0;
     }
+
     spawn(x, y) {
         this.x = x; this.y = y;
-        this.radius = 18; 
-        this.hp = Game.floor * 10 + 20; 
+        this.radius = 18;
+        this.hp = Game.floor * 10 + 20;
         this.active = true;
         this.dead = false;
-        this.isProphetBuffed = false; // FIX: Resetta sempre lo scudo del Profeta dal pool
+        this.dying = false;
+        this.isProphetBuffed = false;
         this.hitTimer = 0;
+        this.breakTimer = 0;
         Game.enemyGrid.insert(this);
     }
+
     takeDamage(amount, source, isCrit) {
-        if (!this.active || this.dead) return;
+        if (!this.active || this.dead || this.dying) return;
         if (this.isProphetBuffed) {
-            amount *= 0.05; // Protetta dallo scudo del Profeta
+            amount *= 0.05;
             if (source === Game.player) AudioEngine.playHit('shield_clang');
             if (Game.frameCount % 4 === 0) Game.getParticle().spawn(this.x, 18, this.y, SharedMat.spriteWhite, 'spark');
         }
         this.hp -= amount;
-        
-        // Innesca l'animazione di Wobble (0.3s di durata)
-        this.hitTimer = 0.3;
 
-        // Colpire una cassa o anfora aumenta la combo (+1)
+        // Calcola la direzione del colpo ricevuto per orientare piega e frammenti
+        if (source && typeof source.x === 'number' && typeof source.y === 'number') {
+            let dx = this.x - source.x, dz = this.y - source.y;
+            let len = Math.hypot(dx, dz) || 1;
+            this.hitDirX = dx / len;
+            this.hitDirZ = dz / len;
+        } else {
+            let a = Math.random() * Math.PI * 2;
+            this.hitDirX = Math.cos(a);
+            this.hitDirZ = Math.sin(a);
+        }
+
         if (source === Game.player) {
             Game.addCombo(1);
         }
 
-        Game.getParticle().spawn(this.x, 10, this.y, SharedMat.spriteDust, 'spark');
+        let dustMat = this.type === 'crate' ? SharedMat.spriteWoodDust : SharedMat.spriteClayDust;
+        let puff = Game.getParticle();
+        puff.spawn(this.x, 14, this.y, dustMat, 'dust');
+        puff.baseSize = MathUtils.randomRange(18, 28);
 
         if (this.hp <= 0) {
+            // Libera subito le collisioni e riproduce il suono, avviando il gonfiaggio esplosivo di 65ms
             this.dead = true;
-            this.hitTimer = 0; // Ferma il wobble
-            this.destroy();
+            this.dying = true;
+            this.hitTimer = 0;
+            this.breakTimer = 0.065;
+            Game.enemyGrid.remove(this);
+            AudioEngine.playBreak(this.type);
+            Haptics.vibrate(12);
+        } else {
+            this.hitTimer = 0.28;
+            // Stacca 1-2 piccole schegge già sui colpi intermedi
+            if (!AppSettings.isLow) {
+                let chip = Game.getDebris();
+                if (chip) {
+                    Game._vec3.set(this.x + MathUtils.randomRange(-6, 6), 14, this.y + MathUtils.randomRange(-6, 6));
+                    Game._dummyScale.set(4.2, 4.2, 4.2);
+                    let chipCol = this.type === 'crate' ? 0xb87333 : 0xb35936;
+                    chip.spawn(Game._vec3, Game._dummyQuat, Game._dummyScale, this.type === 'crate' ? 'crate_plank' : 'urn_shard', chipCol, 8, false, false, this.hitDirX * 0.6, this.hitDirZ * 0.6);
+                }
+            }
         }
     }
-    push() {} 
-    hideAuras() {} 
 
-    // Aggiornamento a 60fps per animare fisicamente la matrice
+    push() {}
+    hideAuras() {}
+
     update(dt) {
-        if (!this.active || this.dead || this.hitTimer <= 0) return;
+        if (!this.active) return;
 
+        // FASE DI ROTTURA: rapida dilatazione elastica a pressione prima della deflagrazione in schegge 3D
+        if (this.dying) {
+            this.breakTimer -= dt;
+            if (this.breakTimer <= 0) {
+                this.dying = false;
+                this.destroy(false);
+                return;
+            }
+            let p = 1.0 - (this.breakTimer / 0.065); // 0 -> 1
+            let ease = p * (2.0 - p);
+            let swellXZ = 1.0 + ease * 0.34;
+            let squashY = 1.0 - ease * 0.24;
+            let py = (this.type === 'crate' ? 12 : 17) * this.originalScale;
+            let dummy = Game._dummyDebris;
+
+            dummy.position.set(this.x + this.hitDirX * ease * 3.5, py * squashY + ease * 2.5, this.y + this.hitDirZ * ease * 3.5);
+            dummy.rotation.set(this.hitDirZ * ease * 0.28, this.originalRotY + ease * 0.18, -this.hitDirX * ease * 0.28);
+            dummy.scale.set(this.originalScale * swellXZ, this.originalScale * squashY, this.originalScale * swellXZ);
+            dummy.updateMatrix();
+
+            if (this.type === 'crate' && Game.map && Game.map.crateMesh) {
+                Game.map.crateMesh.setMatrixAt(this.index, dummy.matrix);
+                Game.map.crateMesh.instanceMatrix.needsUpdate = true;
+                if (Game.map.crateShadowMesh) {
+                    dummy.position.set(this.x + 4 * this.originalScale, 0.45, this.y + 5 * this.originalScale);
+                    dummy.rotation.set(0, 0, 0);
+                    dummy.scale.set(48 * this.originalScale * swellXZ, 1, 48 * this.originalScale * swellXZ);
+                    dummy.updateMatrix();
+                    Game.map.crateShadowMesh.setMatrixAt(this.index, dummy.matrix);
+                    Game.map.crateShadowMesh.instanceMatrix.needsUpdate = true;
+                }
+            } else if (this.type === 'urn' && Game.map && Game.map.urnMesh) {
+                Game.map.urnMesh.setMatrixAt(this.index, dummy.matrix);
+                Game.map.urnMesh.instanceMatrix.needsUpdate = true;
+                if (Game.map.urnShadowMesh) {
+                    dummy.position.set(this.x + 4 * this.originalScale, 0.45, this.y + 5.5 * this.originalScale);
+                    dummy.rotation.set(0, 0, 0);
+                    dummy.scale.set(44 * this.originalScale * swellXZ, 1, 44 * this.originalScale * swellXZ);
+                    dummy.updateMatrix();
+                    Game.map.urnShadowMesh.setMatrixAt(this.index, dummy.matrix);
+                    Game.map.urnShadowMesh.instanceMatrix.needsUpdate = true;
+                }
+            }
+            return;
+        }
+
+        if (this.dead || this.hitTimer <= 0) return;
+
+        // OSCILLAZIONE DIREZIONALE SUI COLPI NON LETALI
         this.hitTimer -= dt;
         let dummy = Game._dummyDebris;
         let py = (this.type === 'crate' ? 12 : 17) * this.originalScale;
 
         if (this.hitTimer > 0) {
-            let intensity = this.hitTimer / 0.3; // sfuma da 1 a 0
-            // Oscillazione laterale e schiacciamento
-            let wobbleAngle = Math.sin(this.hitTimer * 40) * 0.35 * intensity;
-            let squish = 1.0 - (Math.sin(this.hitTimer * 25) * 0.2 * intensity);
+            let intensity = this.hitTimer / 0.28;
+            let wave = Math.sin((1.0 - intensity) * Math.PI * 3.5);
+            let tilt = wave * 0.32 * intensity;
+            let squish = 1.0 - Math.sin((1.0 - intensity) * Math.PI) * 0.18 * intensity;
+            let expand = 1.0 + (1.0 - squish) * 0.6;
 
-            dummy.position.set(this.x, py * squish, this.y); // Rimbalza verso il basso
-            dummy.rotation.set(wobbleAngle, this.originalRotY, wobbleAngle); // Tremolio direzionale
-            dummy.scale.set(this.originalScale, this.originalScale * squish, this.originalScale);
+            dummy.position.set(this.x + this.hitDirX * wave * 2.2 * intensity, py * squish, this.y + this.hitDirZ * wave * 2.2 * intensity);
+            dummy.rotation.set(this.hitDirZ * tilt, this.originalRotY, -this.hitDirX * tilt);
+            dummy.scale.set(this.originalScale * expand, this.originalScale * squish, this.originalScale * expand);
         } else {
-            // Ritorno allo stato di riposo perfetto
             dummy.position.set(this.x, py, this.y);
             dummy.rotation.set(0, this.originalRotY, 0);
             dummy.scale.setScalar(this.originalScale);
         }
 
         dummy.updateMatrix();
-
-        // Passa la nuova matrice deformata alla GPU
         if (this.type === 'crate') {
             Game.map.crateMesh.setMatrixAt(this.index, dummy.matrix);
             Game.map.crateMesh.instanceMatrix.needsUpdate = true;
@@ -10507,13 +10648,14 @@ this.fogMesh.renderOrder = -1; // Assicura che venga disegnato DOPO il terreno (
 
     destroy(silent = false) {
         this.active = false;
-        Game.enemyGrid.remove(this); 
-        
+        this.dying = false;
+        Game.enemyGrid.remove(this);
+
         let dummy = Game._dummyDebris;
         dummy.position.set(0, -1000, 0);
         dummy.scale.set(0, 0, 0);
         dummy.updateMatrix();
-        
+
         if (this.type === 'crate' && Game.map && Game.map.crateMesh) {
             Game.map.crateMesh.setMatrixAt(this.index, dummy.matrix);
             Game.map.crateMesh.instanceMatrix.needsUpdate = true;
@@ -10530,57 +10672,97 @@ this.fogMesh.renderOrder = -1; // Assicura che venga disegnato DOPO il terreno (
             }
         }
 
-        // Se rimosso durante la generazione della mappa o se il player non esiste ancora, esce subito
         if (silent || !Game.player) return;
 
-        // --- EFFETTO NUVOLA FUMO NERO (Stile Crash Bandicoot) ---
-        let pCount = AppSettings.isLow ? 4 : (isTouchDevice ? 8 : 12);
-        for(let i=0; i<pCount; i++) {
+        Game.addTrauma(0.14);
+        Game.pushDebris(this.x, this.y, 85, 190);
+
+        const isCrate = (this.type === 'crate');
+        const cratePalette = [0xc88342, 0xa4632a, 0x5c3317, 0xd99b56];
+        const urnPalette   = [0xb55a35, 0xd1744b, 0x4a2511, 0x8f4022];
+        const palette = isCrate ? cratePalette : urnPalette;
+
+        // 1. Esplosione fisica in vere assi di legno o cocci di terracotta 3D
+        let pieceCount = AppSettings.isLow ? 5 : (isTouchDevice ? 7 : 11);
+        for (let i = 0; i < pieceCount; i++) {
+            let deb = Game.getDebris();
+            if (!deb) break;
+            let ringAngle = (Math.PI * 2 / pieceCount) * i + MathUtils.randomRange(-0.25, 0.25);
+            let spawnR = MathUtils.randomRange(3, 11) * this.originalScale;
+            let spawnY = MathUtils.randomRange(6, isCrate ? 22 : 28) * this.originalScale;
+            Game._vec3.set(this.x + Math.cos(ringAngle) * spawnR, spawnY, this.y + Math.sin(ringAngle) * spawnR);
+            Game._dummyScale.setScalar(this.originalScale * 9.0);
+
+            let outX = Math.cos(ringAngle) * 0.75 + this.hitDirX * 0.55;
+            let outZ = Math.sin(ringAngle) * 0.75 + this.hitDirZ * 0.55;
+            deb.spawn(
+                Game._vec3,
+                Game._dummyQuat,
+                Game._dummyScale,
+                isCrate ? 'crate_plank' : 'urn_shard',
+                palette[i % palette.length],
+                14,
+                false,
+                true,
+                outX,
+                outZ
+            );
+        }
+
+        // 2. Flash d'urto centrale + nuvola leggera di segatura o polvere di terracotta
+        if (!AppSettings.isLow) {
+            let pop = Game.getParticle();
+            pop.spawn(this.x, 14, this.y, isCrate ? SharedMat.spriteYellow : SharedMat.spriteWhite, 'nova');
+            pop.baseSize = 46 * this.originalScale;
+            pop.life = 0.11; pop.maxLife = 0.11;
+        }
+
+        let dustMat = isCrate ? SharedMat.spriteWoodDust : SharedMat.spriteClayDust;
+        let dustCount = AppSettings.isLow ? 3 : (isTouchDevice ? 5 : 8);
+        for (let i = 0; i < dustCount; i++) {
+            let a = (Math.PI * 2 / dustCount) * i + MathUtils.randomRange(-0.3, 0.3);
             let p = Game.getParticle();
-            p.spawn(this.x, 10, this.y, SharedMat.spriteBlackSmoke, 'dust');
-            p.baseSize = MathUtils.randomRange(50, 90);
-            p.vy = MathUtils.randomRange(20, 45);
-            p.vx = MathUtils.randomRange(-30, 30); 
-            p.vz = MathUtils.randomRange(-30, 30);
-            p.life = MathUtils.randomRange(1.2, 1.8);
+            p.spawn(this.x + Math.cos(a) * 6, MathUtils.randomRange(6, 18), this.y + Math.sin(a) * 6, dustMat, 'dust');
+            p.baseSize = MathUtils.randomRange(24, 40) * this.originalScale;
+            let spd = MathUtils.randomRange(35, 85);
+            p.vx = Math.cos(a) * spd + this.hitDirX * 25;
+            p.vz = Math.sin(a) * spd + this.hitDirZ * 25;
+            p.vy = MathUtils.randomRange(18, 45);
+            p.life = MathUtils.randomRange(0.42, 0.68);
             p.maxLife = p.life;
         }
-        
-        let debrisMat = this.type === 'crate' ? SharedMat.spriteYellow : SharedMat.spriteWhite;
-        for(let i=0; i<3; i++) Game.getParticle().spawn(this.x, 15, this.y, debrisMat, 'spark');
 
-        AudioEngine.playBreak(this.type);
-        
-        // --- NUOVO SISTEMA DROP CASSE E VASI ---
+        let sparkMat = isCrate ? SharedMat.spriteYellow : SharedMat.spriteWhite;
+        let sparkCount = AppSettings.isLow ? 2 : 4;
+        for (let i = 0; i < sparkCount; i++) {
+            Game.getParticle().spawn(this.x, 15, this.y, sparkMat, 'spark');
+        }
+
+        // 3. Sistema Drop Casse e Vasi
         let r = Math.random();
         let propRelicChance = 0.0025 / (1 + Game.player.relics.length * 0.25);
 
-        if ((Game.floorBonusRelics || 0) < 1 && r < propRelicChance) { 
+        if ((Game.floorBonusRelics || 0) < 1 && r < propRelicChance) {
             let choices = RelicSystem.getChoices();
             if (choices.length > 0) {
                 Game.floorBonusRelics = (Game.floorBonusRelics || 0) + 1;
-                let dropRelic = choices[0]; 
+                let dropRelic = choices[0];
                 dropRelic.apply(Game.player); Game.player.relics.push(dropRelic);
                 AudioEngine.playRelicDrop();
                 Game.getFloatingText().spawn(this.x, this.y + 40, "RELIQUIA SEGRETA!", '#fbbf24', 35, true);
             } else {
-                for(let c=0; c<10; c++) Game.queueDrop('coin', this.x, this.y, 30, false);
+                for (let c = 0; c < 10; c++) Game.queueDrop('coin', this.x, this.y, 30, false);
             }
         } else if (r < 0.06) {
-            // ~5.7% (Rara) - Rigenerazione HP (10% HP in 5 Secondi)
             Game.player.shortBuffs.regen = 5.0;
             Game.getFloatingText().spawn(this.x, this.y + 30, "RIGENERO! (+10% HP)", '#33ff00', 30, true);
-            for(let i=0; i<6; i++) Game.getParticle().spawn(this.x, 25, this.y, SharedMat.spriteLevel, 'spark');
+            for (let i = 0; i < 6; i++) Game.getParticle().spawn(this.x, 25, this.y, SharedMat.spriteLevel, 'spark');
             AudioEngine.playCollect();
-
         } else if (r < 0.26) {
-            // 20% - Essenza
             Game.queueDrop('essence', this.x, this.y, 20, false);
-        } else { 
-            // 63% - Monete 
-            // BILANCIAMENTO: 80% di possibilità di droppare 1 sola moneta, solo il 20% di dropparne 2.
-            let numCoins = Math.random() < 0.2 ? 2 : 1; 
-            for(let i=0; i<numCoins; i++) Game.queueDrop('coin', this.x, this.y, 25, false);
+        } else {
+            let numCoins = Math.random() < 0.2 ? 2 : 1;
+            for (let i = 0; i < numCoins; i++) Game.queueDrop('coin', this.x, this.y, 25, false);
         }
     }
 }
@@ -15738,44 +15920,60 @@ class Particle {
 }
 class Debris {
     constructor(index) {
-        this.index = index; 
+        this.index = index;
         this.active = false;
         this.initialScale = 1;
+        this.sx = 1; this.sy = 1; this.sz = 1;
+        this.isFlatPiece = false;
     }
-    
-    spawn(worldPos, worldQuat, scaleVec, enemyType, colorHex, enemyRadius, isElite = false, forceSpawn = false) {
+
+    spawn(worldPos, worldQuat, scaleVec, enemyType, colorHex, enemyRadius, isElite = false, forceSpawn = false, dirX = 0, dirZ = 0) {
         if (!forceSpawn && Game.debrisThisFrame > (isTouchDevice ? 4 : 15)) return;
         if (!forceSpawn) Game.debrisThisFrame = (Game.debrisThisFrame || 0) + 1;
-        
+
         this.active = true;
-        this.isSleeping = false; 
-        this.isSinking = false; 
-        this.life = MathUtils.randomRange(3.2, 4.5); 
-        
-        // --- LOGICA FORME DETRITI ZERO-ALLOCATION ---
-        if (enemyType === 'golem' || enemyType === 'orc') {
-            this.shapeType = 1; // Solo Cubi (Rocciosi/Massicci)
+        this.isSleeping = false;
+        this.isSinking = false;
+        this.life = MathUtils.randomRange(3.2, 4.5);
+        this.sx = 1; this.sy = 1; this.sz = 1;
+        this.isFlatPiece = false;
+
+        if (enemyType === 'crate_plank') {
+            this.shapeType = 1; // Assi e listelli di legno 3D
+            this.sx = MathUtils.randomRange(1.85, 2.65);
+            this.sy = MathUtils.randomRange(0.18, 0.28);
+            this.sz = MathUtils.randomRange(0.42, 0.68);
+            this.isFlatPiece = true;
+        } else if (enemyType === 'urn_shard') {
+            // Cocci piatti triangolari e curvi in terracotta
+            this.shapeType = Math.random() < 0.65 ? 0 : 1;
+            this.sx = MathUtils.randomRange(1.10, 1.55);
+            this.sy = MathUtils.randomRange(0.20, 0.32);
+            this.sz = MathUtils.randomRange(0.85, 1.25);
+            this.isFlatPiece = true;
+        } else if (enemyType === 'golem' || enemyType === 'orc') {
+            this.shapeType = 1;
         } else if (enemyType === 'slime' || enemyType === 'slime_mini') {
-            this.shapeType = 2; // Solo Sfere (Gelatinosi)
+            this.shapeType = 2;
         } else if (enemyType === 'goblin' || enemyType === 'pyromancer' || enemyType === 'crystal') {
-            this.shapeType = 0; // Solo Triangoli (Spigolosi)
+            this.shapeType = 0;
         } else if (enemyType === 'skeleton_archer') {
-            this.shapeType = Math.random() > 0.5 ? 1 : 2; // Cubi e Sfere (Ossa e teschi)
+            this.shapeType = Math.random() > 0.5 ? 1 : 2;
         } else if (enemyType === 'fire_demon') {
-            this.shapeType = Math.random() > 0.5 ? 0 : 1; // Triangoli e Cubi (Corna e Torso)
+            this.shapeType = Math.random() > 0.5 ? 0 : 1;
         } else if (enemyType === 'boss') {
             let r = Math.random();
-            this.shapeType = r < 0.33 ? 0 : (r < 0.66 ? 1 : 2); // Tutte le forme
+            this.shapeType = r < 0.33 ? 0 : (r < 0.66 ? 1 : 2);
         } else {
-            this.shapeType = Math.random() > 0.5 ? 0 : 2; // Triangoli e Sfere
+            this.shapeType = Math.random() > 0.5 ? 0 : 2;
         }
-        
+
         if (!Game._dummyColor) Game._dummyColor = new THREE.Color();
-        if (!Game._eliteMixColor) Game._eliteMixColor = new THREE.Color(0x440000); 
-        
+        if (!Game._eliteMixColor) Game._eliteMixColor = new THREE.Color(0x440000);
+
         Game._dummyColor.setHex(colorHex);
-        if (isElite) Game._dummyColor.lerp(Game._eliteMixColor, 0.5); 
-        
+        if (isElite) Game._dummyColor.lerp(Game._eliteMixColor, 0.5);
+
         Game.debrisMeshes[this.shapeType].setColorAt(this.index, Game._dummyColor);
         Game.debrisMeshes[this.shapeType].instanceColor.needsUpdate = true;
 
@@ -15793,34 +15991,37 @@ class Debris {
         this.x = worldPos.x;
         this.y = worldPos.y;
         this.z = worldPos.z;
-        this.rotX = Math.random() * Math.PI;
-        this.rotY = Math.random() * Math.PI;
-        this.rotZ = Math.random() * Math.PI;
+        this.rotX = this.isFlatPiece ? MathUtils.randomRange(-0.5, 0.5) : Math.random() * Math.PI;
+        this.rotY = Math.random() * Math.PI * 2;
+        this.rotZ = this.isFlatPiece ? MathUtils.randomRange(-0.5, 0.5) : Math.random() * Math.PI;
 
-        // Dimensione bilanciata con variazione organica: ben visibili ma senza coprire i drop
         let rawScale = Math.max(Math.abs(scaleVec.x), Math.abs(scaleVec.y), Math.abs(scaleVec.z));
-        let capScale = isElite ? 14.0 : Math.min(enemyRadius * 0.85, 11.5);
-        this.baseScale = Math.max(3.5, Math.min(rawScale * 0.68, capScale) * MathUtils.randomRange(0.85, 1.15));
+        if (this.isFlatPiece) {
+            this.baseScale = Math.max(3.2, Math.min(rawScale * 0.72, 7.6) * MathUtils.randomRange(0.82, 1.18));
+        } else {
+            let capScale = isElite ? 14.0 : Math.min(enemyRadius * 0.85, 11.5);
+            this.baseScale = Math.max(3.5, Math.min(rawScale * 0.68, capScale) * MathUtils.randomRange(0.85, 1.15));
+        }
         this.initialScale = this.baseScale;
 
-        // Parabola esplosiva più bassa e reattiva (non invade mai la visuale della telecamera)
         let a = Math.random() * Math.PI * 2;
-        let speed = MathUtils.randomRange(65, 145); 
-        this.vx = Math.cos(a) * speed;
-        this.vz = Math.sin(a) * speed;
-        this.vy = MathUtils.randomRange(160, 290); 
-        this.rx = MathUtils.randomRange(-14, 14);
-        this.ry = MathUtils.randomRange(-14, 14);
-        this.rz = MathUtils.randomRange(-14, 14);
+        let speed = this.isFlatPiece ? MathUtils.randomRange(95, 210) : MathUtils.randomRange(65, 145);
+        this.vx = Math.cos(a) * speed * (this.isFlatPiece ? 0.55 : 1.0) + dirX * speed * 0.85;
+        this.vz = Math.sin(a) * speed * (this.isFlatPiece ? 0.55 : 1.0) + dirZ * speed * 0.85;
+        this.vy = this.isFlatPiece ? MathUtils.randomRange(175, 320) : MathUtils.randomRange(160, 290);
+        let spin = this.isFlatPiece ? 18 : 14;
+        this.rx = MathUtils.randomRange(-spin, spin);
+        this.ry = MathUtils.randomRange(-spin, spin);
+        this.rz = MathUtils.randomRange(-spin, spin);
 
-        this.update(0); 
+        this.update(0);
     }
-    
+
     update(dt) {
         if (!this.active) return false;
-        
+
         this.life -= dt;
-        
+
         if (this.life <= 0) {
             this.active = false;
             let dummy = Game._dummyDebris;
@@ -15832,7 +16033,7 @@ class Debris {
         }
 
         if (this.life < 0.7 && !this.isSinking) {
-            this.isSleeping = false; 
+            this.isSleeping = false;
             this.isSinking = true;
         }
 
@@ -15840,7 +16041,7 @@ class Debris {
             if (!Game.player || Game.player.dead || (Game.inputs.left.x === 0 && Game.inputs.left.y === 0 && !Game.player.isDashing)) return false;
 
             let dx = this.x - Game.player.x;
-            let dz = this.z - Game.player.y; 
+            let dz = this.z - Game.player.y;
             let distSq = dx * dx + dz * dz;
 
             let kickRadius = Game.player.isDashing ? 35 : 18;
@@ -15848,17 +16049,17 @@ class Debris {
             if (distSq < kickRadius * kickRadius) {
                 this.isSleeping = false;
                 let kickForce = Game.player.isDashing ? MathUtils.randomRange(280, 440) : MathUtils.randomRange(90, 210);
-                
+
                 let dist = Math.sqrt(distSq);
                 if (dist === 0) { dx = 1; dist = 1; }
-                
+
                 this.vx = (dx / dist) * kickForce + MathUtils.randomRange(-25, 25);
                 this.vz = (dz / dist) * kickForce + MathUtils.randomRange(-25, 25);
                 this.vy = MathUtils.randomRange(70, 160);
                 this.rx = MathUtils.randomRange(-14, 14);
                 this.rz = MathUtils.randomRange(-14, 14);
-                
-                if (this.life < 1.0) this.life = 1.0; 
+
+                if (this.life < 1.0) this.life = 1.0;
                 return true;
             }
             return false;
@@ -15869,7 +16070,7 @@ class Debris {
             this.y -= dt * 12;
             this.baseScale = this.initialScale * sinkProgress;
         } else if (dt > 0) {
-            this.vy -= 750 * dt; 
+            this.vy -= 780 * dt;
             this.y += this.vy * dt;
 
             let margin = Math.max(5, this.baseScale * 0.5);
@@ -15893,19 +16094,25 @@ class Debris {
             this.rotY += this.ry * dt;
             this.rotZ += this.rz * dt;
 
-            let floorLimit = this.baseScale * 0.28;
+            let floorLimit = this.isFlatPiece ? Math.max(1.1, this.baseScale * this.sy * 0.55) : (this.baseScale * 0.28);
             if (this.y < floorLimit) {
                 this.y = floorLimit;
-                this.vy *= -0.35; 
-                this.vx *= 0.58; 
+                this.vy *= -0.36;
+                this.vx *= 0.58;
                 this.vz *= 0.58;
-                this.rx *= 0.5;
-                this.ry *= 0.5;
-                this.rz *= 0.5;
+                this.rx *= 0.45;
+                this.ry *= 0.6;
+                this.rz *= 0.45;
+                if (this.isFlatPiece) {
+                    // Assi e cocci tendono ad adagiarsi piatti sul terreno a ogni rimbalzo
+                    this.rotX *= 0.55;
+                    this.rotZ *= 0.55;
+                }
 
-                if (Math.abs(this.vy) < 15 && Math.abs(this.vx) < 5 && Math.abs(this.vz) < 5) {
+                if (Math.abs(this.vy) < 16 && Math.abs(this.vx) < 6 && Math.abs(this.vz) < 6) {
                     this.isSleeping = true;
                     this.vy = 0; this.vx = 0; this.vz = 0;
+                    if (this.isFlatPiece) { this.rotX *= 0.25; this.rotZ *= 0.25; }
                 }
             }
         }
@@ -15913,11 +16120,11 @@ class Debris {
         let dummy = Game._dummyDebris;
         dummy.position.set(this.x, this.y, this.z);
         dummy.rotation.set(this.rotX, this.rotY, this.rotZ);
-        dummy.scale.setScalar(this.baseScale); 
-        
+        dummy.scale.set(this.baseScale * this.sx, this.baseScale * this.sy, this.baseScale * this.sz);
+
         dummy.updateMatrix();
         Game.debrisMeshes[this.shapeType].setMatrixAt(this.index, dummy.matrix);
-        return true; 
+        return true;
     }
 }
 class FloatingText {
