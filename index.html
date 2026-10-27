@@ -3032,11 +3032,10 @@ const RelicSystem = {
         { id: 'c2', name: "Siero Adrenalinico", desc: "Se i tuoi HP scendono sotto il 30%, la Velocità d'Attacco aumenta del +30%.", rarity: "common", image: "icona_adrenalina.png", icon: "fa-bolt", apply: (p) => { p.modifiers.lowHpAtkSpeed = true; } },
         { id: 'c4', name: "Cristallo Rigenerante", desc: "Se non subisci danni per 5 secondi, rigeneri l'1% di Salute massima al secondo.", rarity: "common", image: "icona_cristallo_vitale.png", icon: "fa-heart", apply: (p) => { p.modifiers.outOfCombatRegen = true; } },
         { id: 'r5', name: "Magnete Elementale", desc: "Attrae magneticamente le monete. Raccogliere un'essenza dona +3% Velocità di movimento per 3s (max 5 stack).", rarity: "common", image: "icona_magnete_delle_anime.png", icon: "fa-magnet", apply: (p) => { p.modifiers.pickupRadiusMult += 1.0; p.modifiers.essenceSpeedStacks = true; p.modifiers.coinMagnet = true; } },
-
-        // 🔵 RARE (5 Reliquie - Drop 30% - Meccaniche di combattimento)
-        { id: 'c5', name: "Runa dell'Agguato", desc: "Infliggi +20% danni ai nemici che hanno più dell'80% di Salute.", rarity: "rare", image: "icona_runa_minore.png", icon: "fa-fire", apply: (p) => { p.modifiers.openerDmg = true; } },
+// 🔵 RARE (5 Reliquie - Drop 30% - Meccaniche di combattimento)
+        { id: 'c5', name: "Runa dell'Agguato", desc: "Infliggi +30% danni ai nemici che hanno più dell'80% di Salute.", rarity: "rare", image: "icona_runa_minore.png", icon: "fa-fire", apply: (p) => { p.modifiers.openerDmg = true; } },
         { id: 'r1', name: "Bussola Dimensionale", desc: "Tutte le Essenze raccolte e l'Overdrive durano il +40% in più.", rarity: "rare", image: "icona_bussola_dimensionale.png", icon: "fa-compass", apply: (p) => { p.modifiers.essenceDurationMult += 0.40; } },
-        { id: 'r4', name: "Apprendimento Rapido", desc: "+15% XP guadagnata. Salire di livello scatena un'onda d'urto che respinge i nemici.", rarity: "rare", image: "icona_spirito_avaro.png", icon: "fa-coins", apply: (p) => { p.modifiers.xpMult += 0.15; p.modifiers.levelUpNova = true; } },
+        { id: 'r4', name: "Apprendimento Rapido", desc: "+20% XP guadagnata. Salire di livello scatena un'esplosione d'urto (200% Danno).", rarity: "rare", image: "icona_spirito_avaro.png", icon: "fa-coins", apply: (p) => { p.modifiers.xpMult += 0.20; p.modifiers.levelUpNova = true; } }, 
         { id: 'r6', name: "Sovraccarico Cinetico", desc: "Mentre lo Scudo Cinetico è attivo, la tua Velocità d'Attacco aumenta del +30%.", rarity: "rare", image: "icona_sovraccarico_cinetico.png", icon: "fa-bolt", apply: (p) => { p.modifiers.shieldAtkSpeedBonus = 0.30; } },
         { id: 'c3', name: "Piuma Spettrale", desc: "Dopo uno Scatto ottieni 0.4s di invulnerabilità e +15% Velocità di movimento per 2s.", rarity: "rare", image: "icona_piuma.png", icon: "fa-feather", apply: (p) => { p.modifiers.dashInvul = true; p.modifiers.dashSpeedBuff = true; } },
 
@@ -3052,8 +3051,8 @@ const RelicSystem = {
 
         // 🟡 LEGGENDARIE (10 Reliquie - Drop 8% - Con Mutazioni 3D, Kill FX, Scie e Arrivi)
         { id: 'e2', name: "Riciclo Magico", desc: "Conbi/Overdrive non consumano l'ultima essenza e lanciano 2 dardi a ricerca (75% Danno).", rarity: "legendary", image: "icona_riciclo_magico.png", icon: "fa-recycle", apply: (p) => { p.modifiers.keepEssenceOnCombo = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
-        { id: 'l1', name: "Follia Omicida", desc: "Danni Critici 2.0x e +15% Prob. Critico, ma Velocità d'Attacco ridotta del -15%.", rarity: "legendary", image: "icona_follia_omicida.png", icon: "fa-skull", apply: (p) => { p.modifiers.critDmgMult = 2.0; p.modifiers.bonusCritChance += 0.15; p.modifiers.atkSpeedPenalty = 0.85; p.modifiers.homicidalFrenzy = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
-        { id: 'l5', name: "Maestria del Flow", desc: "Cap Combo raddoppiata. Se >50: +15% danni fatti/subiti e colpi perforano 1 bersaglio. Se <50: -15% danni.", rarity: "legendary", image: "icona_maestria_del_flow.png", icon: "fa-infinity", apply: (p) => { p.modifiers.flowMastery = true; p.modifiers.comboDecayRate *= 0.5; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
+       { id: 'l1', name: "Follia Omicida", desc: "Danni Critici 2.25x e +15% Prob. Critico, ma Velocità d'Attacco ridotta del -12%.", rarity: "legendary", image: "icona_follia_omicida.png", icon: "fa-skull", apply: (p) => { p.modifiers.critDmgMult = 2.25; p.modifiers.bonusCritChance += 0.15; p.modifiers.atkSpeedPenalty = 0.88; p.modifiers.homicidalFrenzy = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
+        { id: 'l5', name: "Maestria del Flow", desc: "Cap Combo 200. Se >=50: +25% danni, perforazione +1 e +12% danni subiti. Se <50: -12% danni subiti.", rarity: "legendary", image: "icona_maestria_del_flow.png", icon: "fa-infinity", apply: (p) => { p.modifiers.flowMastery = true; p.modifiers.comboDecayRate *= 0.5; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
         { id: 'e6', name: "Batteria a Ioni", desc: "Lo Scudo dura +1s, riduce i danni del 65% e folgora i nemici vicini.", rarity: "legendary", image: "icona_batteria_ioni.png", icon: "fa-battery-full", apply: (p) => { p.modifiers.shieldDurationAdd += 1.0; p.modifiers.ionBattery = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
         { id: 'e8', name: "Patto dell'Avaro", desc: "Le monete non spariscono e donano +4% Vel. Mov/Atk e +3% Danno per 3s (max 5 stack).", rarity: "legendary", image: "icona_patto_avaro.png", icon: "fa-sack-dollar", apply: (p) => { p.modifiers.miserPact = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
        { id: 'l2', name: "Lama del Giudizio", desc: "[Mietitore d'Anime] +75% danni ai nemici sotto il 30% HP (+25% ai Boss <20% HP) e penetra il 50% degli scudi.", rarity: "legendary", image: "icona_lama_del_giudizio.png", icon: "fa-gavel", apply: (p) => { p.modifiers.executioner = true; if(p.syncRelicVisuals) p.syncRelicVisuals(); } },
@@ -4176,7 +4175,6 @@ const GLOBAL_ALPHA_TEX = createOrganicAlphaMap();
     leaperTeeth: new THREE.MeshBasicMaterial({color: 0xffffff}),
     archerGlint: new THREE.SpriteMaterial({color: 0xffcc55, map: GLOW_TEX, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false}),
     ringWalkerEdge: new THREE.MeshBasicMaterial({color: 0xff2a1a, wireframe: true, transparent: true, opacity: 0.45}),
-    archerGlint: new THREE.SpriteMaterial({color: 0xffcc55, map: GLOW_TEX, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false}),
     dashLine: new THREE.MeshBasicMaterial({color: 0x00ffff, blending: THREE.AdditiveBlending, transparent: true}),
     auraBlueDome: new THREE.MeshBasicMaterial({color: 0x0088ff, transparent: true, opacity: 0.04, depthWrite: false, side: THREE.BackSide, blending: THREE.AdditiveBlending}),
     auraBlueRing: new THREE.MeshBasicMaterial({color: 0x00aaff, transparent: true, opacity: 0.8, depthWrite: false}),
@@ -5057,9 +5055,9 @@ class Hazard {
                                     Game.getParticle().spawn(Game.player.x, 18, Game.player.y, s % 2 === 0 ? SharedMat.spriteBlue : SharedMat.spriteWhite, 'spark');
                                 }
 
-                                if ((Game.player.shieldHealCount || 0) < 5) {
+                                if ((Game.player.shieldHealCount || 0) < 4) {
                                     Game.player.shieldHealCount = (Game.player.shieldHealCount || 0) + 1;
-                                    let healPct = Game.player.essence === 'green' ? 0.06 : 0.03;
+                                    let healPct = (Game.player.essence === 'green' ? 0.05 : 0.03) * Game.getHealScale();
                                     let heal = Game.player.stats.maxHp * healPct;
                                     Game.player.stats.hp = Math.min(Game.player.stats.maxHp, Game.player.stats.hp + heal);
                                     Game.getFloatingText().spawn(Game.player.x - 15, Game.player.y + 15, `+${Math.max(1, Math.floor(heal))}`, '#00ffaa', 22, true);
@@ -5242,9 +5240,9 @@ class Hazard {
                             // SE NON HA LO SCUDO: Danno a tick ogni secondo
                             let pCd = this.hitCooldown.get('player') || 0;
                             if (Game.playTime >= pCd) {
-                                let playerDmg = this.type === 'crystal_fire' ? 35 * Game.difficultyMult : this.damage;
-                                Game.player.takeDamage(playerDmg, null); 
-                               this.hitCooldown.set('player', Game.playTime + 1.0);
+                                let playerDmg = this.type === 'crystal_fire' ? Math.max(16, Game.player.stats.maxHp * 0.15) : this.damage;
+                                Game.player.takeDamage(playerDmg, 'hazard'); 
+                                this.hitCooldown.set('player', Game.playTime + 1.0);
                             }
                         }
                     }
@@ -6394,10 +6392,14 @@ pushDebris(px, pz, radius, force) {
         return fallback;
     },
 
-  addCombo(amount = 1) { 
+ getHealScale() {
+        return this.floor <= 10 ? 1.0 : Math.max(0.55, 1.0 - (this.floor - 10) * 0.04);
+    },
+    addCombo(amount = 1) { 
         let oldCombo = this.combo;
         this.combo += amount * (this.player ? this.player.modifiers.comboStep : 1); 
-        let maxCombo = (this.isCorrupted && this.corruptedType === 'combo') ? 300 : 100;
+        let baseMaxCombo = (this.player && this.player.modifiers.flowMastery) ? 200 : 100;
+        let maxCombo = (this.isCorrupted && this.corruptedType === 'combo') ? 300 : baseMaxCombo;
         this.combo = Math.min(this.combo, maxCombo); 
         this.comboMaxTime = 5.0 + (this.player ? this.player.modifiers.comboDecayAdd : 0);
         
@@ -6545,33 +6547,85 @@ pushDebris(px, pz, radius, force) {
         window.addEventListener('contextmenu', e => e.preventDefault()); 
     },
    spawnSpecificEnemy(x, y, difficulty) {
-        const r = Math.random(); let type = 'goblin';
+        const f = this.floor || 1;
+        const countAlive = (t) => {
+            let c = 0;
+            for (let i = 0; i < this.enemies.length; i++) {
+                if (!this.enemies[i].dead && this.enemies[i].type === t) c++;
+            }
+            return c;
+        };
 
-        if (difficulty >= 1 && r > 0.36) type = 'orc';
-        if (difficulty >= 1 && r > 0.55) type = 'skeleton_archer';
-        if (difficulty >= 1.5 && r > 0.66) type = 'slime';
-        if (difficulty >= 2.0 && r > 0.74) type = 'ring_walker';
-        if (difficulty > 2.5 && r > 0.83) type = 'mage';
-        if (difficulty > 3.0 && r > 0.88) type = 'leaper';
-        if (difficulty > 3.5 && r > 0.92) type = 'golem';
-        if (difficulty > 4.0 && r > 0.95) type = 'pyromancer';
-        if (difficulty > 5.0 && r > 0.975) type = 'fire_demon';
-        
-        if (difficulty > 3.5 && Math.random() < 0.05 && this.floorProphets < 4) { 
-            type = 'dark_prophet'; 
-            this.floorProphets++; 
-        }
-        
-        let enemy = this.getEnemy();
-        if (!enemy) return; // FIX: Se non ci sono più slot nemici, salta lo spawn in modo sicuro.
-        enemy.spawn(x, y, type, difficulty);
-        this.enemies.push(enemy); 
-        this.enemyGrid.insert(enemy);
-    },
+        const r = Math.random();
+        let type = 'goblin';
+
+        // Curva graduale di introduzione nemici per piano reale
+        if (f === 1) {
+            if (r > 0.44) type = 'orc';
+            if (r > 0.74) type = 'skeleton_archer';
+        } else if (f === 2) {
+            if (r > 0.34) type = 'orc';
+            if (r > 0.58) type = 'skeleton_archer';
+            if (r > 0.78) type = 'slime';
+        } else if (f === 3) {
+            if (r > 0.30) type = 'orc';
+            if (r > 0.50) type = 'skeleton_archer';
+            if (r > 0.68) type = 'slime';
+            if (r > 0.84) type = 'ring_walker';
+        } else if (f <= 5) {
+            if (r > 0.24) type = 'orc';
+            if (r > 0.42) type = 'skeleton_archer';
+            if (r > 0.57) type = 'slime';
+            if (r > 0.70) type = 'ring_walker';
+            if (r > 0.82) type = 'mage';
+            if (r > 0.91) type = 'leaper';
+        } else if (f <= 7) {
+            if (r > 0.18) type = 'orc';
+            if (r > 0.33) type = 'skeleton_archer';
+            if (r > 0.46) type = 'slime';
+            if (r > 0.58) type = 'ring_walker';
+            if (r > 0.70) type = 'mage';
+            if (r > 0.80) type = 'leaper';
+            if (r > 0.89) type = 'golem';
+            if (f >= 7 && r > 0.95) type = 'pyromancer';
+        } else {
+            if (r > 0.15) type = 'orc';
+            if (r > 0.28) type = 'skeleton_archer';
+            if (r > 0.39) type = 'slime';
+            if (r > 0.50) type = 'ring_walker';
+            if (r > 0.62) type = 'mage';
+            if (r > 0.72) type = 'leaper';
+            if (r > 0.81) type = 'golem';
+            if (r > 0.89) type = 'pyromancer';
+            if (r > 0.94) type = 'fire_demon';
+        }
+
+        // Tetti massimi contemporanei a schermo per evitare muri impenetrabili di scudi
+        const maxWalkers = Math.min(4, 1 + Math.floor(f / 4));
+        const maxGolems = Math.min(4, 1 + Math.floor(f / 5));
+        const maxDemons = Math.min(3, 1 + Math.floor((f - 6) / 4));
+        if (type === 'ring_walker' && countAlive('ring_walker') >= maxWalkers) type = 'skeleton_archer';
+        if (type === 'golem' && countAlive('golem') >= maxGolems) type = 'orc';
+        if (type === 'fire_demon' && countAlive('fire_demon') >= maxDemons) type = 'mage';
+
+        const maxFloorProphets = Math.min(4, 1 + Math.floor((f - 4) / 3));
+        if (f >= 6 && Math.random() < 0.05 && this.floorProphets < maxFloorProphets && countAlive('dark_prophet') < 2) {
+            type = 'dark_prophet';
+            this.floorProphets++;
+        }
+
+        let enemy = this.getEnemy();
+        if (!enemy) return;
+        enemy.spawn(x, y, type, difficulty);
+        this.enemies.push(enemy);
+        this.enemyGrid.insert(enemy);
+    },
     spawnEnemy() {
         let pos = this.map.getRandomFloorTile(); let attempts = 0;
         while(MathUtils.distance({x: pos.x*TILE_SIZE, y: pos.y*TILE_SIZE}, this.player) < TILE_SIZE * 8 && attempts < 50) { pos = this.map.getRandomFloorTile(); attempts++; }
-        let difficulty = this.floor + (this.floorKills * 0.1); this.spawnSpecificEnemy(pos.x * TILE_SIZE + TILE_SIZE/2, pos.y * TILE_SIZE + TILE_SIZE/2, difficulty);
+        let prog = this.floorMaxKills > 0 ? (this.floorKills / this.floorMaxKills) : 0;
+        let difficulty = this.floor + prog * 0.85;
+        this.spawnSpecificEnemy(pos.x * TILE_SIZE + TILE_SIZE/2, pos.y * TILE_SIZE + TILE_SIZE/2, difficulty);
     },
     spawnEnemies() {
         // Cap massimo di nemici attivi contemporaneamente.
@@ -7194,7 +7248,13 @@ loop(timestamp) {
         if (InteractiveGrassSystem.mat) {
             InteractiveGrassSystem.mat.color.setHex(currentTheme.grassShader);
         }
-        this.difficultyMult = this.baseDifficultyMult;
+        if (this.floor <= 5) {
+            this.difficultyMult = 0.62 + (this.floor - 1) * 0.045;
+        } else if (this.floor <= 12) {
+            this.difficultyMult = 0.80 + (this.floor - 5) * 0.055;
+        } else {
+            this.difficultyMult = 1.185 + (this.floor - 12) * 0.065;
+        }
         
         let vignetteEl = document.getElementById('vignette');
         if (vignetteEl) {
@@ -7296,8 +7356,8 @@ loop(timestamp) {
             let boss = new BossEnemy(cx, cy, this.floor, chosenElement); 
             this.enemies.push(boss); this.enemyGrid.insert(boss);
             AudioEngine.playBossMusic(); setTimeout(() => Game.getFloatingText().spawn(this.player.x, this.player.y, "ATTENZIONE: BOSS!", '#FF2244', 50, true), 100);
-        } else {
-            this.floorMaxKills = 20 + (this.floor * 8); 
+       } else {
+            this.floorMaxKills = this.floor <= 10 ? (16 + this.floor * 6) : Math.min(115, 76 + (this.floor - 10) * 4);
             for(let i=0; i<this.enemies.length; i++) { if(this.enemies[i].type === 'crystal') this.floorMaxKills++; }
             this.floorKills = 0;
             let pos = this.map.getRandomFloorTile();
@@ -7785,12 +7845,13 @@ startGame(diffMult) {
                     }
                     this.acidPoolTimer = MathUtils.randomRange(1.5, 3.0);
                 }
-            } else if (this.corruptedType === 'unstable') {
-                this.standStillTimer = (this.standStillTimer || 0) + combatDt;
+           } else if (this.corruptedType === 'unstable') {
+                let pMoving = Math.abs(this.player.slideDx || 0) > 0.05 || Math.abs(this.player.slideDy || 0) > 0.05 || this.player.isDashing;
+                this.standStillTimer = (this.standStillTimer || 0) + combatDt * (pMoving ? 0.65 : 2.1);
                 if (this.standStillTimer >= 1.8) {
                     this.standStillTimer = 0;
                     let dmg = this.player.stats.maxHp * 0.18;
-                    this.getHazard().spawn(this.player.x, this.player.y, 45, 3.5, dmg, 0xff3300, 'enemy_fire');
+                    this.getHazard().spawn(this.player.x, this.player.y, 45, 3.2, dmg, 0xff3300, 'enemy_fire');
                     this.getParticle().spawn(this.player.x, 10, this.player.y, SharedMat.spriteRed, 'nova');
                 }
             } else if (this.corruptedType === 'snake') {
@@ -11662,7 +11723,7 @@ class Entity {
                 if (!p._lastBloodHealTime || Game.playTime - p._lastBloodHealTime >= 0.6) {
                     p._lastBloodHealTime = Game.playTime;
                     p._bloodHaloPulse = 0.30;
-                    let heal = p.stats.maxHp * 0.01;
+                   let heal = p.stats.maxHp * 0.01 * Game.getHealScale();
                     let maxBloodShield = p.stats.maxHp * 0.08;
                     let missingHp = p.stats.maxHp - p.stats.hp;
                     if (missingHp > 0) {
@@ -12225,8 +12286,8 @@ class Player extends Entity {
                 for (let i=0; i<nearby.length; i++) { 
                     let e = nearby[i];
                     if (MathUtils.distanceSq(this, e) < shockRangeSq) { 
-                        e.slowedTimer = 4.0; e.slowType = 'blue'; 
-                        e.takeDamage(this.stats.maxDmg * 0.15 * this.modifiers.dmgMult, this, false, false); 
+                       e.slowedTimer = 4.0; e.slowType = 'blue'; 
+                        e.takeDamage(this.stats.maxDmg * 1.2 * this.modifiers.dmgMult, this, false, false);
                         let angleToEnemy = Math.atan2(e.y - this.y, e.x - this.x);
                         e.push(Math.cos(angleToEnemy), Math.sin(angleToEnemy), 200);
                         Game.getParticle().spawn(e.x, 20, e.y, SharedMat.spriteWhite, 'nova');
@@ -12250,7 +12311,7 @@ class Player extends Entity {
                 for (let i=0; i<nearby.length; i++) { 
                     let e = nearby[i];
                     if (MathUtils.distanceSq(this, e) < freezeRangeSq) { 
-                        e.frozenTimer = 4.0; e.takeDamage(this.stats.maxDmg * 0.15 * this.modifiers.dmgMult, this, true, false); 
+                       e.frozenTimer = 3.5; e.takeDamage(this.stats.maxDmg * 1.2 * this.modifiers.dmgMult, this, true, false);
                     } 
                 } 
                 this.tempHp = this.stats.maxHp * 0.20;
@@ -12267,7 +12328,7 @@ class Player extends Entity {
             } 
             else if (counts.red > 0 && counts.green > 0 && counts.blue === 0) {
                 comboName = "NOVA TOSSICA!"; color = "#99FF00"; 
-                Game.getHazard().spawn(this.x, this.y, 250, 1.5, this.stats.maxDmg * 1.5 * this.modifiers.dmgMult, 0x99FF00, 'nova_ring');
+                Game.getHazard().spawn(this.x, this.y, 250, 1.5, this.stats.maxDmg * 2.2 * this.modifiers.dmgMult, 0x99FF00, 'nova_ring');
                 let pCount = AppSettings.isLow ? 15 : (AppSettings.isUltraPC ? 80 : 40);
                 for(let i=0; i<pCount; i++) { let a = (Math.PI * 2 / pCount) * i; Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteGreen, 'trail', a); }
                 if (!AppSettings.isLow) { let flash = Game.getParticle(); flash.spawn(this.x, 20, this.y, SharedMat.spriteGreen, 'flame'); flash.baseSize = 90; }
@@ -12281,7 +12342,7 @@ class Player extends Entity {
                     let e = nearby[i];
                     if (MathUtils.distanceSq(this, e) < range * range) { 
                         e.slowedTimer = 4.0; e.infected = true; 
-                        e.takeDamage(this.stats.maxDmg * 1.5 * this.modifiers.dmgMult, this, true, true); 
+                        e.takeDamage(this.stats.maxDmg * 2.5 * this.modifiers.dmgMult, this, true, true); 
                     } 
                 }
                 let pCount = AppSettings.isLow ? 30 : (AppSettings.isUltraPC ? 120 : 60);
@@ -12297,11 +12358,12 @@ class Player extends Entity {
                     Game.getParticle().spawn(this.x, 30, this.y, mat, 'spark', angle + 0.1); 
                 }
                 AudioEngine.playShoot('explosive_arrow'); AudioEngine.playShoot('chain_lightning');
-                let instantHeal = this.stats.maxHp * 0.10;
+                let hScale = Game.getHealScale();
+                let instantHeal = this.stats.maxHp * 0.08 * hScale;
                 this.stats.hp = Math.min(this.stats.maxHp, this.stats.hp + instantHeal); 
-                Game.getFloatingText().spawn(this.x, this.y + 20, `+${Math.floor(instantHeal)} HP`, '#00DDFF', 25, true);
+                Game.getFloatingText().spawn(this.x, this.y + 20, `+${Math.max(1, Math.floor(instantHeal))} HP`, '#00DDFF', 25, true);
                 this.chaosHoTTimer = 4.0;
-                this.chaosHoTAmount = this.stats.maxHp * 0.20;
+                this.chaosHoTAmount = this.stats.maxHp * 0.12 * hScale;
                 this.chaosHoTTickTimer = 0;
             }
             
@@ -13325,7 +13387,7 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
                 let wAngle = -this.mesh.rotation.y + Math.PI/2;
                 let tipX = this.x + Math.cos(wAngle) * 12;
                 let tipZ = this.y + Math.sin(wAngle) * 12;
-                let tipY = 28 + this.animFloat;
+               let tipY = 28 + Game.animFloat;
 
                 p.spawn(tipX, tipY, tipZ, pMat, 'trail');
                 p.baseSize = Game.ultimateActive ? 22 : 14;
@@ -13675,10 +13737,9 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
         if (aura === 'red') baseDmg *= 1.4;
         if (aura === 'corrupted') baseDmg *= 1.2;
         
-        // Maestria del Flow (+15% sopra 50 Combo, -15% sotto 50 Combo)
-        if (this.modifiers.flowMastery) {
-            if (Game.combo > 50) baseDmg *= 1.15;
-            else baseDmg *= 0.85;
+        // Maestria del Flow (+15% danni a >=50 Combo, zero penalità al danno sotto 50)
+        if (this.modifiers.flowMastery && Game.combo >= 50) {
+            baseDmg *= 1.15;
         }
 
         if (Game.ultimateActive) baseDmg *= 2.0;
@@ -13935,10 +13996,16 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
     
   takeDamage(amount, source) {
         if (this.invincibilityTimer > 0) return; 
+
+        // Protezione dinamica anti-oneshot prima delle riduzioni attive (premia l'uso dello Scudo!)
+        if (source !== 'hazard') {
+            let maxHitPct = Game.floor <= 4 ? 0.28 : (Game.floor <= 11 ? 0.36 : 0.45);
+            amount = Math.min(amount, this.stats.maxHp * maxHitPct);
+        }
         
         let aura = Game.getAuraAt(this.x, this.y); 
         if (aura === 'green') amount *= 0.6; 
-        if (aura === 'corrupted') amount *= 1.2; // +20% Danni subiti
+        if (aura === 'corrupted') amount *= 1.2;
         
        // REWORK: Riduzione base 50% (Aumenta a 80% se ha Batteria a Ioni)
         if (this.activeShieldTimer > 0) {
@@ -13994,12 +14061,12 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
         let wasDead = this.dead; amount *= this.modifiers.dmgTakenMult; 
         
    if (this.modifiers.flowMastery && !wasDead) {
-            if (Game.combo > 50) {
-                amount *= 1.15;
-                Game.getFloatingText().spawn(this.x, this.y + 30, "SOVRACCARICO!", '#ff0000', 30, true);
+            if (Game.combo >= 50) {
+                amount *= 1.12;
+                Game.getFloatingText().spawn(this.x, this.y + 30, "SOVRACCARICO!", '#ff0000', 26, true);
             } else {
-                amount *= 0.85;
-                Game.getFloatingText().spawn(this.x, this.y + 30, "DIFESA!", '#00DDFF', 30, true);
+                amount *= 0.88;
+                Game.getFloatingText().spawn(this.x, this.y + 30, "DIFESA!", '#00DDFF', 26, true);
             }
         }
 
@@ -14176,31 +14243,38 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
     gainXp(amount) {
         this.xp += amount * this.modifiers.xpMult;
         if (this.xp >= this.xpNeeded) {
-            this.level++; this.xp -= this.xpNeeded; this.xpNeeded = Math.floor(this.xpNeeded * 1.3); 
-           if (!this.modifiers.noMaxHpLevelUp) { 
-                this.stats.maxHp += 15; 
-                this.baseStats.maxHp += 15; 
-            } 
-            this.stats.hp = this.stats.maxHp; 
-            this.stats.minDmg += 3; this.stats.maxDmg += 5;
+            this.level++;
+            this.xp -= this.xpNeeded;
+            this.xpNeeded = Math.floor(this.xpNeeded * 1.22 + 25);
+            if (!this.modifiers.noMaxHpLevelUp) {
+                let hpGain = this.modifiers.bloodthirst ? 13 : 16;
+                this.stats.maxHp += hpGain;
+                this.baseStats.maxHp += 16;
+            }
+            if (Game.floor <= 8) {
+                this.stats.hp = this.stats.maxHp;
+            } else {
+                let lvlHeal = (this.stats.maxHp - this.stats.hp) * 0.5 + this.stats.maxHp * 0.25;
+                this.stats.hp = Math.min(this.stats.maxHp, this.stats.hp + lvlHeal);
+            }
+            this.stats.minDmg += 3; this.stats.maxDmg += 5;
             this.baseStats.minDmg += 3; this.baseStats.maxDmg += 5;
-            for(let i=0; i< (isTouchDevice?10:(AppSettings.isUltraPC?60:30)); i++) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteLevel, 'level'); Game.getFloatingText().spawn(this.x, this.y, "LEVEL UP!", '#ffffff', 28, true);
+            for(let i=0; i< (isTouchDevice?10:(AppSettings.isUltraPC?60:30)); i++) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteLevel, 'level');
+            Game.getFloatingText().spawn(this.x, this.y, "LEVEL UP!", '#ffffff', 28, true);
             AudioEngine.playLevelUp();
             Game.pushDebris(this.x, this.y, 250, 400);
-            // NUOVO: Trigger Onda d'urto Apprendimento Rapido
             if (this.modifiers.levelUpNova) {
-                // Sfrutta l'hazard esistente: fa poco danno (10% del maxDmg) ma respinge molto i nemici
-                Game.getHazard().spawn(this.x, this.y, 250, 0.5, this.stats.maxDmg * 0.1, 0xffd700, 'nova_ring');
+                Game.getHazard().spawn(this.x, this.y, 260, 0.45, this.stats.maxDmg * 2.0 * this.modifiers.dmgMult, 0xffd700, 'nova_ring');
                 Game.addTrauma(1.0);
             }
         }
     }
-activateShield() {
+    activateShield() {
         if (this.activeShieldCooldown <= 0 && (this.activeShieldTimer <= 0 || this.autoShieldActive)) {
             this.autoShieldActive = false;
             this.activeShieldTimer = 3.0 + this.modifiers.shieldDurationAdd;
             if (this.modifiers.seismicShield) {
-                Game.getHazard().spawn(this.x, this.y, 250, 0.4, this.stats.maxDmg * 0.2, 0xffffff, 'seismic_nova_ring');
+                Game.getHazard().spawn(this.x, this.y, 250, 0.4, this.stats.maxDmg * 1.0 * this.modifiers.dmgMult, 0xffffff, 'seismic_nova_ring');
             }
             this.shieldAbsorbed = 0;
             this.shieldHealCount = 0;
@@ -14285,20 +14359,20 @@ class Enemy extends Entity {
         let hpMod = 1, dmgMod = 1, spdMod = 1, color = 0x666666, size = 12;
         this.isFlying = false;
 
-        // Fazioni e Statistiche
-        if (type === 'goblin') { color = 0xffcc00; size = 11; spdMod = 1.8; hpMod = 0.5; dmgMod = 1.2; this.aggroRange = 550; this.attackRange = 170; this.isFlying = true; }
-        else if (type === 'orc') { color = 0x5c4033; size = 18; spdMod = 0.8; hpMod = 1.6; dmgMod = 2.5; this.aggroRange = 450; this.attackRange = 62; }
-        else if (type === 'skeleton_archer') { color = 0x888888; size = 14; spdMod = 1.1; hpMod = 0.4; dmgMod = 1.5; this.aggroRange = 700; this.attackRange = 420; }
-        else if (type === 'slime') { color = 0xaa00ff; size = 15; spdMod = 0.9; hpMod = 0.9; dmgMod = 1.0; this.aggroRange = 500; this.attackRange = 40; }
-        else if (type === 'slime_mini') { color = 0xcc33ff; size = 8; spdMod = 1.5; hpMod = 0.3; dmgMod = 0.5; this.aggroRange = 600; this.attackRange = 30; }
-        else if (type === 'leaper') { color = 0xaa00ff; size = 12; spdMod = 0.7; hpMod = 1.0; dmgMod = 2.2; this.aggroRange = 600; this.attackRange = 250; this.leapCooldown = 0; }
+        // Fazioni e Statistiche Ribilanciate
+        if (type === 'goblin') { color = 0xffcc00; size = 11; spdMod = 1.65; hpMod = 0.55; dmgMod = 1.05; this.aggroRange = 550; this.attackRange = 170; this.isFlying = true; }
+        else if (type === 'orc') { color = 0x5c4033; size = 18; spdMod = 0.82; hpMod = 1.65; dmgMod = 1.55; this.aggroRange = 460; this.attackRange = 62; }
+        else if (type === 'skeleton_archer') { color = 0x888888; size = 14; spdMod = 1.05; hpMod = 0.50; dmgMod = 1.15; this.aggroRange = 700; this.attackRange = 420; }
+        else if (type === 'slime') { color = 0xaa00ff; size = 15; spdMod = 0.88; hpMod = 0.95; dmgMod = 0.95; this.aggroRange = 500; this.attackRange = 40; }
+        else if (type === 'slime_mini') { color = 0xcc33ff; size = 8; spdMod = 1.42; hpMod = 0.32; dmgMod = 0.55; this.aggroRange = 600; this.attackRange = 30; }
+        else if (type === 'leaper') { color = 0xaa00ff; size = 12; spdMod = 0.78; hpMod = 1.05; dmgMod = 1.45; this.aggroRange = 600; this.attackRange = 250; this.leapCooldown = 0; }
         else if (type === 'crystal') { color = 0xff00ff; size = 12; this.aggroRange = 0; this.speed = 0; hpMod = 0.001; }
-        else if (type === 'pyromancer') { color = 0xff3300; size = 12; spdMod = 0.6; hpMod = 0.8; dmgMod = 2.2; this.aggroRange = 650; this.attackRange = 450; }
-        else if (type === 'fire_demon') { color = 0xff4400; size = 14; spdMod = 1.0; hpMod = 1.15; dmgMod = 3.0; this.aggroRange = 800; this.attackRange = 600; }
-        else if (type === 'mage') { color = 0x00aaff; size = 12; spdMod = 0.6; hpMod = 0.7; dmgMod = 2.8; this.aggroRange = 700; this.attackRange = 450; }
-        else if (type === 'golem') { color = 0x00aaff; size = 20; spdMod = 0.4; hpMod = 4.0; dmgMod = 2.0; this.aggroRange = 600; this.attackRange = 60; }
-       else if (type === 'ring_walker') { color = 0x141418; size = 15; spdMod = 0.78; hpMod = 1.45; dmgMod = 2.0; this.aggroRange = 680; this.attackRange = 360; }
-        else if (type === 'dark_prophet') { color = 0xff5500; size = 12; spdMod = 0.3; hpMod = 1.5; dmgMod = 0; this.aggroRange = 800; this.attackRange = 0; }
+        else if (type === 'pyromancer') { color = 0xff3300; size = 12; spdMod = 0.65; hpMod = 0.85; dmgMod = 1.20; this.aggroRange = 650; this.attackRange = 450; }
+        else if (type === 'fire_demon') { color = 0xff4400; size = 14; spdMod = 0.95; hpMod = 1.35; dmgMod = 1.85; this.aggroRange = 800; this.attackRange = 560; }
+        else if (type === 'mage') { color = 0x00aaff; size = 12; spdMod = 0.65; hpMod = 0.75; dmgMod = 1.30; this.aggroRange = 700; this.attackRange = 450; }
+        else if (type === 'golem') { color = 0x00aaff; size = 20; spdMod = 0.45; hpMod = 3.50; dmgMod = 1.65; this.aggroRange = 600; this.attackRange = 60; }
+        else if (type === 'ring_walker') { color = 0x141418; size = 15; spdMod = 0.78; hpMod = 1.40; dmgMod = 1.45; this.aggroRange = 680; this.attackRange = 360; }
+        else if (type === 'dark_prophet') { color = 0xff5500; size = 12; spdMod = 0.35; hpMod = 1.25; dmgMod = 0.80; this.aggroRange = 800; this.attackRange = 0; }
         else if (type === 'boss') { color = 0x550000; size = 35; }
 
         this.isProphetBuffed = false;
@@ -14307,8 +14381,8 @@ class Enemy extends Entity {
 
         if (type === 'dark_prophet') {
             this.maxLinks = 1;
-            if (level >= 8) this.maxLinks = 2;
-            if (level >= 14) this.maxLinks = 3;
+            if (level >= 9) this.maxLinks = 2;
+            if (level >= 15) this.maxLinks = 3;
 
             if (!this.beams) {
                 this.beams = []; this.beamGlows = []; this.targetShields = [];
@@ -14329,11 +14403,16 @@ class Enemy extends Entity {
 
         const baseModelSize = size;
         this.isElite = false;
-        if (type !== 'boss' && type !== 'crystal' && type !== 'leaper' && type !== 'slime_mini') {
-            if (Math.random() < 0.05) {
-                this.isElite = true; size *= 1.5; hpMod *= 6.0; dmgMod *= 1.5; spdMod *= 1.2;
-                if (Math.random() < 0.1) {
-                    this.isGolden = true; color = 0xffd700; hpMod *= 1.5; spdMod *= 1.3;
+        let eliteChance = Math.min(0.12, 0.03 + Game.floor * 0.005);
+        if (type !== 'boss' && type !== 'crystal' && type !== 'leaper' && type !== 'slime_mini' && type !== 'dark_prophet') {
+            if (Math.random() < eliteChance) {
+                this.isElite = true;
+                size *= 1.5;
+                hpMod *= (type === 'ring_walker' || type === 'golem') ? 3.2 : 4.2;
+                dmgMod *= 1.35;
+                spdMod *= 1.15;
+                if (Math.random() < 0.12) {
+                    this.isGolden = true; color = 0xffd700; hpMod *= 1.4; spdMod *= 1.25;
                 }
             }
         }
@@ -14341,26 +14420,27 @@ class Enemy extends Entity {
         this.radius = size;
         this.baseModelSize = baseModelSize;
 
-        let expoCurve = Math.pow(1.04, Game.floor);
-        this.stats.maxHp = type === 'crystal' ? 1 : Math.floor(34 * hpMod * (1 + level * 0.16) * expoCurve * Game.difficultyMult);
+        let expoCurve = Math.pow(1.085, Math.max(0, Game.floor - 1));
+        this.stats.maxHp = type === 'crystal' ? 1 : Math.floor(32 * hpMod * (1 + level * 0.20) * expoCurve * Game.difficultyMult);
         this.stats.hp = this.stats.maxHp;
 
-        let rawMinDmg = 8 * dmgMod * (1 + level * 0.1) * expoCurve * Game.difficultyMult;
-        let rawMaxDmg = 16 * dmgMod * (1 + level * 0.1) * expoCurve * Game.difficultyMult;
-        let dmgCap = Game.player ? (Game.player.stats.maxHp * 0.40) : 999;
+        let dmgCurve = Math.pow(1.055, Math.max(0, Game.floor - 1));
+        let rawMinDmg = 7 * dmgMod * (1 + level * 0.09) * dmgCurve * Game.difficultyMult;
+        let rawMaxDmg = 13 * dmgMod * (1 + level * 0.09) * dmgCurve * Game.difficultyMult;
+        let dmgCap = Game.player ? (Game.player.stats.maxHp * 0.42) : 999;
 
-        this.stats.minDmg = Math.floor(Math.min(rawMinDmg, dmgCap * 0.7));
-        this.stats.maxDmg = Math.floor(Math.min(rawMaxDmg, dmgCap));
+        this.stats.minDmg = Math.max(2, Math.floor(Math.min(rawMinDmg, dmgCap * 0.72)));
+        this.stats.maxDmg = Math.max(4, Math.floor(Math.min(rawMaxDmg, dmgCap)));
 
-        let diffSpeedMod = 0.8;
-        this.baseSpeed = 100 * spdMod * Math.min(2.2, 1 + (level * 0.03)) * diffSpeedMod;
+        let floorSpd = Math.min(1.45, 0.78 + Game.floor * 0.028);
+        this.baseSpeed = 100 * spdMod * floorSpd;
 
         if (Game.isCorrupted && Game.corruptedType === 'darkness') {
-            this.baseSpeed *= 1.20;
+            this.baseSpeed *= 1.18;
         }
 
         this.speed = this.baseSpeed;
-        this.xpValue = Math.floor(20 * hpMod * level) * (this.isElite ? 3 : 1);
+        this.xpValue = Math.floor(20 * hpMod * (1 + level * 0.7) * Math.sqrt(expoCurve)) * (this.isElite ? 3 : 1);
         this.aggroRangeSq = this.aggroRange * this.aggroRange;
         this.attackRangeSq = this.attackRange * this.attackRange;
 
@@ -14603,17 +14683,17 @@ class Enemy extends Entity {
                 this.angle = throwAngle;
                 this.mesh.rotation.y = -throwAngle + Math.PI / 2;
                 this.attackSwingTimer = 0.28;
-                Game.getProjectile().spawn(this.x, this.y, throwAngle, 390, this.stats.maxDmg * 1.40, 'enemy', 'orc_club', false, false, this);
+                Game.getProjectile().spawn(this.x, this.y, throwAngle, 380, this.stats.maxDmg * 1.15, 'enemy', 'orc_club', false, false, this);
                 AudioEngine.playDash();
             }
 
             this.attackRange = 48;
             this.attackRangeSq = 48 * 48;
-            this.attackCooldown = 0.35;
-            this.baseSpeed = Math.min(260, this.baseSpeed * 1.8);
+            this.attackCooldown = 0.40;
+            this.baseSpeed = Math.min(205 + Game.floor * 2.5, this.baseSpeed * 1.65);
             this.speed = this.baseSpeed;
-            this.stats.maxDmg *= 1.5;
-            this.stats.minDmg *= 1.5;
+            this.stats.maxDmg *= 1.30;
+            this.stats.minDmg *= 1.30;
 
             this.mat.emissive.setHex(0xff0000);
             this.mat.emissiveIntensity = 1.0;
@@ -14830,8 +14910,8 @@ class Enemy extends Entity {
 
         let aura = Game.getAuraAt(this.x, this.y);
         if (aura === 'blue') this.speed *= 0.6;
-        if (aura === 'green' && !this.dead && this.type !== 'crystal') {
-            let healAmount = this.stats.maxHp * 0.05 * dt;
+       if (aura === 'green' && !this.dead && this.type !== 'crystal' && !(this.type === 'ring_walker' && (this.ringRecoverTimer || 0) <= 0)) {
+            let healAmount = this.stats.maxHp * 0.025 * dt;
             this.stats.hp = Math.min(this.stats.maxHp, this.stats.hp + healAmount);
             if (this.auraHealTimer === undefined) this.auraHealTimer = 0;
             this.auraHealTimer += dt;
@@ -15341,7 +15421,7 @@ class Enemy extends Entity {
                     hitsRockOrObelisk(nx + cosD * rNose * 0.6 + sinD * 6, ny + sinD * rNose * 0.6 - cosD * 6)) {
                     this.push(-cosD, -sinD, 24);
                     this.state = 'walk';
-                    this.goblinStunTimer = 0.8;
+                    this.goblinStunTimer = 1.1;
                     this.hitSquashTimer = 0.15;
                     for (let i = 0; i < this.flashMats.length; i++) {
                         this.flashMats[i].emissive.setHex(defaultEmissive);
@@ -15678,13 +15758,13 @@ class Enemy extends Entity {
     }
 
     executeAttack() {
-        let cdMult = Math.max(0.4, 1.0 / Game.difficultyMult);
-        let spdMult = 0.75 + (Game.difficultyMult * 0.25);
+        let cdMult = Math.max(0.52, Math.min(1.35, 1.05 / Math.sqrt(Game.difficultyMult)));
+        let spdMult = Math.min(1.28, 0.82 + Game.difficultyMult * 0.24);
 
-        let buffDmgMult = this.isProphetBuffed ? 2.5 : 1.0;
-        if (this.isProphetBuffed) cdMult *= 0.3;
+        let buffDmgMult = this.isProphetBuffed ? 1.75 : 1.0;
+        if (this.isProphetBuffed) cdMult *= 0.45;
 
-        if (this.isElite && (this.type === 'mage' || this.type === 'skeleton_archer' || this.type === 'ring_walker')) cdMult *= 0.75;
+        if (this.isElite && (this.type === 'mage' || this.type === 'skeleton_archer' || this.type === 'ring_walker')) cdMult *= 0.80;
 
         let aura = Game.getAuraAt(this.x, this.y);
         if (aura === 'blue') cdMult /= 0.6;
@@ -15692,49 +15772,48 @@ class Enemy extends Entity {
 
         let isRanged = (this.type === 'skeleton_archer' || this.type === 'mage' || this.type === 'pyromancer' || this.type === 'fire_demon' || this.type === 'ring_walker');
         if (Game.isCorrupted && Game.corruptedType === 'darkness' && isRanged) {
-            cdMult *= 0.80;
+            cdMult *= 0.82;
         }
 
         this.attackCooldown = 0.9 * cdMult;
         let actualDmg = MathUtils.randomRange(this.stats.minDmg, this.stats.maxDmg) * buffDmgMult;
-        if (aura === 'red') actualDmg *= 1.4;
+        if (aura === 'red') actualDmg *= 1.3;
 
         if (this.type === 'skeleton_archer') {
             let shotAng = (this.lockedAttackAngle !== undefined) ? this.lockedAttackAngle : this.angle;
-            Game.getProjectile().spawn(this.x, this.y, shotAng, 460 * spdMult, actualDmg * 1.15, 'enemy', 'arrow', false, false, this);
+            Game.getProjectile().spawn(this.x, this.y, shotAng, 430 * spdMult, actualDmg, 'enemy', 'arrow', false, false, this);
             AudioEngine.playShoot('player_arrow');
             this.attackCooldown = 1.25 * cdMult;
         }
         else if (this.type === 'mage') {
-            Game.getProjectile().spawn(this.x, this.y, this.angle, 180 * spdMult, actualDmg * 1.5, 'enemy', 'enemy_bolt', false, false, this);
-            this.attackCooldown = 1.2 * cdMult;
+            Game.getProjectile().spawn(this.x, this.y, this.angle, 195 * spdMult, actualDmg * 1.10, 'enemy', 'enemy_bolt', false, false, this);
+            this.attackCooldown = 1.25 * cdMult;
         }
         else if (this.type === 'fire_demon') {
-            Game.getProjectile().spawn(this.x, this.y, this.angle, 110 * spdMult, actualDmg * 3.0, 'enemy', 'enemy_fireball', false, false, this);
-            this.attackCooldown = Math.max(1.4, 2.5 * cdMult);
+            Game.getProjectile().spawn(this.x, this.y, this.angle, 135 * spdMult, actualDmg * 1.30, 'enemy', 'enemy_fireball', false, false, this);
+            this.attackCooldown = Math.max(1.5, 2.5 * cdMult);
         }
         else if (this.type === 'pyromancer') {
-            Game.getProjectile().spawn(this.x, this.y, this.angle, 130 * spdMult, actualDmg * 1.5, 'enemy', 'fire_shape', false, false, this);
+            Game.getProjectile().spawn(this.x, this.y, this.angle, 150 * spdMult, actualDmg * 1.05, 'enemy', 'fire_shape', false, false, this);
             this.attackCooldown = 2.0 * cdMult;
         }
         else if (this.type === 'ring_walker') {
             let fireAngle = (this.lockedAttackAngle !== undefined) ? this.lockedAttackAngle : this.angle;
-            let wallSpeed = 165 * spdMult;
+            let wallSpeed = 155 * Math.min(1.18, spdMult);
             let wallMaxRadius = 390;
             let wallDuration = (wallMaxRadius - 20) / wallSpeed;
-            Game.getHazard().spawn(this.x, this.y, wallMaxRadius, wallDuration, actualDmg * 1.45, 0xff1e00, 'enemy_firewall', fireAngle, this);
+            Game.getHazard().spawn(this.x, this.y, wallMaxRadius, wallDuration, actualDmg * 1.15, 0xff1e00, 'enemy_firewall', fireAngle, this);
             Game.spawnLightFlash(this.x, this.y, 0xff2200, 4.5, 340, 0.22);
             AudioEngine.playFireWall();
-            // Garantisce che l'intera finestra vulnerabile di e.0s si completi prima della carica successiva
-            this.attackCooldown = Math.max(3.40, 3.80 * cdMult);
+            // Garantisce il completamento dell'intera finestra vulnerabile di 3.8s prima della ricarica
+            this.attackCooldown = Math.max(4.20, 4.60 * cdMult);
         }
         else if (this.type === 'orc' && !this.isBerserk) {
-            // Schianto frontale pesante con clava piantata a terra
             let slamAngle = (this.lockedAttackAngle !== undefined) ? this.lockedAttackAngle : this.angle;
             let impX = this.x + Math.cos(slamAngle) * 38;
             let impY = this.y + Math.sin(slamAngle) * 38;
             this.push(Math.cos(slamAngle), Math.sin(slamAngle), 12);
-            this.clubRecoveryTimer = 0.55;
+            this.clubRecoveryTimer = 0.65;
             this.attackCooldown = 1.15 * cdMult;
 
             AudioEngine.playBreak('crate');
@@ -15748,13 +15827,13 @@ class Enemy extends Entity {
                 let dxP = Game.player.x - impX, dyP = Game.player.y - impY;
                 let hitRad = 38 + Game.player.radius;
                 if ((dxP * dxP + dyP * dyP) <= hitRad * hitRad) {
-                    Game.player.takeDamage(actualDmg * 1.25, this);
+                    Game.player.takeDamage(actualDmg * 1.15, this);
                 }
             }
         }
         else if (this.type !== 'leaper' && this.type !== 'dark_prophet') {
             this.attackSwingTimer = 0.28;
-            let dmg = this.isPursuer ? (Game.player.stats.maxHp * 0.3) : actualDmg;
+            let dmg = this.isPursuer ? (Game.player.stats.maxHp * 0.30) : actualDmg;
             Game.player.takeDamage(dmg, this);
             this.push(Math.cos(this.angle), Math.sin(this.angle), this.type === 'golem' ? 3 : 18);
         }
@@ -15770,7 +15849,7 @@ class Enemy extends Entity {
         }
 
         let aura = Game.getAuraAt(this.x, this.y);
-        if (aura === 'green') amount *= 0.6;
+        if (aura === 'green') amount *= 0.65;
 
         let hasJudgment = (source === Game.player && Game.player && Game.player.modifiers.executioner);
         let executionTriggered = false;
@@ -15788,7 +15867,7 @@ class Enemy extends Entity {
                 Game.spawnLightFlash(this.x, this.y, 0xffe680, 4.0, 260, 0.14);
             }
         }
-        if (source === Game.player && Game.player.modifiers.openerDmg && (this.stats.hp / this.stats.maxHp) >= 0.8) amount *= 1.2;
+        if (source === Game.player && Game.player.modifiers.openerDmg && (this.stats.hp / this.stats.maxHp) >= 0.8) amount *= 1.30;
 
         if (this.isProphetBuffed) {
             amount *= 0.05;
@@ -15797,34 +15876,37 @@ class Enemy extends Entity {
             if (Game.frameCount % 4 === 0) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteWhite, 'spark');
         }
 
-       // --- ARMATURA ORBITALE RING WALKER (-95% danni finché l'anello ruota intorno al corpo) ---
-        if (this.type === 'ring_walker' && (this.ringRecoverTimer || 0) <= 0) {
-            amount *= hasJudgment ? 0.525 : 0.05;
-            if (!hasJudgment) isCrit = false;
-            this._shieldClang = true;
-            if (Game.frameCount % 3 === 0) Game.getParticle().spawn(this.x, this.radius * 2.55, this.y, SharedMat.spriteRed, 'spark');
-        }
-
-        // --- GABBIA CHIUSA FIRE DEMON (-60% danni mentre cammina col petto chiuso) ---
-        if (this.type === 'fire_demon' && (this.telegraphTimer || 0) <= 0 && (this.coreExposedTimer || 0) <= 0) {
-            amount *= hasJudgment ? 0.70 : 0.40;
-            if (!hasJudgment) isCrit = false;
-            this._shieldClang = true;
-            if (Game.frameCount % 3 === 0) Game.getParticle().spawn(this.x, this.radius * 1.5, this.y, SharedMat.spriteWhite, 'spark');
-        }
-
-        if (isCrit && source === Game.player && Game.player.modifiers.critGold && Math.random() < 0.30) {
-            if (!Game.player._lastCritGoldTime || Game.playTime - Game.player._lastCritGoldTime >= 1.0) {
-                Game.player._lastCritGoldTime = Game.playTime;
-                Game.coins++;
-                if (UI.els.coins) UI.els.coins.innerText = Game.coins;
-                Game.getFloatingText().spawn(this.x, this.y, "+1", '#ffff00', 20);
+        // --- SCUDI E FINESTRE DI VULNERABILITÀ TATTICHE ---
+        if (this.type === 'ring_walker') {
+            if ((this.ringRecoverTimer || 0) <= 0) {
+                amount *= hasJudgment ? 0.50 : 0.05;
+                if (!hasJudgment) isCrit = false;
+                this._shieldClang = true;
+                if (Game.frameCount % 3 === 0) Game.getParticle().spawn(this.x, this.radius * 2.55, this.y, SharedMat.spriteRed, 'spark');
+            } else {
+                amount *= 1.25; // +25% danni sul nucleo scoperto!
             }
         }
 
-        if (this.fireDebuffTimer > 0 && Game.player && Game.player.modifiers.fireTrailDebuff) amount *= 1.20;
+        if (this.type === 'fire_demon') {
+            if ((this.telegraphTimer || 0) <= 0 && (this.coreExposedTimer || 0) <= 0) {
+                amount *= hasJudgment ? 0.70 : 0.40;
+                if (!hasJudgment) isCrit = false;
+                this._shieldClang = true;
+                if (Game.frameCount % 3 === 0) Game.getParticle().spawn(this.x, this.radius * 1.5, this.y, SharedMat.spriteWhite, 'spark');
+            } else {
+                amount *= 1.35; // +35% danni sul nucleo incandescente aperto!
+            }
+        }
 
-        // --- SCUDO DIREZIONALE GOLEM ---
+        if (this.type === 'goblin' && (this.goblinStunTimer || 0) > 0) {
+            amount *= 1.50; // +50% danni se schiantato contro muro/obelisco!
+        }
+
+        if (this.type === 'orc' && (this.clubRecoveryTimer || 0) > 0) {
+            amount *= 1.25; // +25% danni mentre recupera la clava da terra!
+        }
+
         if (this.type === 'golem' && source && typeof source.x === 'number') {
             let angleToSource = Math.atan2(source.y - this.y, source.x - this.x);
             let golemFacingAngle = -this.mesh.rotation.y + Math.PI / 2;
@@ -15837,9 +15919,21 @@ class Enemy extends Entity {
                 this._shieldClang = true;
                 Game.getParticle().spawn(this.x + Math.cos(angleToSource) * this.radius, 15, this.y + Math.sin(angleToSource) * this.radius, SharedMat.spriteBlue, 'spark');
                 this.hitSquashTimer = 0.12;
+            } else {
+                amount *= 1.25; // +25% danni colpendo il Golem alle spalle!
             }
         }
 
+        if (isCrit && source === Game.player && Game.player.modifiers.critGold && Math.random() < 0.30) {
+            if (!Game.player._lastCritGoldTime || Game.playTime - Game.player._lastCritGoldTime >= 1.0) {
+                Game.player._lastCritGoldTime = Game.playTime;
+                Game.coins++;
+                if (UI.els.coins) UI.els.coins.innerText = Game.coins;
+                Game.getFloatingText().spawn(this.x, this.y, "+1", '#ffff00', 20);
+            }
+        }
+
+        if (this.fireDebuffTimer > 0 && Game.player && Game.player.modifiers.fireTrailDebuff) amount *= 1.20;
         if (source === Game.player && Game.matchStats) Game.matchStats.dmgDealt += amount;
 
         let wasChargingCore = (this.type === 'fire_demon' && (this.telegraphTimer || 0) > 0);
@@ -16083,8 +16177,8 @@ class Enemy extends Entity {
 
         let itemsToSpawn = [];
         let isMini = (this.type === 'slime_mini');
-        let coinChance = this.isBoss ? 1.0 : (this.isGolden ? 1.0 : (this.isElite ? 0.70 : (isMini ? 0.05 : 0.20)));
-
+        let lateCoinBoost = Math.min(0.14, Math.max(0, Game.floor - 5) * 0.01);
+        let coinChance = this.isBoss ? 1.0 : (this.isGolden ? 1.0 : (this.isElite ? 0.80 : (isMini ? 0.05 : (0.22 + lateCoinBoost))));
         if (Math.random() < coinChance) {
             let count = this.isBoss ? MathUtils.randomInt(2, 4) : (this.isGolden ? MathUtils.randomInt(12, 18) : (this.isElite ? MathUtils.randomInt(1, 3) : 1));
             if (Game.isCorrupted && Game.corruptedReward === 'coins') count *= 2;
@@ -16153,9 +16247,8 @@ class BossEnemy extends Enemy {
         this.spawnMinionTimer = 2.0; this.hazardTimer = 4.0; 
         this.bossElement = element; // 'red', 'blue' o 'green'
         
-        // Scaling Ibrido ribilanciato per la nuova difficoltà base (0.68)
-        let exponentialScale = Math.pow(1.16, Math.max(0, level - 5)); 
-        this.stats.maxHp = Math.floor(2200 * (1 + (level/5) + exponentialScale) * Game.difficultyMult);
+       let exponentialScale = Math.pow(1.15, Math.max(0, level - 5)); 
+        this.stats.maxHp = Math.floor(1750 * (0.9 + (level / 5) + exponentialScale) * Game.difficultyMult);
         
         // Personalizzazione statistiche iniziali in base all'elemento
         if (this.bossElement === 'green') this.stats.maxHp *= 1.25; // Il verde ha più vita
@@ -16189,8 +16282,8 @@ class BossEnemy extends Enemy {
       if (this.fightTimer === undefined) this.fightTimer = 0;
        this.fightTimer += dt;
        
-      // FASE ENRAGED (Sotto il 50% HP oppure dopo 45 secondi di combattimento - DPS Check)
-        if (!this.isEnraged && (this.stats.hp <= this.stats.maxHp * 0.5 || this.fightTimer > 45.0)) {
+     let enrageTimeLimit = this.level <= 5 ? 55.0 : 45.0;
+        if (!this.isEnraged && (this.stats.hp <= this.stats.maxHp * 0.5 || this.fightTimer > enrageTimeLimit)) {
             this.isEnraged = true;
             Game.arenaEvolution = true; // Trasforma gradualmente luci e nebbia dell'arena in rosso abissale!
             this.baseSpeed *= 1.35; 
@@ -16205,12 +16298,11 @@ class BossEnemy extends Enemy {
             Game.addTrauma(1.5);
             AudioEngine.playGameOverSound(); 
 
-            // --- NUOVO: RITUALE OSCURO (Spawn 3 Profeti a Triangolo) ---
+            let prophetCount = this.level <= 5 ? 1 : (this.level <= 10 ? 2 : 3);
             let spawnRadius = 250; 
             let baseAngle = Math.random() * Math.PI * 2;
-            for (let i = 0; i < 3; i++) {
-                // Calcola i tre vertici del triangolo (120 gradi di differenza)
-                let angle = baseAngle + (Math.PI * 2 / 3) * i;
+            for (let i = 0; i < prophetCount; i++) {
+                let angle = baseAngle + (Math.PI * 2 / prophetCount) * i;
                 let sx = this.x + Math.cos(angle) * spawnRadius;
                 let sy = this.y + Math.sin(angle) * spawnRadius;
                 
@@ -16298,8 +16390,13 @@ class BossEnemy extends Enemy {
                 }
                 
                 // Attacchi secondari alla fine del salto
-                if (this.bossElement === 'red') {
+               if (this.bossElement === 'red') {
                     for(let i=0; i<12; i++) { let a = (Math.PI*2/12) * i; Game.getProjectile().spawn(this.x, this.y, a, 220, this.stats.maxDmg * 0.8, 'enemy', 'enemy_fireball', false, false, this); }
+                    if (this.level >= 10 && Game.player && !Game.player.dead) {
+                        let fwAng = Math.atan2(Game.player.y - this.y, Game.player.x - this.x);
+                        Game.getHazard().spawn(this.x, this.y, 400, 2.1, this.stats.maxDmg * 1.15, 0xff1e00, 'enemy_firewall', fwAng, this);
+                        AudioEngine.playFireWall();
+                    }
                 } else if (this.bossElement === 'blue') {
                     for(let i=0; i<8; i++) { let a = (Math.PI*2/8) * i; Game.getProjectile().spawn(this.x, this.y, a, 400, this.stats.maxDmg * 0.5, 'enemy', 'enemy_bolt', false, false, this); }
                 }
@@ -16420,12 +16517,12 @@ class BossEnemy extends Enemy {
             amount *= 0.50; 
         }
         
-        // 3. Anti-Burst Severo
-        let burstCapPct = Math.max(0.015, 0.05 - (this.level * 0.0015));
+        // 3. Anti-Burst Equo (protegge da cheese istantanei senza punire le build a colpi lenti/critici)
+        let burstCapPct = Math.max(0.030, 0.075 - (this.level * 0.0018)) * (isCrit ? 1.35 : 1.0);
         let burstCap = this.stats.maxHp * burstCapPct;
         
         if (amount > burstCap) {
-            amount = burstCap + (amount - burstCap) * 0.10; 
+            amount = burstCap + (amount - burstCap) * 0.25; 
             if (Game.frameCount % 2 === 0) {
                 Game.getParticle().spawn(this.x, 40, this.y, SharedMat.spriteWhite, 'spark');
             }
@@ -16962,10 +17059,9 @@ if (type === 'arrow' || type === 'homing_arrow') {
                     Game.getParticle().spawn(this.x, 15, this.y, SharedMat.spriteBlue, 'spark');
                     AudioEngine.playCollect(); 
                     
-                    // RECUPERO: 3% base (6% col Verde), max 5 proiettili curativi per attivazione (max 15%-30% HP)
-                    if ((Game.player.shieldHealCount || 0) < 5) {
+                    if ((Game.player.shieldHealCount || 0) < 4) {
                         Game.player.shieldHealCount = (Game.player.shieldHealCount || 0) + 1;
-                        let healPct = Game.player.essence === 'green' ? 0.06 : 0.03;
+                        let healPct = (Game.player.essence === 'green' ? 0.05 : 0.03) * Game.getHealScale();
                         let heal = Game.player.stats.maxHp * healPct; 
                         Game.player.stats.hp = Math.min(Game.player.stats.maxHp, Game.player.stats.hp + heal);
                         Game.getFloatingText().spawn(Game.player.x - 15, Game.player.y + 15, `+${Math.max(1, Math.floor(heal))}`, '#00ffaa', 22, true);
@@ -17945,96 +18041,80 @@ const Preloader = {
 
   const ShopSystem = {
     bonus: { hp: 0, dmg: 0, speed: 0, atkSpeed: 0, crit: 0 },
-    costs: { hp: 6, dmg: 9, speed: 7, atkSpeed: 9, crit: 8 },
-
-    // Funzione per animare fluidamente i numeri che salgono
-    animateValue(elementId, start, end, duration, formatStr = "", isFloat = false) {
-        let obj = document.getElementById(elementId);
-        if(!obj) return;
-        let startTimestamp = null;
-        const step = (timestamp) => {
-            if (!startTimestamp) startTimestamp = timestamp;
-            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-            // Curva Ease Out per un arresto morbido
-            const ease = 1 - Math.pow(1 - progress, 3);
-            const current = start + (end - start) * ease;
-            obj.innerText = (isFloat ? current.toFixed(2) : Math.floor(current)) + formatStr;
-            if (progress < 1) window.requestAnimationFrame(step);
-        };
-        window.requestAnimationFrame(step);
-    },
+    costs: { hp: 5, dmg: 7, speed: 6, atkSpeed: 7, crit: 7 },
 
     updateUI() {
         if(!document.getElementById('shop-coins')) return;
-        
-        // Aggiorna il testo dentro il negozio
         document.getElementById('shop-coins').innerText = Game.coins;
-        
-        // Sincronizza anche l'HUD in alto a sinistra!
         if (UI.els.coins) UI.els.coins.innerText = Game.coins;
 
-        // Vitalità
         let currentHpMax = Game.player ? Game.player.stats.maxHp : 100;
         document.getElementById('shop-hp-curr').innerText = currentHpMax;
-        document.getElementById('shop-hp-next').innerText = currentHpMax + 15;
+        document.getElementById('shop-hp-next').innerText = currentHpMax + 18;
         document.getElementById('shop-cost-hp').innerText = this.costs.hp;
 
-        // Furia
         let currentDmgMult = Game.player ? Game.player.modifiers.dmgMult : 1.0;
         document.getElementById('shop-dmg-curr').innerText = currentDmgMult.toFixed(2) + "x";
         document.getElementById('shop-dmg-next').innerText = (currentDmgMult + 0.10).toFixed(2) + "x";
         document.getElementById('shop-cost-dmg').innerText = this.costs.dmg;
 
-       // Agilità (+3% invece di +5%)
         let currentSpdMult = Game.player ? Game.player.modifiers.speedMult : 1.0;
         document.getElementById('shop-spd-curr').innerText = currentSpdMult.toFixed(2) + "x";
-        document.getElementById('shop-spd-next').innerText = (currentSpdMult + 0.03).toFixed(2) + "x";
+        document.getElementById('shop-spd-next').innerText = (currentSpdMult + 0.04).toFixed(2) + "x";
         document.getElementById('shop-cost-spd').innerText = this.costs.speed;
 
-        // Ritmo (Attack Speed, +3% invece di +5%)
         let currentAtkMult = Game.player ? (1.0 + Game.player.modifiers.bonusAtkSpeed) : 1.0;
         if(document.getElementById('shop-atk-curr')){
             document.getElementById('shop-atk-curr').innerText = currentAtkMult.toFixed(2) + "x";
-            document.getElementById('shop-atk-next').innerText = (currentAtkMult + 0.03).toFixed(2) + "x";
+            document.getElementById('shop-atk-next').innerText = (currentAtkMult + 0.05).toFixed(2) + "x";
             document.getElementById('shop-cost-atk').innerText = this.costs.atkSpeed;
         }
 
-        // Precisione (Critico)
-        let currentCrit = Game.player ? Math.round((Game.player.modifiers.critChance + Game.player.modifiers.bonusCritChance) * 100) : 10;
+        let totalCrit = Game.player ? (Game.player.modifiers.critChance + Game.player.modifiers.bonusCritChance) : 0.10;
+        let currentCrit = Math.round(totalCrit * 100);
         if(document.getElementById('shop-crit-curr')){
-            document.getElementById('shop-crit-curr').innerText = currentCrit + "%";
-            document.getElementById('shop-crit-next').innerText = (currentCrit + 5) + "%";
+            if (totalCrit >= 0.75 && Game.player) {
+                let cdm = Game.player.modifiers.critDmgMult;
+                document.getElementById('shop-crit-curr').innerText = cdm.toFixed(2) + "x";
+                document.getElementById('shop-crit-next').innerText = (cdm + 0.12).toFixed(2) + "x";
+            } else {
+                document.getElementById('shop-crit-curr').innerText = currentCrit + "%";
+                document.getElementById('shop-crit-next').innerText = Math.min(75, currentCrit + 5) + "%";
+            }
             document.getElementById('shop-cost-crit').innerText = this.costs.crit;
         }
     },
 
-  buy(type) {
+    buy(type) {
         let cost = this.costs[type];
         if (Game.coins >= cost) {
             Game.coins -= cost;
             AudioEngine.playCoin();
-
-            this.costs[type] = Math.floor(this.costs[type] * 1.3); // Rincaro esponenziale per forzare build ragionate
+            this.costs[type] = Math.ceil(this.costs[type] * 1.26);
 
             if (type === 'hp') { 
-                Game.player.stats.maxHp += 15; Game.player.baseStats.maxHp += 15; Game.player.stats.hp += 15; this.bonus.hp += 15; 
+                let gain = Game.player.modifiers.bloodthirst ? 15 : 18;
+                Game.player.stats.maxHp += gain; Game.player.baseStats.maxHp += 18; Game.player.stats.hp = Math.min(Game.player.stats.maxHp, Game.player.stats.hp + gain); this.bonus.hp += 18; 
             }
             if (type === 'dmg') { 
                 Game.player.modifiers.dmgMult += 0.10; this.bonus.dmg += 0.10; 
             }
             if (type === 'speed') { 
-                Game.player.modifiers.speedMult += 0.03; this.bonus.speed += 0.03; 
+                Game.player.modifiers.speedMult += 0.04; this.bonus.speed += 0.04; 
             }
             if (type === 'atkSpeed') { 
-                Game.player.modifiers.bonusAtkSpeed += 0.03; this.bonus.atkSpeed += 0.03; 
+                Game.player.modifiers.bonusAtkSpeed += 0.05; this.bonus.atkSpeed += 0.05; 
             }
             if (type === 'crit') { 
-                Game.player.modifiers.bonusCritChance += 0.05; this.bonus.crit += 0.05; 
+                let totalCrit = Game.player.modifiers.critChance + Game.player.modifiers.bonusCritChance;
+                if (totalCrit >= 0.75) {
+                    Game.player.modifiers.critDmgMult += 0.12;
+                } else {
+                    Game.player.modifiers.bonusCritChance += 0.05;
+                    this.bonus.crit += 0.05;
+                }
             }
-            
-            // Aggiornamento immediato senza delay o animazioni lente
             this.updateUI();
-            
         } else {
             AudioEngine.playClick();
             let btn = document.querySelector(`button[onclick="ShopSystem.buy('${type}')"]`);
@@ -18046,7 +18126,7 @@ const Preloader = {
                     setTimeout(() => {
                         span.classList.remove('text-red-500');
                         span.classList.add('text-white');
-                    }, 150); // Feedback rosso velocizzato a 150ms per farlo sembrare più snello
+                    }, 150);
                 });
             }
         }
@@ -18054,7 +18134,7 @@ const Preloader = {
 
     reset() {
         this.bonus = { hp: 0, dmg: 0, speed: 0, atkSpeed: 0, crit: 0 };
-        this.costs = { hp: 6, dmg: 8, speed: 7, atkSpeed: 9, crit: 8 };
+        this.costs = { hp: 5, dmg: 7, speed: 6, atkSpeed: 7, crit: 7 };
     }
 };
 
