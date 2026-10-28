@@ -1178,7 +1178,7 @@ const AppSettings = {
     get maxParticlesPerFrame() { return isTouchDevice ? (this.mode === 0 ? 7 : (this.mode === 1 ? 14 : 24)) : (this.mode === 0 ? 20 : (this.mode === 1 ? 35 : 55)); },
     get maxDebrisPerFrame() { return isTouchDevice ? (this.mode === 0 ? 3 : (this.mode === 1 ? 5 : 9)) : (this.mode === 0 ? 6 : (this.mode === 1 ? 12 : 18)); },
     get maxTextsDrawn() { return isTouchDevice ? (this.mode === 0 ? 6 : (this.mode === 1 ? 10 : 16)) : (this.mode === 0 ? 14 : (this.mode === 1 ? 25 : 35)); },
-    get maxWindSources() { return isTouchDevice ? (this.mode === 0 ? 1 : (this.mode === 1 ? 3 : 6)) : (this.mode === 0 ? 2 : (this.mode === 1 ? 6 : 10)); },
+    get maxWindSources() { return isTouchDevice ? (this.mode === 0 ? 3 : (this.mode === 1 ? 5 : 6)) : (this.mode === 0 ? 4 : (this.mode === 1 ? 8 : 10)); },
     get grassDensityMult() { return this.mode === 0 ? 0.50 : (this.mode === 1 ? 0.78 : 1.0); },
     get targetFogCount() { return this.mode === 0 ? 0 : (isTouchDevice ? (this.mode === 1 ? 16 : 28) : (this.mode === 1 ? 30 : 50)); },
     get playerLightRadius() { return !isTouchDevice ? 1050 : (this.mode === 0 ? 520 : (this.mode === 1 ? 650 : 780)); },
@@ -6399,6 +6399,10 @@ const debrisMat = new THREE.MeshStandardMaterial({roughness: 0.8, metalness: 0.2
         this._flashLightIdx = 0;
     },
 pushDebris(px, pz, radius, force) {
+        if (!this.explosionWinds) this.explosionWinds = [];
+        if (this.explosionWinds.length < 8) {
+            this.explosionWinds.push({ x: px, z: pz, force: Math.min(5.0, Math.max(2.5, force / 90)), life: 0.35, maxLife: 0.35 });
+        }
         if (!this.debris || !this.debrisMeshes) return;
         let radSq = radius * radius;
         for (let i = 0, len = this.debris.length; i < len; i++) {
@@ -6797,6 +6801,7 @@ pushDebris(px, pz, radius, force) {
         this._camZoom = 1.0;
         this.camera.position.set(this.player.x, camY, camZ);
         this.camera.lookAt(this.player.x, 0, this.player.y);
+        InteractiveGrassSystem.uniforms.uCamPos.value.copy(this.camera.position);
         if (this.dirLight) {
             this.dirLight.position.set(this.player.x - 400, 1000, this.player.y - 540);
             this.dirLight.target.position.set(this.player.x, 0, this.player.y - 140);
@@ -6919,6 +6924,7 @@ pushDebris(px, pz, radius, force) {
         this.camera.position.set(this._camFocusX + shakeX, baseHeight + shakeY, this._camFocusZ + baseDist + shakeZ);
         // Il punto osservato subisce solo il 25% dello shake per non far ruotare l'orizzonte in modo fastidioso
         this.camera.lookAt(this._camFocusX + shakeX * 0.25, 0, this._camFocusZ + shakeZ * 0.25);
+        InteractiveGrassSystem.uniforms.uCamPos.value.copy(this.camera.position);
 
         // 7. Parallasse Nebbia 3D
         if (this.mistSystem && this.player) {
@@ -7917,6 +7923,7 @@ startGame(diffMult) {
         }
       // --- AGGIORNAMENTO SHADER ERBA INTERATTIVA ---
         InteractiveGrassSystem.uniforms.uTime.value = this.visualTime;
+        if (this.camera) InteractiveGrassSystem.uniforms.uCamPos.value.copy(this.camera.position);
         
         let windSources = InteractiveGrassSystem.uniforms.uWindSources.value;
         let windCount = 0; const activeMaxWind = AppSettings.maxWindSources;
@@ -7926,45 +7933,78 @@ startGame(diffMult) {
         let focalZ = this.player ? this.player.y : this.camera.position.z;
         let maxWindDistSq = 1500 * 1500; // Ampio margine visivo attorno al giocatore
 
-        if (this.player && !this.player.dead) {
-            let windForce = this.player.isDashing ? 4.5 : (Game.ultimateActive ? 2.5 : 1.0);
+        // 1. Giocatore (camminata, scatto, ultimate)
+        if (this.player && !this.player.dead && windCount < activeMaxWind) {
+            let windForce = this.player.isDashing ? 4.5 : (Game.ultimateActive ? 2.5 : 1.3);
             windSources[windCount].set(this.player.x, windForce, this.player.y);
             windCount++;
         }
-        
-       for(let i=0, len=this.projectiles.length; i<len; i++) {
-            if (windCount >= activeMaxWind) break; // Interrompe il ciclo appena gli slot della fascia grafica sono pieni
-            let p = this.projectiles[i];
-            if (p.active) { // Considera esclusivamente i proiettili in volo
-                let dx = p.x - focalX;
-                let dz = p.y - focalZ;
-                if ((dx * dx + dz * dz) < maxWindDistSq) {
-                    windSources[windCount].set(p.x, 2.0, p.y);
-                    windCount++;
+
+        // 2. Impulsi d'onda d'urto ed esplosioni (priorita alta)
+        if (this.explosionWinds && this.explosionWinds.length > 0) {
+            for (let i = this.explosionWinds.length - 1; i >= 0; i--) {
+                let ew = this.explosionWinds[i];
+                ew.life -= dt;
+                if (ew.life <= 0) {
+                    this.explosionWinds.splice(i, 1);
+                    continue;
+                }
+                if (windCount < activeMaxWind) {
+                    let dx = ew.x - focalX, dz = ew.z - focalZ;
+                    if ((dx * dx + dz * dz) < maxWindDistSq) {
+                        let f = ew.force * (ew.life / ew.maxLife);
+                        windSources[windCount++].set(ew.x, f, ew.z);
+                    }
                 }
             }
         }
-        
-       // --- VENTO PER LE ONDE E IL MURO DI FUOCO IN ESPANSIONE ---
+
+        // 3. Onde d'urto (nova_ring / crystal_nova_ring) e muro di fuoco in espansione
         for (let i = 0; i < this.hazards.length; i++) {
             let h = this.hazards[i];
             if (!h.active || windCount >= activeMaxWind) continue;
-            if (h.type === 'nova_ring' && windCount < MAX_WIND - 4) {
+            if (h.type === 'nova_ring' || h.type === 'crystal_nova_ring') {
                 let dx = h.x - focalX, dz = h.y - focalZ;
                 if ((dx * dx + dz * dz) < maxWindDistSq) {
-                    let points = isTouchDevice ? 4 : 8;
-                    for (let j = 0; j < points && windCount < MAX_WIND; j++) {
-                        let a = (Math.PI * 2 / points) * j + (Game.playTime * 5);
-                        windSources[windCount++].set(h.x + Math.cos(a) * h.radius, 1.5, h.y + Math.sin(a) * h.radius);
+                    if (h.radius < 75 || activeMaxWind - windCount < 4) {
+                        windSources[windCount++].set(h.x, 3.6, h.y);
+                    } else {
+                        let points = Math.min(isTouchDevice ? 4 : 6, activeMaxWind - windCount);
+                        for (let j = 0; j < points && windCount < activeMaxWind; j++) {
+                            let a = (Math.PI * 2 / points) * j + (Game.playTime * 5);
+                            windSources[windCount++].set(h.x + Math.cos(a) * h.radius, 2.2, h.y + Math.sin(a) * h.radius);
+                        }
                     }
                 }
-            } else if (h.type === 'enemy_firewall' && windCount < MAX_WIND - 2) {
+            } else if (h.type === 'enemy_firewall') {
                 let dx = h.x - focalX, dz = h.y - focalZ;
                 if ((dx * dx + dz * dz) < maxWindDistSq) {
-                    for (let s = -1; s <= 1 && windCount < MAX_WIND; s++) {
-                        let a = h.dirAngle + s * 0.42;
-                        windSources[windCount++].set(h.x + Math.cos(a) * h.radius, 2.2, h.y + Math.sin(a) * h.radius);
+                    if (activeMaxWind - windCount < 3) {
+                        let a = h.dirAngle;
+                        windSources[windCount++].set(h.x + Math.cos(a) * h.radius, 2.5, h.y + Math.sin(a) * h.radius);
+                    } else {
+                        for (let s = -1; s <= 1 && windCount < activeMaxWind; s++) {
+                            let a = h.dirAngle + s * 0.42;
+                            windSources[windCount++].set(h.x + Math.cos(a) * h.radius, 2.2, h.y + Math.sin(a) * h.radius);
+                        }
                     }
+                }
+            }
+        }
+
+        // 4. Proiettili in volo e onde residue di proiettili appena esplosi
+        for (let i = 0, len = this.projectiles.length; i < len; i++) {
+            if (windCount >= activeMaxWind) break;
+            let p = this.projectiles[i];
+            if (p.active || p.windIntensity > 0) {
+                let wx = p.active ? p.x : p.windX;
+                let wz = p.active ? p.y : p.windZ;
+                let dx = wx - focalX;
+                let dz = wz - focalZ;
+                if ((dx * dx + dz * dz) < maxWindDistSq) {
+                    let wf = p.active ? 2.0 : p.windIntensity;
+                    windSources[windCount].set(wx, wf, wz);
+                    windCount++;
                 }
             }
         }
@@ -8713,6 +8753,7 @@ startGame(diffMult) {
 
    draw() {
         if(!this.scene || !this.uiCtx) return;
+        if (this.camera) InteractiveGrassSystem.uniforms.uCamPos.value.copy(this.camera.position);
         
         if (!AppSettings.isLow && !isTouchDevice && this.composer) {
             this.composer.render();
@@ -8993,7 +9034,8 @@ const InteractiveGrassSystem = {
     uniforms: {
         uWindSources: { value: Array(MAX_WIND).fill(null).map(() => new THREE.Vector3(0, 0, 0)) },
         uWindCount: { value: 0 },
-        uTime: { value: 0 }
+        uTime: { value: 0 },
+        uCamPos: { value: new THREE.Vector3(0, 0, 0) }
     },
     geo: null,
     mat: null,
@@ -9038,14 +9080,14 @@ const InteractiveGrassSystem = {
        // Colore base muschio scuro. Nessuna emissione, deve reagire solo alla luce della lanterna!
         this.mat = new THREE.MeshLambertMaterial({
             color: 0x1a2b16,      
-            emissive: 0x000000,   
-            flatShading: false // Usa la normale morbida (0,1,0) evitando sfaccettature nere e calcoli dFdx/dFdy nel Fragment Shader
+            emissive: 0x000000    // Usa la normale morbida (0,1,0) evitando sfaccettature nere e calcoli dFdx/dFdy nel Fragment Shader
         });
 
         this.mat.onBeforeCompile = (shader) => {
             shader.uniforms.uWindSources = this.uniforms.uWindSources;
             shader.uniforms.uWindCount = this.uniforms.uWindCount;
             shader.uniforms.uTime = this.uniforms.uTime;
+            shader.uniforms.uCamPos = this.uniforms.uCamPos;
 
             // --- 1. VERTEX SHADER (Movimento e Dati Colore) ---
             shader.vertexShader = `
@@ -9053,6 +9095,7 @@ const InteractiveGrassSystem = {
                 uniform vec3 uWindSources[MAX_WIND];
                 uniform int uWindCount;
                 uniform float uTime;
+                uniform vec3 uCamPos;
                 
                 // Variabili da passare al Fragment Shader
                 varying float vHeight;
@@ -9082,7 +9125,7 @@ const InteractiveGrassSystem = {
                 vColorRandom = fract(sin(dot(basePos.xz, vec2(12.9898, 78.233))) * 43758.5453);
 
          // Scarta istantaneamente i fili d'erba fuori dall'inquadratura prima di vento, trigonometria e luci Lambert
-                if (abs(basePos.x - cameraPosition.x) > 1300.0 || basePos.z > cameraPosition.z + 120.0 || basePos.z < cameraPosition.z - 1600.0) {
+                if (abs(basePos.x - uCamPos.x) > 1300.0 || basePos.z > uCamPos.z + 120.0 || basePos.z < uCamPos.z - 1600.0) {
                     gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
                     return;
                 }
@@ -9438,6 +9481,9 @@ class GameMap {
         interactiveGrassMesh.receiveShadow = true;
         interactiveGrassMesh.castShadow = false;
         interactiveGrassMesh.frustumCulled = false;
+        interactiveGrassMesh.onBeforeRender = function(renderer, scene, camera) {
+            InteractiveGrassSystem.uniforms.uCamPos.value.setFromMatrixPosition(camera.matrixWorld);
+        };
         let idxInteractiveGrass = 0; const grassPassTag = new Uint8Array(maxGrassClusters);
 
        // --- 2.5 ALLOCHIAMO I DETRITI ---
@@ -10949,58 +10995,58 @@ class GameMap {
                             meshGrass.setMatrixAt(idxGrass++, dummy.matrix);
 
                           let bandCore = Math.max(0.0, 1.0 - Math.abs(r - 0.525) / 0.175);
-                          let meadowWave = 0.5 + 0.5 * Math.sin(x * 0.45 - y * 0.35) * Math.cos(y * 0.40 + x * 0.30);
-                          let patchScore = bandCore * 0.55 + meadowWave * 0.45;
-                          if (patchScore > 0.20) {
-                                let intensity = Math.min(1.0, (patchScore - 0.20) / 0.58);
-                                let baseMax = Math.ceil((isTouchDevice ? 56 : 130) * grassModeMult);
-                                let maxBlades = MathUtils.randomInt(Math.max(16, baseMax - 35), Math.max(24, baseMax));
-                                let numBlades = Math.floor(maxBlades * (0.38 + 0.62 * Math.pow(intensity, 0.85)));
-                                let patchOffX = Math.sin(x * 1.7 + y * 2.3) * (nearPit ? 5 : 11);
-                                let patchOffZ = Math.cos(x * 2.1 - y * 1.9) * (nearPit ? 5 : 11);
-                                let maxPatchRad = nearPit ? 24 : 35;
+                        let meadowWave = 0.5 + 0.5 * Math.sin(x * 0.45 - y * 0.35) * Math.cos(y * 0.40 + x * 0.30);
+                        let patchScore = bandCore * 0.55 + meadowWave * 0.45;
+                        if (patchScore > 0.15) {
+                            let intensity = Math.min(1.0, (patchScore - 0.15) / 0.62);
+                            let baseMax = Math.ceil((isTouchDevice ? 45 : 110));
+                            let numBlades = Math.floor(baseMax * (0.5 + 0.5 * intensity));
+                            let patchOffX = Math.sin(x * 1.7 + y * 2.3) * (nearPit ? 4 : 8);
+                            let patchOffZ = Math.cos(x * 2.1 - y * 1.9) * (nearPit ? 4 : 8);
+                            let maxPatchRad = nearPit ? 20 : 30;
 
-                                for (let g = 0; g < numBlades; g++) {
-                                    let radialT = (g + Math.random() * 0.65) / Math.max(1, numBlades);
-                                    let rDist = Math.pow(radialT, 0.72) * maxPatchRad;
-                                    let rAng = g * 2.39996 + Math.random() * 0.45;
-                                    let gx = (x * TILE_SIZE + TILE_SIZE / 2) + patchOffX + Math.cos(rAng) * rDist;
-                                    let gz = (y * TILE_SIZE + TILE_SIZE / 2) + patchOffZ + Math.sin(rAng) * rDist;
-                                    if (nearPit) {
-                                        let txA = Math.floor((gx - 8) / TILE_SIZE), txB = Math.floor((gx + 8) / TILE_SIZE);
-                                        let tzA = Math.floor((gz - 8) / TILE_SIZE), tzB = Math.floor((gz + 8) / TILE_SIZE);
-                                        if ((this.grid[txA] && this.grid[txA][tzA] === 5) ||
-                                            (this.grid[txB] && this.grid[txB][tzA] === 5) ||
-                                            (this.grid[txA] && this.grid[txA][tzB] === 5) ||
-                                            (this.grid[txB] && this.grid[txB][tzB] === 5)) continue;
-                                    }
-                                    if (propOnTile) {
-                                        let d1x = gx - propX1, d1z = gz - propZ1;
-                                        if (d1x * d1x + d1z * d1z < 484) continue;
-                                        if (propX2 > -9000) {
-                                            let d2x = gx - propX2, d2z = gz - propZ2;
-                                            if (d2x * d2x + d2z * d2z < 441) continue;
-                                        }
-                                    }
-                                    dummy.position.set(gx, nearPit ? 0.45 : 0.2, gz);
-                                    let domeProfile = 1.28 - radialT * 0.48;
-                                    let sizeMod = (0.58 + (intensity * 0.62)) * domeProfile;
-                                    let scaleG = MathUtils.randomRange(0.8, 1.5) * sizeMod;
-                                    if (nearPit) scaleG = Math.min(scaleG * 0.55, 0.60);
-                                    let maxTilt = nearPit ? 0.06 : 0.2;
-                                    dummy.scale.set(scaleG, scaleG, scaleG);
-                                    dummy.rotation.set(
-                                        MathUtils.randomRange(-maxTilt, maxTilt),
-                                        Math.random() * Math.PI * 2,
-                                        MathUtils.randomRange(-maxTilt, maxTilt)
-                                    );
-                                    dummy.updateMatrix();
-                                    if (idxInteractiveGrass < maxGrassClusters) {
-                                        grassPassTag[idxInteractiveGrass] = radialT < 0.50 ? 0 : (radialT < 0.78 ? 1 : 2);
-                                        interactiveGrassMesh.setMatrixAt(idxInteractiveGrass++, dummy.matrix);
+                            for (let g = 0; g < numBlades; g++) {
+                                let radialT = (g + Math.random() * 0.5) / Math.max(1, numBlades);
+                                let rDist = Math.pow(radialT, 0.65) * maxPatchRad;
+                                let rAng = g * 2.39996 + Math.random() * 0.6;
+                                let gx = (x * TILE_SIZE + TILE_SIZE / 2) + patchOffX + Math.cos(rAng) * rDist;
+                                let gz = (y * TILE_SIZE + TILE_SIZE / 2) + patchOffZ + Math.sin(rAng) * rDist;
+                                
+                                if (nearPit) {
+                                    let txA = Math.floor((gx - 8) / TILE_SIZE), txB = Math.floor((gx + 8) / TILE_SIZE);
+                                    let tzA = Math.floor((gz - 8) / TILE_SIZE), tzB = Math.floor((gz + 8) / TILE_SIZE);
+                                    if ((this.grid[txA] && this.grid[txA][tzA] === 5) ||
+                                        (this.grid[txB] && this.grid[txB][tzA] === 5) ||
+                                        (this.grid[txA] && this.grid[txA][tzB] === 5) ||
+                                        (this.grid[txB] && this.grid[txB][tzB] === 5)) continue;
+                                }
+                                if (propOnTile) {
+                                    let d1x = gx - propX1, d1z = gz - propZ1;
+                                    if (d1x * d1x + d1z * d1z < 484) continue;
+                                    if (propX2 > -9000) {
+                                        let d2x = gx - propX2, d2z = gz - propZ2;
+                                        if (d2x * d2x + d2z * d2z < 441) continue;
                                     }
                                 }
+                                dummy.position.set(gx, nearPit ? 0.45 : 0.2, gz);
+                                let domeProfile = 1.25 - radialT * 0.35;
+                                let scaleG = MathUtils.randomRange(0.85, 1.45) * domeProfile;
+                                if (nearPit) scaleG = Math.min(scaleG * 0.55, 0.60);
+                                let maxTilt = nearPit ? 0.06 : 0.22;
+                                dummy.scale.set(scaleG, scaleG, scaleG);
+                                dummy.rotation.set(
+                                    MathUtils.randomRange(-maxTilt, maxTilt),
+                                    Math.random() * Math.PI * 2,
+                                    MathUtils.randomRange(-maxTilt, maxTilt)
+                                );
+                                dummy.updateMatrix();
+                                if (idxInteractiveGrass < maxGrassClusters) {
+                                    // Assegnazione concentrica per chiazza (0: Cuore 50% PERF, 1: Corpo 78% BILANC, 2: Bordo 100% ULTRA)
+                                    grassPassTag[idxInteractiveGrass] = radialT < 0.50 ? 0 : (radialT < 0.78 ? 1 : 2);
+                                    interactiveGrassMesh.setMatrixAt(idxInteractiveGrass++, dummy.matrix);
+                                }
                             }
+                        }
                         }
                         // 3C. DETTAGLI PIETRA SUL PAVIMENTO (r >= 0.70) - CALPESTABILI
                         else {
@@ -11169,6 +11215,8 @@ Game.auras.push({
         this.grassMesh = interactiveGrassMesh;
         this.totalGrassSpawned = idxInteractiveGrass;
         interactiveGrassMesh.count = Math.floor(idxInteractiveGrass * AppSettings.grassDensityMult);
+        interactiveGrassMesh.instanceMatrix.needsUpdate = true;
+        if (idxInteractiveGrass > 0) this.mapGroup.add(interactiveGrassMesh);
         if (idxDebris > 1) {
             const arrD = meshDebris.instanceMatrix.array;
             for (let i = idxDebris - 1; i > 0; i--) {
@@ -11213,9 +11261,6 @@ Game.auras.push({
             this.mapGroup.add(this.urnShadowMesh); // Viene sempre aggiunto
         }
         if (idxDebris > 0) this.mapGroup.add(meshDebris);
-        
-        interactiveGrassMesh.instanceMatrix.needsUpdate = true; 
-        if (idxInteractiveGrass > 0) this.mapGroup.add(interactiveGrassMesh);
 
       wallMesh.count = wIdx;
         wallMesh.instanceMatrix.needsUpdate = true;
@@ -17226,7 +17271,7 @@ if (type === 'arrow' || type === 'homing_arrow') {
         if (!this.active) {
             if (this.windIntensity > 0) {
                 // Il vento si dissipa sul posto dopo l'esplosione, senza trascinarsi in avanti
-                this.windIntensity -= dt * 1.5; 
+                this.windIntensity = Math.max(0, this.windIntensity - dt * 6.0); 
             }
             return;
         }
@@ -17454,7 +17499,13 @@ if (type === 'arrow' || type === 'homing_arrow') {
     destroy() {
         this.groundGlow.visible = false;
         this.active = false; 
-        this.windIntensity = 0; // Rilascia immediatamente lo slot del vento
+        if (this.type === 'explosive_arrow' || this.type === 'enemy_fireball' || this.type === 'fire_shape') {
+            this.windX = this.x;
+            this.windZ = this.y;
+            this.windIntensity = 3.8; // Impulso d'onda d'urto sull'erba nel punto di impatto
+        } else {
+            this.windIntensity = 0; // Rilascia immediatamente lo slot del vento
+        }
         this.group.visible = false; 
         let pMat = SharedMat.spriteWhite;
         if (this.type === 'player_arrow') pMat = SharedMat.spriteYellow;
