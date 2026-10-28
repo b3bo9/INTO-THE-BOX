@@ -1172,9 +1172,77 @@ const AppSettings = {
     damageNumbers: true,
     get isLow() { return this.mode === 0; },
     get isUltra() { return this.mode === 2; },
+    get isBalanced() { return this.mode === 1; },
     get isUltraPC() { return this.mode === 2 && !isTouchDevice; },
+    _storageKey: 'intoTheBox_settings_v1',
+    get maxParticlesPerFrame() { return isTouchDevice ? (this.mode === 0 ? 7 : (this.mode === 1 ? 14 : 24)) : (this.mode === 0 ? 20 : (this.mode === 1 ? 35 : 55)); },
+    get maxDebrisPerFrame() { return isTouchDevice ? (this.mode === 0 ? 3 : (this.mode === 1 ? 5 : 9)) : (this.mode === 0 ? 6 : (this.mode === 1 ? 12 : 18)); },
+    get maxTextsDrawn() { return isTouchDevice ? (this.mode === 0 ? 6 : (this.mode === 1 ? 10 : 16)) : (this.mode === 0 ? 14 : (this.mode === 1 ? 25 : 35)); },
+    get maxWindSources() { return isTouchDevice ? (this.mode === 0 ? 1 : (this.mode === 1 ? 3 : 6)) : (this.mode === 0 ? 2 : (this.mode === 1 ? 6 : 10)); },
+    get grassDensityMult() { return this.mode === 0 ? 0.30 : (this.mode === 1 ? 0.68 : 1.0); },
+    get targetFogCount() { return this.mode === 0 ? 0 : (isTouchDevice ? (this.mode === 1 ? 16 : 28) : (this.mode === 1 ? 30 : 50)); },
+    get playerLightRadius() { return !isTouchDevice ? 1050 : (this.mode === 0 ? 520 : (this.mode === 1 ? 650 : 780)); },
+    getTargetPixelRatio() {
+        const dpr = window.devicePixelRatio || 1;
+        if (isTouchDevice) {
+            if (this.mode === 2) return Math.max(1.10, Math.min(dpr * 0.85, 1.45));
+            if (this.mode === 1) return Math.max(0.90, Math.min(dpr * 0.68, 1.15));
+            return Math.max(0.70, Math.min(dpr * 0.50, 0.85));
+        }
+        return this.mode === 2 ? Math.min(dpr, 1.5) : (this.mode === 1 ? Math.min(dpr, 1.0) : 0.75);
+    },
+    getTargetUiDpr() {
+        const dpr = window.devicePixelRatio || 1;
+        if (!isTouchDevice) return dpr;
+        return this.mode === 0 ? 1.0 : (this.mode === 1 ? Math.min(dpr, 1.25) : Math.min(dpr, 1.5));
+    },
+    detectHardwareTier() {
+        if (!isTouchDevice) return 1;
+        const mem = navigator.deviceMemory || 4;
+        const cores = navigator.hardwareConcurrency || 6;
+        const dpr = window.devicePixelRatio || 2;
+        if (mem <= 3 || cores <= 4) return 0;
+        if (mem >= 8 && cores >= 8 && dpr >= 2.5) return 2;
+        return 1;
+    },
+    save() {
+        try {
+            localStorage.setItem(this._storageKey, JSON.stringify({
+                mode: this.mode, fpsCap: this.fpsCap, colorblind: this.colorblind,
+                screenShake: this.screenShake, damageNumbers: this.damageNumbers
+            }));
+        } catch (e) {}
+    },
     
    get shadowsEnabled() { return this.mode === 2; },
+    loadAndDetect() {
+        let loaded = false;
+        try {
+            const raw = localStorage.getItem(this._storageKey);
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (typeof data.mode === 'number' && data.mode >= 0 && data.mode <= 2) {
+                    this.mode = data.mode;
+                    loaded = true;
+                }
+                if (data.fpsCap === 30 || data.fpsCap === 60) this.fpsCap = data.fpsCap;
+                if (typeof data.screenShake === 'boolean') this.screenShake = data.screenShake;
+                if (typeof data.damageNumbers === 'boolean') this.damageNumbers = data.damageNumbers;
+                if (typeof data.colorblind === 'boolean' && data.colorblind !== this.colorblind) {
+                    this.colorblind = data.colorblind;
+                    if (this.colorblind) {
+                        document.body.classList.add('colorblind-mode');
+                        ESSENCE_COLORS = { 'red': 0xFF00AA, 'blue': 0x00CCFF, 'green': 0xFFFF00 };
+                    }
+                }
+            }
+        } catch (e) {}
+        if (!loaded) {
+            this.mode = this.detectHardwareTier();
+        }
+        if (this.isLow) document.body.classList.add('low-spec');
+        else document.body.classList.remove('low-spec');
+    },
     
     init() {
         if (this.isLow) document.body.classList.add('low-spec');
@@ -1182,6 +1250,7 @@ const AppSettings = {
     
     toggleGraphics() {
         this.mode = (this.mode + 1) % 3;
+        this.save();
         this.applyGraphics();
     },
 
@@ -1197,6 +1266,9 @@ const AppSettings = {
 
         if (typeof Game !== 'undefined' && Game.mistSystem) {
             Game.mistSystem.visible = !this.isLow;
+            if (Game.mistMat1 && isTouchDevice) {
+                Game.mistMat1.opacity = this.isUltra ? 0.095 : 0.065;
+            }
         }
 
         if (this.isLow) document.body.classList.add('low-spec');
@@ -1213,7 +1285,9 @@ const AppSettings = {
                 else if (this.mode === 1) pr = Math.min(window.devicePixelRatio, 1.0);
                 else pr = 0.75;
             }
+            pr = this.getTargetPixelRatio();
             Game.renderer.setPixelRatio(pr);
+            Game.resize();
             if (Game.composer) Game.composer.setSize(window.innerWidth, window.innerHeight);
             if (Game.bloomPass) Game.bloomPass.setSize(Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.floor(window.innerHeight / 2)));
             Game.updateShadowConfig();
@@ -1227,6 +1301,43 @@ const AppSettings = {
                 Game.map.mapGroup.children.forEach(c => {
                     if (c.material === SharedMat.blobShadow) c.visible = showFakeShadows;
                 });
+                // Scala in tempo reale Erba 3D, Detriti statici, Raggi Divini e Nebbia Bassa senza ricaricare il piano
+                if (Game.map.grassMesh && Game.map.totalGrassSpawned !== undefined) {
+                    Game.map.grassMesh.count = Math.floor(Game.map.totalGrassSpawned * this.grassDensityMult);
+                }
+                if (Game.map.debrisStaticMesh && Game.map.totalDebrisStaticSpawned !== undefined) {
+                    const debMult = this.isLow ? 0.45 : (this.isUltra ? 1.0 : 0.75);
+                    Game.map.debrisStaticMesh.count = Math.floor(Game.map.totalDebrisStaticSpawned * debMult);
+                }
+                if (Game.map.raysMesh) {
+                    Game.map.raysMesh.visible = !this.isLow;
+                }
+                if (Game.map.fogMesh && Game.map.maxFogAllocated !== undefined) {
+                    const tFog = Math.min(this.targetFogCount, Game.map.maxFogAllocated);
+                    Game.map.fogMesh.count = tFog;
+                    Game.map.fogMesh.visible = tFog > 0;
+                }
+            }
+            if (Game.player) {
+                if (Game.player.light) Game.player.light.distance = this.playerLightRadius;
+                if (Game.player.modelParts && Game.player.modelParts.body && Game.player.modelParts.body.material) {
+                    const bodyMat = Game.player.modelParts.body.material;
+                    const wantBump = (!isTouchDevice || this.isUltra) ? CHAR_GRUNGE_TEX : null;
+                    if (bodyMat.bumpMap !== wantBump) {
+                        bodyMat.bumpMap = wantBump;
+                        bodyMat.needsUpdate = true;
+                    }
+                }
+            }
+            if (this.isLow && Game.flashLights) {
+                for (let i = 0; i < Game.flashLights.length; i++) {
+                    Game.flashLights[i].life = 0;
+                    Game.flashLights[i].light.intensity = 0;
+                }
+            }
+            if (false) {
+                [].forEach(c => {
+                });
             }
         }
         
@@ -1237,6 +1348,7 @@ const AppSettings = {
     },
     toggleColorblind() {
         this.colorblind = !this.colorblind;
+        this.save();
         if(this.colorblind) {
             // Aggiunge la classe al body per far cambiare i colori all'HUD CSS
             document.body.classList.add('colorblind-mode');
@@ -1263,10 +1375,11 @@ const AppSettings = {
         
         if(Game.player) Game.player.updateAppearance();
     },
-   toggleScreenShake() { this.screenShake = !this.screenShake; },
-    toggleDamageNumbers() { this.damageNumbers = !this.damageNumbers; },
+   toggleScreenShake() { this.screenShake = !this.screenShake; this.save(); },
+    toggleDamageNumbers() { this.damageNumbers = !this.damageNumbers; this.save(); },
     toggleFPS() { 
         this.fpsCap = this.fpsCap === 60 ? 30 : 60; 
+        this.save();
         if (typeof Game !== 'undefined') Game.frameInterval = 1000 / this.fpsCap;
     }
 };
@@ -3001,9 +3114,9 @@ const UIManager = {
         const gfxTxt = document.getElementById('opt-gfx-text');
         const btnGfx = document.getElementById('btn-opt-gfx');
         btnGfx.classList.remove('text-yellow-500', 'text-green-400', 'text-cyan-400');
-        if (AppSettings.mode === 0) { gfxTxt.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i> PERF.'; btnGfx.classList.add('text-yellow-500'); }
-        else if (AppSettings.mode === 1) { gfxTxt.innerHTML = '<i class="fa-solid fa-scale-balanced"></i> BILANC.'; btnGfx.classList.add('text-green-400'); }
-        else { gfxTxt.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> ULTRA'; btnGfx.classList.add('text-cyan-400'); }
+        if (AppSettings.mode === 0) { gfxTxt.innerHTML = isTouchDevice ? '<i class="fa-solid fa-bolt"></i> PERF. (BASE)' : '<i class="fa-solid fa-mobile-screen-button"></i> PERF.'; btnGfx.classList.add('text-yellow-500'); }
+        else if (AppSettings.mode === 1) { gfxTxt.innerHTML = isTouchDevice ? '<i class="fa-solid fa-scale-balanced"></i> BILANC. (MEDIA)' : '<i class="fa-solid fa-scale-balanced"></i> BILANC.'; btnGfx.classList.add('text-green-400'); }
+        else { gfxTxt.innerHTML = isTouchDevice ? '<i class="fa-solid fa-wand-magic-sparkles"></i> ULTRA (TOP)' : '<i class="fa-solid fa-wand-magic-sparkles"></i> ULTRA'; btnGfx.classList.add('text-cyan-400'); }
 
         // Musica
         const musTxt = document.getElementById('opt-music-text');
@@ -6062,7 +6175,7 @@ getEnemy() {
             alpha: false, 
             powerPreference: "high-performance" 
         });
-        this.renderer.setPixelRatio(pixelRatio); this.renderer.setSize(this.width, this.height);
+        pixelRatio = AppSettings.getTargetPixelRatio(); this.renderer.setPixelRatio(pixelRatio); this.renderer.setSize(this.width, this.height); this.frameInterval = 1000 / AppSettings.fpsCap;
        this.renderer.outputEncoding = THREE.sRGBEncoding; 
         // FIX LUMINOSITÀ: Rimuoviamo ACESFilmic per un look "arcade" più vibrante e luminoso
         this.renderer.toneMapping = THREE.NoToneMapping;
@@ -6117,7 +6230,7 @@ this.dirLight = new THREE.DirectionalLight(0x335577, 1.4);
             texMist.repeat.set(8, 8);
 
             this.mistMat1 = new THREE.MeshBasicMaterial({
-                map: texMist, transparent: true, opacity: isTouchDevice ? 0.08 : 0.12, depthWrite: false, blending: THREE.AdditiveBlending
+                map: texMist, transparent: true, opacity: isTouchDevice ? (AppSettings.isUltra ? 0.095 : 0.065) : 0.12, depthWrite: false, blending: THREE.AdditiveBlending
             });
 
             let plane1 = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), this.mistMat1);
@@ -6138,7 +6251,7 @@ this.dirLight = new THREE.DirectionalLight(0x335577, 1.4);
                 this.mistSystem.add(plane2);
             }
 
-            this.scene.add(this.mistSystem);
+            this.mistSystem.visible = !AppSettings.isLow; this.scene.add(this.mistSystem);
         }
        // ^^^ INCOLLA SOPRA QUESTA RIGA ^^^
         this.prewarmShaders(); this.setupInputs(); this.initPools(); 
@@ -6320,7 +6433,8 @@ pushDebris(px, pz, radius, force) {
     spawnLightFlash(x, z, colorHex, intensity, distance, duration = 0.2) {
         if (AppSettings.isLow) return; // Disattiva sui telefoni scarsi per salvare batteria
         let fl = this.flashLights[this._flashLightIdx];
-        this._flashLightIdx = (this._flashLightIdx + 1) % 3;
+        this._flashLightIdx = (this._flashLightIdx + 1) % (isTouchDevice && AppSettings.isBalanced ? 2 : 3);
+        if (isTouchDevice && AppSettings.isBalanced) distance *= 0.85;
         fl.light.color.setHex(colorHex);
         fl.light.intensity = intensity;
         fl.light.distance = distance;
@@ -6376,7 +6490,7 @@ pushDebris(px, pz, radius, force) {
         return fallback; 
     },
   getParticle() { 
-        if ((this.particlesThisFrame || 0) >= (isTouchDevice ? 12 : 50)) {
+        if ((this.particlesThisFrame || 0) >= AppSettings.maxParticlesPerFrame) {
             if (!this._dummyParticle) {
                 this._dummyParticle = { spawn() {}, mesh: { scale: { set() {} }, position: { set() {} } }, active: false, baseSize: 1, vx: 0, vy: 0, vz: 0, life: 0, maxLife: 1 };
             }
@@ -6555,7 +6669,7 @@ pushDebris(px, pz, radius, force) {
         this.width = window.innerWidth; this.height = window.innerHeight; this.renderer.setSize(this.width, this.height);
         this.camera.aspect = this.width / this.height; this.camera.updateProjectionMatrix(); 
         
-        let dpr = isTouchDevice ? Math.min(window.devicePixelRatio || 1, 1.25) : (window.devicePixelRatio || 1);
+        let dpr = AppSettings.getTargetUiDpr();
         this.uiCanvas.width = Math.floor(this.width * dpr); 
         this.uiCanvas.height = Math.floor(this.height * dpr);
         if (this.uiCtx) {
@@ -7805,7 +7919,7 @@ startGame(diffMult) {
         InteractiveGrassSystem.uniforms.uTime.value = this.visualTime;
         
         let windSources = InteractiveGrassSystem.uniforms.uWindSources.value;
-        let windCount = 0;
+        let windCount = 0; const activeMaxWind = AppSettings.maxWindSources;
 
         // OTTIMIZZAZIONE CPU: Culling centrato sul GIOCATORE, non sulla telecamera sfalsata!
         let focalX = this.player ? this.player.x : this.camera.position.x;
@@ -7819,7 +7933,7 @@ startGame(diffMult) {
         }
         
        for(let i=0, len=this.projectiles.length; i<len; i++) {
-            if (windCount >= MAX_WIND) break; // Interrompe il ciclo appena gli slot sono pieni
+            if (windCount >= activeMaxWind) break; // Interrompe il ciclo appena gli slot della fascia grafica sono pieni
             let p = this.projectiles[i];
             if (p.active) { // Considera esclusivamente i proiettili in volo
                 let dx = p.x - focalX;
@@ -7834,7 +7948,7 @@ startGame(diffMult) {
        // --- VENTO PER LE ONDE E IL MURO DI FUOCO IN ESPANSIONE ---
         for (let i = 0; i < this.hazards.length; i++) {
             let h = this.hazards[i];
-            if (!h.active || windCount >= MAX_WIND) continue;
+            if (!h.active || windCount >= activeMaxWind) continue;
             if (h.type === 'nova_ring' && windCount < MAX_WIND - 4) {
                 let dx = h.x - focalX, dz = h.y - focalZ;
                 if ((dx * dx + dz * dz) < maxWindDistSq) {
@@ -7943,7 +8057,7 @@ startGame(diffMult) {
                     pt.baseRune.rotation.y += safeVisualDt * (isReady ? 1.2 : 0.3);
 
                     // Scia di particelle magiche stile WoW lungo il bordo ovale del portale
-                    if (isReady && Game.frameCount % (isTouchDevice ? 5 : 2) === 0) {
+                    if (isReady && Game.frameCount % (AppSettings.isLow ? 8 : (isTouchDevice ? (AppSettings.isUltra ? 3 : 5) : 2)) === 0) {
                         let a = Math.random() * Math.PI * 2;
                         let px = pt.x + Math.cos(a) * 20;
                         let py = 34 + Math.sin(a) * 28;
@@ -8000,7 +8114,7 @@ startGame(diffMult) {
         }
 
         // Particelle che salgono dal pavimento SOLO per gli Obelischi ancora attivi
-        if (this.auras && Game.frameCount % (isTouchDevice ? 12 : 5) === 0) {
+        if (this.auras && Game.frameCount % (AppSettings.isLow ? 18 : (isTouchDevice ? (AppSettings.isUltra ? 8 : 12) : 5)) === 0) {
             for (let i = 0; i < this.auras.length; i++) {
                 let a = this.auras[i];
                 if (!a.active) continue;
@@ -8066,14 +8180,14 @@ startGame(diffMult) {
         this.updateCamera(visualDt); // La telecamera segue fluida il tempo reale
 
         // --- AGGIORNAMENTO DERIVA DELLA NEBBIA BASSA ---
-        if (this.map && this.map.fogMesh && this.map.fogData.length > 0) {
+        if (this.map && this.map.fogMesh && this.map.fogMesh.visible && this.map.fogMesh.count > 0 && this.map.fogData.length > 0) {
             if (AppSettings.isUltraPC || Game.frameCount % 2 === 0) {
                 let dummyFog = this._dummyFog;
                 let mapW = this.map.width * TILE_SIZE;
                 let mapH = this.map.height * TILE_SIZE;
                 let timeScale = AppSettings.isUltraPC ? combatDt : (combatDt * 2);
 
-                for(let i=0; i<this.map.fogData.length; i++) {
+                for(let i=0, fogLim=Math.min(this.map.fogMesh.count, this.map.fogData.length); i<fogLim; i++) {
                     let d = this.map.fogData[i];
                     d.x += d.vx * timeScale;
                     d.z += d.vz * timeScale;
@@ -8093,7 +8207,7 @@ startGame(diffMult) {
         }
      // --- EMANAZIONI PARTICOLARI DALLE FOSSE ---
         // La CPU controlla solo una piccola griglia 5x5 attorno al giocatore ogni tot frame!
-        if (this.map && Game.frameCount % (isTouchDevice ? 5 : 3) === 0 && this.player && !this.player.dead) {
+        if (!AppSettings.isLow && this.map && Game.frameCount % (isTouchDevice ? (AppSettings.isUltra ? 4 : 6) : 3) === 0 && this.player && !this.player.dead) {
             let px = Math.floor(this.player.x / TILE_SIZE);
             let py = Math.floor(this.player.y / TILE_SIZE);
             
@@ -8140,7 +8254,8 @@ startGame(diffMult) {
         // OTTIMIZZAZIONE ZERO-COST: Se è il tema ghiaccio, dimezziamo i tempi di attesa
         // e raddoppiamo i fiocchi riciclando le particelle dal pool per simulare la nevicata.
         let isIceTheme = this.currentThemeIndex === 2;
-        let spawnRate = isIceTheme ? (isTouchDevice ? 15 : 6) : (isTouchDevice ? 30 : 12);
+        let baseAmbRate = isTouchDevice ? (AppSettings.isLow ? 44 : (AppSettings.isUltra ? 18 : 28)) : 12;
+        let spawnRate = isIceTheme ? Math.max(4, Math.floor(baseAmbRate * 0.5)) : baseAmbRate;
 
         if (Game.frameCount % spawnRate === 0) {
             // Genera 2 fiocchi per frame nel livello ghiaccio, 1 solo negli altri temi
@@ -8189,7 +8304,7 @@ startGame(diffMult) {
         }
         
        // --- NUOVO: ALBERI INFUOCATI REALISTICI (SOLO TEMA LAVA) ---
-       if (Game.currentThemeIndex === 1 && Game.frameCount % (isTouchDevice ? 15 : 6) === 0 && this.map && this.map.treePositions && this.map.treePositions.length > 0) {
+       if (!AppSettings.isLow && Game.currentThemeIndex === 1 && Game.frameCount % (isTouchDevice ? (AppSettings.isUltra ? 10 : 16) : 6) === 0 && this.map && this.map.treePositions && this.map.treePositions.length > 0) {
             if (!this._tempVisibleTrees) this._tempVisibleTrees = [];
             this._tempVisibleTrees.length = 0;
             
@@ -8205,7 +8320,7 @@ startGame(diffMult) {
                 }
             }
 
-            let maxTreesToProcess = isTouchDevice ? 3 : 8;
+            let maxTreesToProcess = isTouchDevice ? (AppSettings.isUltra ? 4 : 2) : 8;
             let visibleCount = this._tempVisibleTrees.length;
             
             for (let i = 0; i < Math.min(visibleCount, maxTreesToProcess); i++) {
@@ -8827,7 +8942,7 @@ startGame(diffMult) {
            }
 
           // OTTIMIZZAZIONE: Scrivere sul Canvas 2D è lentissimo. Cappa i testi a schermo.
-           if (textsDrawn > (isTouchDevice ? 8 : 25)) break;
+           if (textsDrawn >= AppSettings.maxTextsDrawn) break;
             
             let pos = this.toScreenPosition(ft.x, ft.h, ft.y);
             let progress = ft.life / ft.maxLife; 
@@ -9277,7 +9392,7 @@ class GameMap {
         }
 
        // 2. ALLOCHIAMO LA MEMORIA PER L'ERBA (Scalata su modalità grafica, 0 costo nella Shadow Map)
-        const grassModeMult = AppSettings.isLow ? 0.35 : (AppSettings.isUltra ? 1.0 : 0.68);
+        const grassModeMult = 1.0; // Allocata a capacità piena per scalare live tra Performance (30%), Bilanciata (68%) e Ultra (100%)
         const maxGrassClusters = Math.ceil(floorCount * (isTouchDevice ? 45 : 150) * grassModeMult);
         const interactiveGrassMesh = new THREE.InstancedMesh(InteractiveGrassSystem.geo, InteractiveGrassSystem.mat, maxGrassClusters);
         interactiveGrassMesh.receiveShadow = true;
@@ -9462,13 +9577,15 @@ class GameMap {
             tempDummy.scale.setScalar(2.4); // Runa enorme per il Boss
             tempDummy.updateMatrix();
             imRunes.setMatrixAt(idxRune++, tempDummy.matrix);
+            tempDummy.position.set(bx, 0, bz); tempDummy.rotation.set(0, 0, 0); tempDummy.scale.setScalar(3.0); tempDummy.updateMatrix();
+            imRays.setMatrixAt(idxRay++, tempDummy.matrix);
             
             if (!AppSettings.isLow) {
                 tempDummy.position.set(bx, 0, bz);
                 tempDummy.rotation.set(0, 0, 0); // Perfettamente verticale
                 tempDummy.scale.setScalar(3.0); // Raggio maestoso
                 tempDummy.updateMatrix();
-                imRays.setMatrixAt(idxRay++, tempDummy.matrix);
+                // Già popolato sopra per supportare il cambio grafica live da Opzioni
             }
         }
         // --- FINE SETUP FAKE LIGHTING ---
@@ -10935,16 +11052,18 @@ class GameMap {
                         dummy.updateMatrix();
                         let currentRuneIdx = idxRune; // Salviamo l'indice di questa specifica runa
                         imRunes.setMatrixAt(idxRune++, dummy.matrix);
+                        dummy.position.set(px, 0, pz); dummy.rotation.set(0, 0, 0); dummy.scale.setScalar(1.4); dummy.updateMatrix();
+                        let _preRayIdx = idxRay; imRays.setMatrixAt(idxRay++, dummy.matrix);
 
-                      let currentRayIdx = -1;
+                      let currentRayIdx = _preRayIdx;
 // --- FAKE LIGHTING: GOD RAY SULL'OBELISCO ---
 if (!AppSettings.isLow) {
     dummy.position.set(px, 0, pz);
     dummy.rotation.set(0, 0, 0); // Nessuna inclinazione, scende a piombo
     dummy.scale.setScalar(1.4); // Avvolge in larghezza l'obelisco
     dummy.updateMatrix();
-    currentRayIdx = idxRay;
-    imRays.setMatrixAt(idxRay++, dummy.matrix);
+    currentRayIdx = _preRayIdx;
+    // Già popolato sopra per supportare il cambio grafica live da Opzioni
 }
 
 // Icona Fluttuante
@@ -10980,8 +11099,29 @@ Game.auras.push({
         meshDirt.count = idxDirt;
         meshGrass.count = idxGrass;
         meshRock.count = idxRock;
-        interactiveGrassMesh.count = idxInteractiveGrass;
-        meshDebris.count = idxDebris;
+        // Permuta uniformemente le matrici dell'erba e dei ciottoli statici così il taglio live di .count (30% / 68% / 100%) scala la densità su TUTTA la mappa e non solo su un lato!
+        if (idxInteractiveGrass > 1) {
+            const arr = interactiveGrassMesh.instanceMatrix.array;
+            for (let i = idxInteractiveGrass - 1; i > 0; i--) {
+                const j = (Math.random() * (i + 1)) | 0;
+                const a = i * 16, b = j * 16;
+                for (let k = 0; k < 16; k++) { const t = arr[a + k]; arr[a + k] = arr[b + k]; arr[b + k] = t; }
+            }
+        }
+        this.grassMesh = interactiveGrassMesh;
+        this.totalGrassSpawned = idxInteractiveGrass;
+        interactiveGrassMesh.count = Math.floor(idxInteractiveGrass * AppSettings.grassDensityMult);
+        if (idxDebris > 1) {
+            const arrD = meshDebris.instanceMatrix.array;
+            for (let i = idxDebris - 1; i > 0; i--) {
+                const j = (Math.random() * (i + 1)) | 0;
+                const a = i * 16, b = j * 16;
+                for (let k = 0; k < 16; k++) { const t = arrD[a + k]; arrD[a + k] = arrD[b + k]; arrD[b + k] = t; }
+            }
+        }
+        this.debrisStaticMesh = meshDebris;
+        this.totalDebrisStaticSpawned = idxDebris;
+        meshDebris.count = Math.floor(idxDebris * (AppSettings.isLow ? 0.45 : (AppSettings.isUltra ? 1.0 : 0.75)));
         meshDebris.instanceMatrix.needsUpdate = true;
        meshTrees.count = idxTree; 
         meshTrees.instanceMatrix.needsUpdate = true; 
@@ -11037,7 +11177,7 @@ Game.auras.push({
         imFloorGlows.count = idxFGlow;
         
         if (idxRune > 0) { imRunes.instanceMatrix.needsUpdate = true; this.mapGroup.add(imRunes); }
-        if (idxRay > 0) { imRays.instanceMatrix.needsUpdate = true; this.mapGroup.add(imRays); }
+        if (idxRay > 0) { imRays.visible = !AppSettings.isLow; imRays.instanceMatrix.needsUpdate = true; this.mapGroup.add(imRays); }
         if (idxFGlow > 0) { imFloorGlows.instanceMatrix.needsUpdate = true; this.mapGroup.add(imFloorGlows); }
         
        imBlueDome.count = cBlue; imBlueRing.count = cBlue;
@@ -11071,9 +11211,9 @@ Game.auras.push({
         
         // FIX PRESTAZIONI E VISIBILITÀ: La nebbia si adatta al menu Opzioni!
         // 0 (Performance) = Niente nebbia. 1 (Bilanciata) = Media. 2 (Ultra) = Densa.
-        let fogCount = 0;
-        if (AppSettings.mode === 1) fogCount = isTouchDevice ? 20 : 30;
-        else if (AppSettings.mode === 2) fogCount = isTouchDevice ? 20 : 50;
+        let fogCount = isTouchDevice ? 28 : 50; this.maxFogAllocated = fogCount;
+        // Allocata alla capienza massima del dispositivo per permettere il cambio live da Opzioni!
+        // La visibilità e il .count effettivo sono regolati da AppSettings.targetFogCount
 
         if (texSmoke && fogCount > 0) {
             texSmoke.wrapS = THREE.RepeatWrapping;
@@ -11111,6 +11251,8 @@ this.fogMesh.renderOrder = -1; // Assicura che venga disegnato DOPO il terreno (
                     vz: MathUtils.randomRange(-20, 20)  // Deriva casuale asse Z
                 });
             }
+            this.fogMesh.count = Math.min(AppSettings.targetFogCount, fogCount);
+            this.fogMesh.visible = this.fogMesh.count > 0;
             this.mapGroup.add(this.fogMesh);
         }
        // --- FINE SISTEMA NEBBIA ---
@@ -11913,7 +12055,7 @@ class Player extends Entity {
                 roughness: 0.7, 
                 metalness: 0.1, 
                 map: CHAR_GRUNGE_TEX, 
-                bumpMap: isTouchDevice ? null : CHAR_GRUNGE_TEX, 
+                bumpMap: (!isTouchDevice || AppSettings.isUltra) ? CHAR_GRUNGE_TEX : null, 
                 bumpScale: 0.08
             }), 
             new THREE.MeshPhongMaterial({color: 0xffff00, emissive: 0xffff00})
@@ -11925,7 +12067,7 @@ class Player extends Entity {
         if (this.modelParts.staffGem) this.modelParts.staffGem.castShadow = false;
         if (this.modelParts.halo) this.modelParts.halo.castShadow = false;
 
-        let lightRadius = isTouchDevice ? 650 : 1050;
+        let lightRadius = AppSettings.playerLightRadius;
         // Luce sulla punta dell'arma con decay 2.0 per non sovraesporre mai il giocatore o il pavimento
         this.light = new THREE.PointLight(0xffcc44, 2.4, lightRadius, 2.0);
         this.light.position.set(12, 34, 16);
@@ -17297,7 +17439,7 @@ class Particle {
     }
     
     spawn(x, y, z, mat, type='spark', dirAngle=null) {
-        if (Game.particlesThisFrame > (isTouchDevice ? 12 : 50)) return;
+        if (Game.particlesThisFrame > AppSettings.maxParticlesPerFrame) return;
         Game.particlesThisFrame = (Game.particlesThisFrame || 0) + 1;
 
         this.active = true; 
@@ -17419,13 +17561,13 @@ class Debris {
     }
 
     spawn(worldPos, worldQuat, scaleVec, enemyType, colorHex, enemyRadius, isElite = false, forceSpawn = false, dirX = 0, dirZ = 0) {
-        if (!forceSpawn && Game.debrisThisFrame > (isTouchDevice ? 4 : 15)) return;
+        if (!forceSpawn && Game.debrisThisFrame > AppSettings.maxDebrisPerFrame) return;
         if (!forceSpawn) Game.debrisThisFrame = (Game.debrisThisFrame || 0) + 1;
 
         this.active = true;
         this.isSleeping = false;
         this.isSinking = false;
-        this.life = MathUtils.randomRange(3.2, 4.5);
+        this.life = AppSettings.isLow ? MathUtils.randomRange(1.8, 2.6) : MathUtils.randomRange(3.2, 4.5);
         this.sx = 1; this.sy = 1; this.sz = 1;
         this.isFlatPiece = false;
 
@@ -18376,7 +18518,7 @@ window.addEventListener('popstate', function (event) {
 history.pushState(null, null, document.URL);
 // ---------------------------------------------------------------
     window.onload = () => {
-    AppSettings.init();
+    AppSettings.loadAndDetect(); AppSettings.init(); UIManager.updateOptionsUI();
     Preloader.init(); // Avvia il LoadingManager globale
     ScoreManager.init(); SkinSystem.init(); Game.init(); TitleSystem.init();
     const initScreen = document.getElementById('initScreen'); const mainMenu = document.getElementById('mainMenu');
