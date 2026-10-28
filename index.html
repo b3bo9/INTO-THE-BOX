@@ -1860,16 +1860,22 @@ playCoin() {
         this.musicNode = true;
         
         this._menuFade = setInterval(() => {
-            if(this.menuBGM.volume < 0.4) this.menuBGM.volume = Math.min(0.4, this.menuBGM.volume + 0.05);
-            else clearInterval(this._menuFade);
+            let prev = this.menuBGM.volume;
+            if(prev < 0.4) {
+                this.menuBGM.volume = Math.min(0.4, prev + 0.05);
+                if (this.menuBGM.volume === prev) clearInterval(this._menuFade);
+            } else clearInterval(this._menuFade);
         }, 100);
     },
     stopMenuMusic() {
         if (!this.musicNode) return;
         clearInterval(this._menuFade);
         this._menuFade = setInterval(() => {
-            if(this.menuBGM.volume > 0.05) this.menuBGM.volume = Math.max(0, this.menuBGM.volume - 0.05);
-            else { this.menuBGM.volume = 0; this.menuBGM.pause(); this.musicNode = null; clearInterval(this._menuFade); }
+            let prev = this.menuBGM.volume;
+            if(prev > 0.05) {
+                this.menuBGM.volume = Math.max(0, prev - 0.05);
+                if (this.menuBGM.volume === prev) { this.menuBGM.pause(); this.musicNode = null; clearInterval(this._menuFade); }
+            } else { this.menuBGM.volume = 0; this.menuBGM.pause(); this.musicNode = null; clearInterval(this._menuFade); }
         }, 100);
     },
     playGameMusic() {
@@ -1880,15 +1886,21 @@ playCoin() {
         let p = this.gameBGM.play();
         if(p !== undefined) p.catch(e => console.warn("Audio bloccato", e));
         this._gameFade = setInterval(() => {
-            if(this.gameBGM.volume < 0.3) this.gameBGM.volume = Math.min(0.3, this.gameBGM.volume + 0.05);
-            else clearInterval(this._gameFade);
+            let prev = this.gameBGM.volume;
+            if(prev < 0.3) {
+                this.gameBGM.volume = Math.min(0.3, prev + 0.05);
+                if (this.gameBGM.volume === prev) clearInterval(this._gameFade);
+            } else clearInterval(this._gameFade);
         }, 100);
     },
     stopGameMusic() {
         clearInterval(this._gameFade);
         this._gameFade = setInterval(() => {
-            if(this.gameBGM.volume > 0.05) this.gameBGM.volume = Math.max(0, this.gameBGM.volume - 0.05);
-            else { this.gameBGM.volume = 0; this.gameBGM.pause(); clearInterval(this._gameFade); }
+            let prev = this.gameBGM.volume;
+            if(prev > 0.05) {
+                this.gameBGM.volume = Math.max(0, prev - 0.05);
+                if (this.gameBGM.volume === prev) { this.gameBGM.pause(); clearInterval(this._gameFade); }
+            } else { this.gameBGM.volume = 0; this.gameBGM.pause(); clearInterval(this._gameFade); }
         }, 100);
     },
     playBossMusic() {
@@ -1900,15 +1912,21 @@ playCoin() {
         let p = this.bossBGM.play();
         if(p !== undefined) p.catch(e => console.warn("Audio bloccato", e));
         this._bossFade = setInterval(() => {
-            if(this.bossBGM.volume < 0.4) this.bossBGM.volume = Math.min(0.4, this.bossBGM.volume + 0.05);
-            else clearInterval(this._bossFade);
+            let prev = this.bossBGM.volume;
+            if(prev < 0.4) {
+                this.bossBGM.volume = Math.min(0.4, prev + 0.05);
+                if (this.bossBGM.volume === prev) clearInterval(this._bossFade);
+            } else clearInterval(this._bossFade);
         }, 100);
     },
     stopBossMusic() {
         clearInterval(this._bossFade);
         this._bossFade = setInterval(() => {
-            if(this.bossBGM.volume > 0.05) this.bossBGM.volume = Math.max(0, this.bossBGM.volume - 0.05);
-            else { this.bossBGM.volume = 0; this.bossBGM.pause(); clearInterval(this._bossFade); }
+            let prev = this.bossBGM.volume;
+            if(prev > 0.05) {
+                this.bossBGM.volume = Math.max(0, prev - 0.05);
+                if (this.bossBGM.volume === prev) { this.bossBGM.pause(); clearInterval(this._bossFade); }
+            } else { this.bossBGM.volume = 0; this.bossBGM.pause(); clearInterval(this._bossFade); }
         }, 100);
     },
     stopAllMusic() {
@@ -2685,30 +2703,33 @@ const SkinSystem = {
         
         // Interazione Touch/Click sul Cubo: cambia risonanza elementale e accelera gli anelli
         this.container.style.pointerEvents = 'auto';
-        this.container.addEventListener('pointerdown', (e) => {
-            if (!this.active || this.isExploding) return;
-            let rect = this.container.getBoundingClientRect();
-            this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-            this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-            
-            this.raycaster.setFromCamera(this.mouse, this.camera);
-            let intersects = this.raycaster.intersectObjects(this.boxGroup.children);
-            
-            if (intersects.length > 0) {
-                this.spinBoost = 16.0;
-                this.boxGroup.scale.set(0.82, 0.82, 0.82);
-                this.colorCycle = (this.colorCycle + 1) % 3;
-                if (this.wireMat) this.wireMat.color.setHex(elemColors[this.colorCycle]);
-                if (this.explosionLight) {
-                    this.explosionLight.color.setHex(elemColors[this.colorCycle]);
-                    this.explosionLight.intensity = 10.0;
+        if (!this._listenersBound) {
+            this._listenersBound = true;
+            this.container.addEventListener('pointerdown', (e) => {
+                if (!this.active || this.isExploding || !this.boxGroup || !this.camera) return;
+                let rect = this.container.getBoundingClientRect();
+                this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                let intersects = this.raycaster.intersectObjects(this.boxGroup.children);
+                
+                if (intersects.length > 0) {
+                    this.spinBoost = 16.0;
+                    this.boxGroup.scale.set(0.82, 0.82, 0.82);
+                    this.colorCycle = (this.colorCycle + 1) % 3;
+                    if (this.wireMat) this.wireMat.color.setHex(elemColors[this.colorCycle]);
+                    if (this.explosionLight) {
+                        this.explosionLight.color.setHex(elemColors[this.colorCycle]);
+                        this.explosionLight.intensity = 10.0;
+                    }
+                    if (typeof AudioEngine !== 'undefined') AudioEngine.playCollect();
+                    if (typeof Haptics !== 'undefined') Haptics.vibrate(15);
                 }
-                if (typeof AudioEngine !== 'undefined') AudioEngine.playCollect();
-                if (typeof Haptics !== 'undefined') Haptics.vibrate(15);
-            }
-        });
+            });
 
-        window.addEventListener('resize', () => this.resize());
+            window.addEventListener('resize', () => this.resize());
+        }
         this.initialized = true;
         this.active = true;
     },
@@ -2853,6 +2874,19 @@ const SkinSystem = {
     dispose() {
         if (!this.initialized) return;
         this.active = false;
+        if (this.scene) {
+            this.scene.traverse((child) => {
+                if (child.isMesh) {
+                    if (child.geometry && (typeof SharedGeoSet === 'undefined' || !SharedGeoSet.has(child.geometry))) {
+                        child.geometry.dispose();
+                    }
+                    if (child.material && (typeof SharedMatSet === 'undefined' || !SharedMatSet.has(child.material))) {
+                        if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                        else child.material.dispose();
+                    }
+                }
+            });
+        }
         if (this.renderer) {
             this.renderer.dispose();
             if (this.renderer.domElement && this.renderer.domElement.parentNode) {
@@ -5840,8 +5874,9 @@ const UI = {
         }
         
      // DESATURAZIONE DINAMICA E DISSOLVENZA ALLA MORTE
+        // Su smartphone evitiamo filter: grayscale() dinamico in combattimento sul canvas WebGL (evita readback/compositing pesante)
         let container = this.els.gameContainer;
-        if (hpRatio <= 0.30 && hpRatio > 0 && !Game.player.dead) {
+        if (!isTouchDevice && hpRatio <= 0.30 && hpRatio > 0 && !Game.player.dead) {
             let grayVal = 1.0 - (hpRatio / 0.30);
             let roundedGray = Math.round(grayVal * 10) / 10; // Arrotondamento per limitare le chiamate CSS
             if (this.cache.grayVal !== roundedGray) {
@@ -6050,17 +6085,16 @@ this.dirLight = new THREE.DirectionalLight(0x335577, 1.4);
         this.scene.add(this.dirLight.target);
         this.updateShadowConfig();
 
-       const renderScene = new THREE.RenderPass(this.scene, this.camera);
-        // BLOOM RIDOTTO: Abbassato drasticamente per avvicinarsi alla pulizia dello smartphone
-        let initialStrength = 0.2; 
-        let initialRadius = 0.2; // Raggio ridotto per evitare il "lavaggio" dell'immagine globale
-        // FIX BLOOM GPU: Calcoliamo il bagliore a un quarto (1/4) della risoluzione!
-        this.bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(this.width / 4, this.height / 4), initialStrength, initialRadius, 0.65);
-        this.bloomPass.threshold = 0.65; // Soglia alzata in modo che brillino SOLO elementi davvero luminosi (neon/proiettili)
-       this.composer = new THREE.EffectComposer(this.renderer);
-        this.composer.addPass(renderScene); 
-        // Aggiungi il Bloom SOLO se NON è un dispositivo touch
+        // OTTIMIZZAZIONE VRAM MOBILE: Istanzia EffectComposer e UnrealBloomPass SOLO su PC (!isTouchDevice)
+        // Su smartphone il bloom post-process non viene mai renderizzato (vedi Game.draw), risparmiando diversi framebuffer fullscreen in VRAM
         if (!isTouchDevice) {
+            const renderScene = new THREE.RenderPass(this.scene, this.camera);
+            let initialStrength = 0.2; 
+            let initialRadius = 0.2;
+            this.bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(this.width / 4, this.height / 4), initialStrength, initialRadius, 0.65);
+            this.bloomPass.threshold = 0.65;
+            this.composer = new THREE.EffectComposer(this.renderer);
+            this.composer.addPass(renderScene); 
             this.composer.addPass(this.bloomPass);
         }
         this.uiCtx = this.uiCanvas.getContext('2d'); this.resize(); window.addEventListener('resize', () => this.resize());
@@ -9342,7 +9376,12 @@ class GameMap {
             }
         }
 
-        const floorGeo = new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE); floorGeo.rotateX(-Math.PI/2);
+        if (!window.GLOBAL_FLOOR_GEO) {
+            window.GLOBAL_FLOOR_GEO = new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE);
+            window.GLOBAL_FLOOR_GEO.rotateX(-Math.PI/2);
+            window.GLOBAL_FLOOR_GEO._isGlobalCached = true;
+        }
+        const floorGeo = window.GLOBAL_FLOOR_GEO;
 
         // --- SISTEMA TEMI A COSTO ZERO (VRAM/CPU = 0) ---
         let currentTheme = MAP_THEMES[Game.currentThemeIndex];
@@ -9524,121 +9563,127 @@ class GameMap {
         liquidTex.repeat.set(mapRealWidth / 250, mapRealHeight / 250);
         liquidTex.needsUpdate = true;
 
-        this.pitMat = new THREE.MeshStandardMaterial({
-            color: pitColor, emissive: pitEmissive,
-            emissiveIntensity: themeIdx === 1 ? 1.15 : (themeIdx === 0 ? 0.34 : 0.62),
-            roughness: pitRoughness, metalness: pitMetalness,
-            map: liquidTex, emissiveMap: liquidTex,
-            transparent: true, opacity: pitOpacity,
-            depthWrite: false
-        });
+        if (!window.GLOBAL_PIT_MATS) window.GLOBAL_PIT_MATS = {};
+        if (!window.GLOBAL_PIT_MATS[themeIdx]) {
+            const cachedPitMat = new THREE.MeshStandardMaterial({
+                color: pitColor, emissive: pitEmissive,
+                emissiveIntensity: themeIdx === 1 ? 1.15 : (themeIdx === 0 ? 0.34 : 0.62),
+                roughness: pitRoughness, metalness: pitMetalness,
+                map: liquidTex, emissiveMap: liquidTex,
+                transparent: true, opacity: pitOpacity,
+                depthWrite: false
+            });
 
-        this.pitMat.customProgramCacheKey = () => 'pit_liquid_v4_' + themeIdx;
-        this.pitMat.onBeforeCompile = (shader) => {
-            shader.uniforms.uTime = InteractiveGrassSystem.uniforms.uTime;
-            const hasMapDecode = THREE.ShaderChunk && THREE.ShaderChunk.map_fragment && THREE.ShaderChunk.map_fragment.includes('mapTexelToLinear');
-            const sampleWaterTex = (uvVar) => hasMapDecode ? `mapTexelToLinear(texture2D(map, ${uvVar}))` : `texture2D(map, ${uvVar})`;
+            cachedPitMat.customProgramCacheKey = () => 'pit_liquid_v4_' + themeIdx;
+            cachedPitMat.onBeforeCompile = (shader) => {
+                shader.uniforms.uTime = InteractiveGrassSystem.uniforms.uTime;
+                const hasMapDecode = THREE.ShaderChunk && THREE.ShaderChunk.map_fragment && THREE.ShaderChunk.map_fragment.includes('mapTexelToLinear');
+                const sampleWaterTex = (uvVar) => hasMapDecode ? `mapTexelToLinear(texture2D(map, ${uvVar}))` : `texture2D(map, ${uvVar})`;
 
-            shader.vertexShader = `
-                uniform float uTime;
-                varying vec2 vPitWPos;
-            ` + shader.vertexShader.replace(
-                '#include <begin_vertex>',
-                `
-                #include <begin_vertex>
-                vec4 wpPit = modelMatrix * vec4(transformed, 1.0);
-                vPitWPos = wpPit.xz;
-                transformed.y += sin(wpPit.x * 0.058 + uTime * 2.0) * cos(wpPit.z * 0.058 - uTime * 1.6) * 0.36;
-                `
-            );
-            shader.fragmentShader = `
-                uniform float uTime;
-                varying vec2 vPitWPos;
-            ` + shader.fragmentShader.replace(
-                '#include <emissivemap_fragment>',
-                `
-                #include <emissivemap_fragment>
-                float texLum = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
-                ${themeIdx === 0 ? `
-                #ifdef USE_MAP
-                    vec2 wWarp = vec2(
-                        sin(vPitWPos.y * 0.058 + uTime * 2.1),
-                        cos(vPitWPos.x * 0.058 - uTime * 1.7)
-                    ) * 0.032;
-                    vec2 uvWaterA = vPitWPos / 200.0 + vec2(uTime * 0.052, uTime * 0.090) + wWarp;
-                    vec2 uvWaterB = vPitWPos / 138.0 + vec2(-uTime * 0.042, uTime * 0.058) - wWarp * 0.90;
-                    vec3 wA = ${sampleWaterTex('uvWaterA')}.rgb;
-                    vec3 wB = ${sampleWaterTex('uvWaterB')}.rgb;
-                #else
-                    vec3 wA = diffuseColor.rgb;
-                    vec3 wB = diffuseColor.rgb;
-                #endif
-                    float pA = sqrt(clamp(dot(wA, vec3(0.299, 0.587, 0.114)), 0.0, 1.0));
-                    float pB = sqrt(clamp(dot(wB, vec3(0.299, 0.587, 0.114)), 0.0, 1.0));
-                    float rippleFactor = smoothstep(0.16, 0.78, pA * 0.65 + pB * 0.35);
-                    float crest = smoothstep(0.46, 0.82, pA * pB * 1.35);
+                shader.vertexShader = `
+                    uniform float uTime;
+                    varying vec2 vPitWPos;
+                ` + shader.vertexShader.replace(
+                    '#include <begin_vertex>',
+                    `
+                    #include <begin_vertex>
+                    vec4 wpPit = modelMatrix * vec4(transformed, 1.0);
+                    vPitWPos = wpPit.xz;
+                    transformed.y += sin(wpPit.x * 0.058 + uTime * 2.0) * cos(wpPit.z * 0.058 - uTime * 1.6) * 0.36;
+                    `
+                );
+                shader.fragmentShader = `
+                    uniform float uTime;
+                    varying vec2 vPitWPos;
+                ` + shader.fragmentShader.replace(
+                    '#include <emissivemap_fragment>',
+                    `
+                    #include <emissivemap_fragment>
+                    float texLum = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+                    ${themeIdx === 0 ? `
+                    #ifdef USE_MAP
+                        vec2 wWarp = vec2(
+                            sin(vPitWPos.y * 0.058 + uTime * 2.1),
+                            cos(vPitWPos.x * 0.058 - uTime * 1.7)
+                        ) * 0.032;
+                        vec2 uvWaterA = vPitWPos / 200.0 + vec2(uTime * 0.052, uTime * 0.090) + wWarp;
+                        vec2 uvWaterB = vPitWPos / 138.0 + vec2(-uTime * 0.042, uTime * 0.058) - wWarp * 0.90;
+                        vec3 wA = ${sampleWaterTex('uvWaterA')}.rgb;
+                        vec3 wB = ${sampleWaterTex('uvWaterB')}.rgb;
+                    #else
+                        vec3 wA = diffuseColor.rgb;
+                        vec3 wB = diffuseColor.rgb;
+                    #endif
+                        float pA = sqrt(clamp(dot(wA, vec3(0.299, 0.587, 0.114)), 0.0, 1.0));
+                        float pB = sqrt(clamp(dot(wB, vec3(0.299, 0.587, 0.114)), 0.0, 1.0));
+                        float rippleFactor = smoothstep(0.16, 0.78, pA * 0.65 + pB * 0.35);
+                        float crest = smoothstep(0.46, 0.82, pA * pB * 1.35);
 
-                    // Reticolo vivo di caustiche che lega l'azzurro dell'acqua al verde-oro della foresta
-                    float c1 = sin(vPitWPos.x * 0.054 + uTime * 1.65 + sin(vPitWPos.y * 0.044 - uTime * 1.25));
-                    float c2 = cos(vPitWPos.y * 0.058 - uTime * 1.45 + cos(vPitWPos.x * 0.048 + uTime * 1.05));
-                    float caustic = pow(clamp(0.5 + 0.5 * c1 * c2, 0.0, 1.0), 2.6);
+                        // Reticolo vivo di caustiche che lega l'azzurro dell'acqua al verde-oro della foresta
+                        float c1 = sin(vPitWPos.x * 0.054 + uTime * 1.65 + sin(vPitWPos.y * 0.044 - uTime * 1.25));
+                        float c2 = cos(vPitWPos.y * 0.058 - uTime * 1.45 + cos(vPitWPos.x * 0.048 + uTime * 1.05));
+                        float caustic = pow(clamp(0.5 + 0.5 * c1 * c2, 0.0, 1.0), 2.6);
 
-                    vec3 rawTex = mix(wA, wB, 0.38);
-                    vec3 tintedTex = vec3(
-                        rawTex.r * 0.12 + rawTex.b * 0.05,
-                        rawTex.g * 0.46 + rawTex.b * 0.16,
-                        max(rawTex.b, rawTex.g * 0.85) * 0.68 + 0.03
-                    );
-                    // Dal blu-ottanio profondo del sottobosco all'azzurro-turchese vivo delle increspature
-                    vec3 deepLagoon = vec3(0.018, 0.105, 0.195);
-                    vec3 midSpring  = vec3(0.095, 0.435, 0.620);
-                    vec3 rampCol = mix(deepLagoon, midSpring, rippleFactor);
+                        vec3 rawTex = mix(wA, wB, 0.38);
+                        vec3 tintedTex = vec3(
+                            rawTex.r * 0.12 + rawTex.b * 0.05,
+                            rawTex.g * 0.46 + rawTex.b * 0.16,
+                            max(rawTex.b, rawTex.g * 0.85) * 0.68 + 0.03
+                        );
+                        // Dal blu-ottanio profondo del sottobosco all'azzurro-turchese vivo delle increspature
+                        vec3 deepLagoon = vec3(0.018, 0.105, 0.195);
+                        vec3 midSpring  = vec3(0.095, 0.435, 0.620);
+                        vec3 rampCol = mix(deepLagoon, midSpring, rippleFactor);
 
-                    diffuseColor.rgb = mix(rampCol, tintedTex, 0.45)
-                                     + vec3(0.14, 0.44, 0.48) * (crest * 0.48 + caustic * 0.32);
-                    totalEmissiveRadiance = mix(
-                        vec3(0.012, 0.055, 0.095),
-                        vec3(0.065, 0.250, 0.340),
-                        clamp(rippleFactor * 0.72 + caustic * 0.48, 0.0, 1.0)
-                    ) * 0.38;
-                ` : (themeIdx === 1 ? `
-                    float m1 = sin(vPitWPos.x * 0.044 + uTime * 0.85 + sin(vPitWPos.y * 0.048 - uTime * 0.65) * 1.5);
-                    float m2 = cos(vPitWPos.y * 0.046 - uTime * 0.75 + cos(vPitWPos.x * 0.039 + uTime * 0.55) * 1.5);
-                    float flow = 0.5 + 0.5 * m1 * m2;
-                    float heat = clamp(texLum * 0.65 + flow * 0.55, 0.0, 1.0);
-                    vec3 crustCol = vec3(0.075, 0.016, 0.012);
-                    vec3 magmaCol = mix(vec3(0.86, 0.15, 0.01), vec3(1.0, 0.80, 0.20), smoothstep(0.55, 0.92, heat));
-                    float veinMask = smoothstep(0.33, 0.62, heat);
-                    diffuseColor.rgb = mix(crustCol, magmaCol, veinMask);
-                    totalEmissiveRadiance = mix(vec3(0.06, 0.01, 0.005), magmaCol * 1.32, veinMask);
-                ` : `
-                    vec2 dirFlow = vec2(0.4472, -0.8944);
-                    vec2 dirCross = vec2(0.8944, 0.4472);
-                    float along = dot(vPitWPos, dirFlow);
-                    float across = dot(vPitWPos, dirCross);
-                    float waveA = sin(across * 0.085 + sin(along * 0.030 - uTime * 1.9) * 1.4 - uTime * 0.6);
-                    float waveB = cos(along * 0.052 - uTime * 2.3 + sin(across * 0.065) * 1.1);
-                    float stream = pow(clamp(0.5 + 0.5 * waveA * waveB, 0.0, 1.0), 1.9);
-                    float flowMix = clamp(texLum * 0.48 + stream * 0.48, 0.0, 1.0);
-                    diffuseColor.rgb = mix(vec3(0.015, 0.06, 0.15), vec3(0.09, 0.40, 0.68), flowMix);
-                    totalEmissiveRadiance = mix(vec3(0.01, 0.05, 0.12), vec3(0.16, 0.56, 0.82), flowMix) * 0.62;
-                `)}
-                `
-            ).replace(
-                '#include <dithering_fragment>',
-                `
-                ${themeIdx !== 1 ? `
-                    float capLim = ${themeIdx === 0 ? '0.66' : '0.68'};
-                    float maxC = max(gl_FragColor.r, max(gl_FragColor.g, gl_FragColor.b));
-                    if (maxC > capLim) {
-                        float compressed = capLim + (maxC - capLim) / (1.0 + (maxC - capLim) * 3.0);
-                        gl_FragColor.rgb *= (compressed / maxC);
-                    }
-                ` : ''}
-                #include <dithering_fragment>
-                `
-            );
-        };
+                        diffuseColor.rgb = mix(rampCol, tintedTex, 0.45)
+                                         + vec3(0.14, 0.44, 0.48) * (crest * 0.48 + caustic * 0.32);
+                        totalEmissiveRadiance = mix(
+                            vec3(0.012, 0.055, 0.095),
+                            vec3(0.065, 0.250, 0.340),
+                            clamp(rippleFactor * 0.72 + caustic * 0.48, 0.0, 1.0)
+                        ) * 0.38;
+                    ` : (themeIdx === 1 ? `
+                        float m1 = sin(vPitWPos.x * 0.044 + uTime * 0.85 + sin(vPitWPos.y * 0.048 - uTime * 0.65) * 1.5);
+                        float m2 = cos(vPitWPos.y * 0.046 - uTime * 0.75 + cos(vPitWPos.x * 0.039 + uTime * 0.55) * 1.5);
+                        float flow = 0.5 + 0.5 * m1 * m2;
+                        float heat = clamp(texLum * 0.65 + flow * 0.55, 0.0, 1.0);
+                        vec3 crustCol = vec3(0.075, 0.016, 0.012);
+                        vec3 magmaCol = mix(vec3(0.86, 0.15, 0.01), vec3(1.0, 0.80, 0.20), smoothstep(0.55, 0.92, heat));
+                        float veinMask = smoothstep(0.33, 0.62, heat);
+                        diffuseColor.rgb = mix(crustCol, magmaCol, veinMask);
+                        totalEmissiveRadiance = mix(vec3(0.06, 0.01, 0.005), magmaCol * 1.32, veinMask);
+                    ` : `
+                        vec2 dirFlow = vec2(0.4472, -0.8944);
+                        vec2 dirCross = vec2(0.8944, 0.4472);
+                        float along = dot(vPitWPos, dirFlow);
+                        float across = dot(vPitWPos, dirCross);
+                        float waveA = sin(across * 0.085 + sin(along * 0.030 - uTime * 1.9) * 1.4 - uTime * 0.6);
+                        float waveB = cos(along * 0.052 - uTime * 2.3 + sin(across * 0.065) * 1.1);
+                        float stream = pow(clamp(0.5 + 0.5 * waveA * waveB, 0.0, 1.0), 1.9);
+                        float flowMix = clamp(texLum * 0.48 + stream * 0.48, 0.0, 1.0);
+                        diffuseColor.rgb = mix(vec3(0.015, 0.06, 0.15), vec3(0.09, 0.40, 0.68), flowMix);
+                        totalEmissiveRadiance = mix(vec3(0.01, 0.05, 0.12), vec3(0.16, 0.56, 0.82), flowMix) * 0.62;
+                    `)}
+                    `
+                ).replace(
+                    '#include <dithering_fragment>',
+                    `
+                    ${themeIdx !== 1 ? `
+                        float capLim = ${themeIdx === 0 ? '0.66' : '0.68'};
+                        float maxC = max(gl_FragColor.r, max(gl_FragColor.g, gl_FragColor.b));
+                        if (maxC > capLim) {
+                            float compressed = capLim + (maxC - capLim) / (1.0 + (maxC - capLim) * 3.0);
+                            gl_FragColor.rgb *= (compressed / maxC);
+                        }
+                    ` : ''}
+                    #include <dithering_fragment>
+                    `
+                );
+            };
+            cachedPitMat._isGlobalCached = true;
+            window.GLOBAL_PIT_MATS[themeIdx] = cachedPitMat;
+        }
+        this.pitMat = window.GLOBAL_PIT_MATS[themeIdx];
 
         let pitAreaGeo = null;
         if (pitFloorCount > 0) {
@@ -9704,75 +9749,80 @@ class GameMap {
                 iceTex.encoding = THREE.sRGBEncoding;
                 iceTex.needsUpdate = true;
 
-                this.iceMat = new THREE.MeshStandardMaterial({
-                    color: 0xdcf2ff, emissive: 0x16446e,
-                    emissiveIntensity: 0.22,
-                    roughness: 0.42, metalness: 0.05,
-                    map: iceTex, emissiveMap: iceTex,
-                    transparent: true, opacity: 0.92,
-                    depthWrite: false
-                });
-                this.iceMat.customProgramCacheKey = () => 'pit_ice_v4';
-                this.iceMat.onBeforeCompile = (shader) => {
-                    shader.vertexShader = `
-                        varying vec2 vIceWPos;
-                    ` + shader.vertexShader.replace(
-                        '#include <begin_vertex>',
-                        `
-                        #include <begin_vertex>
-                        vIceWPos = (modelMatrix * vec4(transformed, 1.0)).xz;
-                        `
-                    );
-                    shader.fragmentShader = `
-                        varying vec2 vIceWPos;
-                    ` + shader.fragmentShader.replace(
-                        '#include <emissivemap_fragment>',
-                        `
-                        #include <emissivemap_fragment>
-                        float iceTex = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
-
-                        // Spessore lattiginoso interno e banchi di brina compatta
-                        float sheetNoise = 0.5 + 0.5 * sin(vIceWPos.x * 0.022 + sin(vIceWPos.y * 0.025) * 1.3) * cos(vIceWPos.y * 0.021 - cos(vIceWPos.x * 0.024) * 1.2);
-                        float frostBody = smoothstep(0.30, 0.80, sheetNoise * 0.52 + iceTex * 0.58);
-
-                        // Crepe di tensione incrociate con bisello interno scuro per dare spessore alla lastra
-                        vec2 ip = vIceWPos * 0.016;
-                        vec2 warp = vec2(
-                            sin(ip.y * 2.3 + iceTex * 1.8) * 0.38,
-                            cos(ip.x * 2.1 - iceTex * 1.8) * 0.38
+                if (!window.GLOBAL_ICE_MAT) {
+                    const cachedIceMat = new THREE.MeshStandardMaterial({
+                        color: 0xdcf2ff, emissive: 0x16446e,
+                        emissiveIntensity: 0.22,
+                        roughness: 0.42, metalness: 0.05,
+                        map: iceTex, emissiveMap: iceTex,
+                        transparent: true, opacity: 0.92,
+                        depthWrite: false
+                    });
+                    cachedIceMat.customProgramCacheKey = () => 'pit_ice_v4';
+                    cachedIceMat.onBeforeCompile = (shader) => {
+                        shader.vertexShader = `
+                            varying vec2 vIceWPos;
+                        ` + shader.vertexShader.replace(
+                            '#include <begin_vertex>',
+                            `
+                            #include <begin_vertex>
+                            vIceWPos = (modelMatrix * vec4(transformed, 1.0)).xz;
+                            `
                         );
-                        float f1 = abs(fract((ip.x * 0.86 + ip.y * 0.50 + warp.x) * 0.52) - 0.5);
-                        float f2 = abs(fract((ip.x * 0.46 - ip.y * 0.89 + warp.y) * 0.40 + 0.27) - 0.5);
-                        float mainCrack = 1.0 - smoothstep(0.0, 0.018, f1);
-                        float subCrack = (1.0 - smoothstep(0.0, 0.013, f2)) * 0.60;
-                        float crackBevel = (1.0 - smoothstep(0.018, 0.055, f1)) * 0.35;
-                        float crackMask = clamp(mainCrack + subCrack, 0.0, 1.0);
+                        shader.fragmentShader = `
+                            varying vec2 vIceWPos;
+                        ` + shader.fragmentShader.replace(
+                            '#include <emissivemap_fragment>',
+                            `
+                            #include <emissivemap_fragment>
+                            float iceTex = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
 
-                        vec3 deepSlabCol = vec3(0.30, 0.58, 0.80);
-                        vec3 frostedSlabCol = vec3(0.76, 0.90, 0.98);
-                        vec3 slabCol = mix(deepSlabCol, frostedSlabCol, frostBody);
-                        slabCol = mix(slabCol, vec3(0.18, 0.42, 0.64), crackBevel * (1.0 - crackMask));
-                        slabCol = mix(slabCol, vec3(0.92, 0.98, 1.0), crackMask * 0.85);
+                            // Spessore lattiginoso interno e banchi di brina compatta
+                            float sheetNoise = 0.5 + 0.5 * sin(vIceWPos.x * 0.022 + sin(vIceWPos.y * 0.025) * 1.3) * cos(vIceWPos.y * 0.021 - cos(vIceWPos.x * 0.024) * 1.2);
+                            float frostBody = smoothstep(0.30, 0.80, sheetNoise * 0.52 + iceTex * 0.58);
 
-                        diffuseColor.rgb = slabCol;
-                        totalEmissiveRadiance = mix(vec3(0.03, 0.11, 0.20), vec3(0.14, 0.38, 0.56), clamp(frostBody * 0.6 + crackMask * 0.7, 0.0, 1.0)) * 0.42;
+                            // Crepe di tensione incrociate con bisello interno scuro per dare spessore alla lastra
+                            vec2 ip = vIceWPos * 0.016;
+                            vec2 warp = vec2(
+                                sin(ip.y * 2.3 + iceTex * 1.8) * 0.38,
+                                cos(ip.x * 2.1 - iceTex * 1.8) * 0.38
+                            );
+                            float f1 = abs(fract((ip.x * 0.86 + ip.y * 0.50 + warp.x) * 0.52) - 0.5);
+                            float f2 = abs(fract((ip.x * 0.46 - ip.y * 0.89 + warp.y) * 0.40 + 0.27) - 0.5);
+                            float mainCrack = 1.0 - smoothstep(0.0, 0.018, f1);
+                            float subCrack = (1.0 - smoothstep(0.0, 0.013, f2)) * 0.60;
+                            float crackBevel = (1.0 - smoothstep(0.018, 0.055, f1)) * 0.35;
+                            float crackMask = clamp(mainCrack + subCrack, 0.0, 1.0);
 
-                        // Lastra solida continua (0.72 nelle finestre blu traslucide, fino a 0.93 su brina e fratture)
-                        float slabOpacity = mix(0.72, 0.90, frostBody);
-                        diffuseColor.a = clamp(max(slabOpacity, crackMask * 0.93), 0.72, 0.93);
-                        `
-                    ).replace(
-                        '#include <dithering_fragment>',
-                        `
-                        float maxIceC = max(gl_FragColor.r, max(gl_FragColor.g, gl_FragColor.b));
-                        if (maxIceC > 0.62) {
-                            float compIce = 0.62 + (maxIceC - 0.62) / (1.0 + (maxIceC - 0.62) * 2.5);
-                            gl_FragColor.rgb *= (compIce / maxIceC);
-                        }
-                        #include <dithering_fragment>
-                        `
-                    );
-                };
+                            vec3 deepSlabCol = vec3(0.30, 0.58, 0.80);
+                            vec3 frostedSlabCol = vec3(0.76, 0.90, 0.98);
+                            vec3 slabCol = mix(deepSlabCol, frostedSlabCol, frostBody);
+                            slabCol = mix(slabCol, vec3(0.18, 0.42, 0.64), crackBevel * (1.0 - crackMask));
+                            slabCol = mix(slabCol, vec3(0.92, 0.98, 1.0), crackMask * 0.85);
+
+                            diffuseColor.rgb = slabCol;
+                            totalEmissiveRadiance = mix(vec3(0.03, 0.11, 0.20), vec3(0.14, 0.38, 0.56), clamp(frostBody * 0.6 + crackMask * 0.7, 0.0, 1.0)) * 0.42;
+
+                            // Lastra solida continua (0.72 nelle finestre blu traslucide, fino a 0.93 su brina e fratture)
+                            float slabOpacity = mix(0.72, 0.90, frostBody);
+                            diffuseColor.a = clamp(max(slabOpacity, crackMask * 0.93), 0.72, 0.93);
+                            `
+                        ).replace(
+                            '#include <dithering_fragment>',
+                            `
+                            float maxIceC = max(gl_FragColor.r, max(gl_FragColor.g, gl_FragColor.b));
+                            if (maxIceC > 0.62) {
+                                float compIce = 0.62 + (maxIceC - 0.62) / (1.0 + (maxIceC - 0.62) * 2.5);
+                                gl_FragColor.rgb *= (compIce / maxIceC);
+                            }
+                            #include <dithering_fragment>
+                            `
+                        );
+                    };
+                    cachedIceMat._isGlobalCached = true;
+                    window.GLOBAL_ICE_MAT = cachedIceMat;
+                }
+                this.iceMat = window.GLOBAL_ICE_MAT;
 
                 this.meshIceFloor = new THREE.Mesh(pitAreaGeo, this.iceMat);
                 this.meshIceFloor.position.set(0, -8.5, 0);
@@ -10218,16 +10268,22 @@ class GameMap {
                 skirtGeo.computeVertexNormals();
                 skirtGeo.computeBoundingSphere();
 
-                const skirtMat = new THREE.MeshPhongMaterial({
-                    color: 0xffffff,
-                    map: tBank,
-                    alphaMap: window.GLOBAL_PIT_SKIRT_ALPHA,
-                    vertexColors: true,
-                    transparent: true,
-                    depthWrite: false,
-                    shininess: themeIdx === 2 ? 20 : 8,
-                    specular: themeIdx === 2 ? 0x1a3348 : 0x111111
-                });
+                if (!window.GLOBAL_PIT_SKIRT_MATS) window.GLOBAL_PIT_SKIRT_MATS = {};
+                if (!window.GLOBAL_PIT_SKIRT_MATS[themeIdx]) {
+                    const cachedSkirtMat = new THREE.MeshPhongMaterial({
+                        color: 0xffffff,
+                        map: tBank,
+                        alphaMap: window.GLOBAL_PIT_SKIRT_ALPHA,
+                        vertexColors: true,
+                        transparent: true,
+                        depthWrite: false,
+                        shininess: themeIdx === 2 ? 20 : 8,
+                        specular: themeIdx === 2 ? 0x1a3348 : 0x111111
+                    });
+                    cachedSkirtMat._isGlobalCached = true;
+                    window.GLOBAL_PIT_SKIRT_MATS[themeIdx] = cachedSkirtMat;
+                }
+                const skirtMat = window.GLOBAL_PIT_SKIRT_MATS[themeIdx];
                 const meshPitSkirt = new THREE.Mesh(skirtGeo, skirtMat);
                 meshPitSkirt.renderOrder = -6;
                 meshPitSkirt.receiveShadow = true;
@@ -10258,15 +10314,21 @@ class GameMap {
                 nAttr.needsUpdate = true;
                 bankGeo.computeBoundingSphere();
 
-                const bankMat = new THREE.MeshPhongMaterial({
-                    color: 0xffffff,
-                    map: tBank,
-                    bumpMap: isTouchDevice ? null : tBank,
-                    bumpScale: 0.09,
-                    vertexColors: true,
-                    shininess: themeIdx === 2 ? 24 : (themeIdx === 1 ? 10 : 12),
-                    specular: themeIdx === 2 ? 0x1e3c56 : (themeIdx === 1 ? 0x26100c : 0x182218)
-                });
+                if (!window.GLOBAL_PIT_BANK_MATS) window.GLOBAL_PIT_BANK_MATS = {};
+                if (!window.GLOBAL_PIT_BANK_MATS[themeIdx]) {
+                    const cachedBankMat = new THREE.MeshPhongMaterial({
+                        color: 0xffffff,
+                        map: tBank,
+                        bumpMap: isTouchDevice ? null : tBank,
+                        bumpScale: 0.09,
+                        vertexColors: true,
+                        shininess: themeIdx === 2 ? 24 : (themeIdx === 1 ? 10 : 12),
+                        specular: themeIdx === 2 ? 0x1e3c56 : (themeIdx === 1 ? 0x26100c : 0x182218)
+                    });
+                    cachedBankMat._isGlobalCached = true;
+                    window.GLOBAL_PIT_BANK_MATS[themeIdx] = cachedBankMat;
+                }
+                const bankMat = window.GLOBAL_PIT_BANK_MATS[themeIdx];
                 const meshPitBanks = new THREE.Mesh(bankGeo, bankMat);
                 meshPitBanks.renderOrder = -5;
                 meshPitBanks.receiveShadow = true;
@@ -10281,77 +10343,83 @@ class GameMap {
                 shoreGeo.setIndex(shoreIdx);
                 shoreGeo.computeBoundingSphere();
 
-                const shoreMat = new THREE.MeshBasicMaterial({
-                    color: 0xffffff,
-                    transparent: true,
-                    depthWrite: false,
-                    polygonOffset: true,
-                    polygonOffsetFactor: -1,
-                    polygonOffsetUnits: -1
-                });
+                if (!window.GLOBAL_SHORE_MATS) window.GLOBAL_SHORE_MATS = {};
+                if (!window.GLOBAL_SHORE_MATS[themeIdx]) {
+                    const cachedShoreMat = new THREE.MeshBasicMaterial({
+                        color: 0xffffff,
+                        transparent: true,
+                        depthWrite: false,
+                        polygonOffset: true,
+                        polygonOffsetFactor: -1,
+                        polygonOffsetUnits: -1
+                    });
 
-                shoreMat.customProgramCacheKey = () => 'pit_shore_v4_' + themeIdx;
-                shoreMat.onBeforeCompile = (shader) => {
-                    shader.uniforms.uTime = InteractiveGrassSystem.uniforms.uTime;
-                    shader.vertexShader = `
-                        attribute vec2 aShoreUV;
-                        varying vec2 vShoreUV;
-                    ` + shader.vertexShader.replace(
-                        '#include <begin_vertex>',
-                        `
-                        #include <begin_vertex>
-                        vShoreUV = aShoreUV;
-                        `
-                    );
-                    shader.fragmentShader = `
-                        uniform float uTime;
-                        varying vec2 vShoreUV;
-                    ` + shader.fragmentShader.replace(
-                        '#include <color_fragment>',
-                        `
-                        #include <color_fragment>
-                        float uArc = vShoreUV.x * 6.2831853;
-                        float sDist = vShoreUV.y;
-                        float deepFade = 1.0 - smoothstep(0.52, 1.0, sDist);
-                        float wob = sin(uArc * 2.0 + uTime * 1.15) * 0.032 + cos(uArc * 5.0 - uTime * 0.85) * 0.018;
-                        float d = clamp(sDist + wob, 0.0, 1.0);
-                        ${themeIdx === 0 ? `
-                            float haloFade = pow(1.0 - smoothstep(0.02, 1.0, sDist), 1.58);
-                            float fairyBreath = 0.86 + 0.14 * sin(uArc * 3.0 - uTime * 1.35) * cos(uArc * 5.0 + uTime * 0.95);
-                            float haloBody = haloFade * fairyBreath;
+                    cachedShoreMat.customProgramCacheKey = () => 'pit_shore_v4_' + themeIdx;
+                    cachedShoreMat.onBeforeCompile = (shader) => {
+                        shader.uniforms.uTime = InteractiveGrassSystem.uniforms.uTime;
+                        shader.vertexShader = `
+                            attribute vec2 aShoreUV;
+                            varying vec2 vShoreUV;
+                        ` + shader.vertexShader.replace(
+                            '#include <begin_vertex>',
+                            `
+                            #include <begin_vertex>
+                            vShoreUV = aShoreUV;
+                            `
+                        );
+                        shader.fragmentShader = `
+                            uniform float uTime;
+                            varying vec2 vShoreUV;
+                        ` + shader.fragmentShader.replace(
+                            '#include <color_fragment>',
+                            `
+                            #include <color_fragment>
+                            float uArc = vShoreUV.x * 6.2831853;
+                            float sDist = vShoreUV.y;
+                            float deepFade = 1.0 - smoothstep(0.52, 1.0, sDist);
+                            float wob = sin(uArc * 2.0 + uTime * 1.15) * 0.032 + cos(uArc * 5.0 - uTime * 0.85) * 0.018;
+                            float d = clamp(sDist + wob, 0.0, 1.0);
+                            ${themeIdx === 0 ? `
+                                float haloFade = pow(1.0 - smoothstep(0.02, 1.0, sDist), 1.58);
+                                float fairyBreath = 0.86 + 0.14 * sin(uArc * 3.0 - uTime * 1.35) * cos(uArc * 5.0 + uTime * 0.95);
+                                float haloBody = haloFade * fairyBreath;
 
-                            float rimGlow = smoothstep(0.01, 0.075, d) * (1.0 - smoothstep(0.075, 0.23, d));
-                            float ripWave = sin(d * 26.0 - uTime * 1.85 + sin(uArc * 4.0) * 0.75);
-                            float ripples = smoothstep(0.58, 0.95, ripWave) * smoothstep(0.07, 0.19, d) * (1.0 - smoothstep(0.42, 0.92, sDist));
+                                float rimGlow = smoothstep(0.01, 0.075, d) * (1.0 - smoothstep(0.075, 0.23, d));
+                                float ripWave = sin(d * 26.0 - uTime * 1.85 + sin(uArc * 4.0) * 0.75);
+                                float ripples = smoothstep(0.58, 0.95, ripWave) * smoothstep(0.07, 0.19, d) * (1.0 - smoothstep(0.42, 0.92, sDist));
 
-                            // Alone acquamarina-turchese che raccorda il muschio della riva con l'acqua azzurra
-                            vec3 innerAqua = vec3(0.20, 0.68, 0.70);
-                            vec3 midCyan   = vec3(0.10, 0.46, 0.64);
-                            vec3 outerBlue = vec3(0.04, 0.23, 0.40);
-                            vec3 haloCol = mix(outerBlue, midCyan, smoothstep(0.18, 0.62, haloFade));
-                            haloCol = mix(haloCol, innerAqua, smoothstep(0.58, 0.96, haloFade));
-                            haloCol = mix(haloCol, vec3(0.46, 0.86, 0.86), clamp(rimGlow * 0.65 + ripples * 0.45, 0.0, 0.80));
+                                // Alone acquamarina-turchese che raccorda il muschio della riva con l'acqua azzurra
+                                vec3 innerAqua = vec3(0.20, 0.68, 0.70);
+                                vec3 midCyan   = vec3(0.10, 0.46, 0.64);
+                                vec3 outerBlue = vec3(0.04, 0.23, 0.40);
+                                vec3 haloCol = mix(outerBlue, midCyan, smoothstep(0.18, 0.62, haloFade));
+                                haloCol = mix(haloCol, innerAqua, smoothstep(0.58, 0.96, haloFade));
+                                haloCol = mix(haloCol, vec3(0.46, 0.86, 0.86), clamp(rimGlow * 0.65 + ripples * 0.45, 0.0, 0.80));
 
-                            float haloAlpha = clamp(haloBody * 0.52 + rimGlow * 0.24 + ripples * 0.16, 0.0, 0.66) * (1.0 - smoothstep(0.80, 1.0, sDist));
-                            diffuseColor = vec4(haloCol, haloAlpha);
-                        ` : (themeIdx === 1 ? `
-                            float pulse = 0.84 + 0.16 * sin(uTime * 2.6 + uArc * 2.0);
-                            float hotRim = (1.0 - smoothstep(0.06, 0.34, d)) * pulse;
-                            float emberGlow = (1.0 - smoothstep(0.12, 0.84, d));
-                            vec3 glowCol = mix(vec3(0.78, 0.12, 0.01), vec3(1.0, 0.86, 0.32), smoothstep(0.22, 0.84, hotRim));
-                            float glowAlpha = clamp(hotRim * 0.78 + emberGlow * 0.36, 0.0, 0.92) * deepFade;
-                            diffuseColor = vec4(glowCol, glowAlpha);
-                        ` : `
-                            float frostNoise = sin(uArc * 3.0) * 0.08 + cos(uArc * 7.0 + 1.2) * 0.05 + sin(uArc * 11.0) * 0.03;
-                            float rimeEdge = 1.0 - smoothstep(0.18 + frostNoise, 0.60 + frostNoise, d);
-                            float crystalGlint = smoothstep(0.05, 0.16, d) * (1.0 - smoothstep(0.16, 0.32, d));
-                            vec3 rimeCol = mix(vec3(0.46, 0.74, 0.90), vec3(0.84, 0.94, 1.0), clamp(rimeEdge * 0.65 + crystalGlint * 0.35, 0.0, 1.0));
-                            float rimeAlpha = clamp(rimeEdge * 0.76, 0.0, 0.80) * deepFade;
-                            diffuseColor = vec4(rimeCol, rimeAlpha);
-                        `)}
-                        `
-                    );
-                };
+                                float haloAlpha = clamp(haloBody * 0.52 + rimGlow * 0.24 + ripples * 0.16, 0.0, 0.66) * (1.0 - smoothstep(0.80, 1.0, sDist));
+                                diffuseColor = vec4(haloCol, haloAlpha);
+                            ` : (themeIdx === 1 ? `
+                                float pulse = 0.84 + 0.16 * sin(uTime * 2.6 + uArc * 2.0);
+                                float hotRim = (1.0 - smoothstep(0.06, 0.34, d)) * pulse;
+                                float emberGlow = (1.0 - smoothstep(0.12, 0.84, d));
+                                vec3 glowCol = mix(vec3(0.78, 0.12, 0.01), vec3(1.0, 0.86, 0.32), smoothstep(0.22, 0.84, hotRim));
+                                float glowAlpha = clamp(hotRim * 0.78 + emberGlow * 0.36, 0.0, 0.92) * deepFade;
+                                diffuseColor = vec4(glowCol, glowAlpha);
+                            ` : `
+                                float frostNoise = sin(uArc * 3.0) * 0.08 + cos(uArc * 7.0 + 1.2) * 0.05 + sin(uArc * 11.0) * 0.03;
+                                float rimeEdge = 1.0 - smoothstep(0.18 + frostNoise, 0.60 + frostNoise, d);
+                                float crystalGlint = smoothstep(0.05, 0.16, d) * (1.0 - smoothstep(0.16, 0.32, d));
+                                vec3 rimeCol = mix(vec3(0.46, 0.74, 0.90), vec3(0.84, 0.94, 1.0), clamp(rimeEdge * 0.65 + crystalGlint * 0.35, 0.0, 1.0));
+                                float rimeAlpha = clamp(rimeEdge * 0.76, 0.0, 0.80) * deepFade;
+                                diffuseColor = vec4(rimeCol, rimeAlpha);
+                            `)}
+                            `
+                        );
+                    };
+                    cachedShoreMat._isGlobalCached = true;
+                    window.GLOBAL_SHORE_MATS[themeIdx] = cachedShoreMat;
+                }
+                const shoreMat = window.GLOBAL_SHORE_MATS[themeIdx];
 
                 const meshShoreFoam = new THREE.Mesh(shoreGeo, shoreMat);
                 meshShoreFoam.renderOrder = 3;
@@ -10399,17 +10467,24 @@ class GameMap {
 
             const tempObj = new THREE.Object3D();
             if (padSpawns.length > 0) {
-                let padGeo, padMat;
-                if (themeIdx === 0) {
-                    padGeo = new THREE.CylinderGeometry(8.5, 8.0, 0.6, 9, 1, false, 0.42, Math.PI * 2 - 0.84);
-                    padMat = new THREE.MeshStandardMaterial({ color: 0x2e8538, emissive: 0x0d2b12, roughness: 0.65, flatShading: true });
-                } else if (themeIdx === 1) {
-                    padGeo = new THREE.CylinderGeometry(7.0, 9.2, 1.3, 6);
-                    padMat = new THREE.MeshStandardMaterial({ color: 0x240a08, emissive: 0x4d1204, emissiveIntensity: 0.6, roughness: 0.9, flatShading: true });
-                } else {
-                    padGeo = new THREE.CylinderGeometry(8.0, 8.5, 0.45, 6);
-                    padMat = new THREE.MeshStandardMaterial({ color: 0xdaf2ff, emissive: 0x1b5685, emissiveIntensity: 0.22, roughness: 0.38, metalness: 0.08, flatShading: true, transparent: true, opacity: 0.84, depthWrite: false });
+                if (!window.GLOBAL_PIT_PAD_ASSETS) window.GLOBAL_PIT_PAD_ASSETS = {};
+                if (!window.GLOBAL_PIT_PAD_ASSETS[themeIdx]) {
+                    let padGeo, padMat;
+                    if (themeIdx === 0) {
+                        padGeo = new THREE.CylinderGeometry(8.5, 8.0, 0.6, 9, 1, false, 0.42, Math.PI * 2 - 0.84);
+                        padMat = new THREE.MeshStandardMaterial({ color: 0x2e8538, emissive: 0x0d2b12, roughness: 0.65, flatShading: true });
+                    } else if (themeIdx === 1) {
+                        padGeo = new THREE.CylinderGeometry(7.0, 9.2, 1.3, 6);
+                        padMat = new THREE.MeshStandardMaterial({ color: 0x240a08, emissive: 0x4d1204, emissiveIntensity: 0.6, roughness: 0.9, flatShading: true });
+                    } else {
+                        padGeo = new THREE.CylinderGeometry(8.0, 8.5, 0.45, 6);
+                        padMat = new THREE.MeshStandardMaterial({ color: 0xdaf2ff, emissive: 0x1b5685, emissiveIntensity: 0.22, roughness: 0.38, metalness: 0.08, flatShading: true, transparent: true, opacity: 0.84, depthWrite: false });
+                    }
+                    padGeo._isGlobalCached = true;
+                    padMat._isGlobalCached = true;
+                    window.GLOBAL_PIT_PAD_ASSETS[themeIdx] = { geo: padGeo, mat: padMat };
                 }
+                const { geo: padGeo, mat: padMat } = window.GLOBAL_PIT_PAD_ASSETS[themeIdx];
                 const meshPitPads = new THREE.InstancedMesh(padGeo, padMat, padSpawns.length);
                 meshPitPads.receiveShadow = true;
                 meshPitPads.renderOrder = 4;
@@ -10427,28 +10502,35 @@ class GameMap {
             }
 
             if (accentSpawns.length > 0) {
-                let accentGeo, accentMat;
-                if (themeIdx === 0) {
-                    let petals = new THREE.ConeGeometry(3.6, 2.8, 5); petals.rotateX(Math.PI); petals.translate(0, 1.2, 0);
-                    let bud = new THREE.DodecahedronGeometry(1.7, 0); bud.translate(0, 1.7, 0);
-                    accentGeo = THREE.BufferGeometryUtils.mergeBufferGeometries([petals.toNonIndexed(), bud.toNonIndexed()]);
-                    petals.dispose(); bud.dispose();
-                    accentMat = new THREE.MeshStandardMaterial({ color: 0xffe0f2, emissive: 0xff5ca8, emissiveIntensity: 0.95, roughness: 0.3, flatShading: true });
-                } else if (themeIdx === 1) {
-                    let s1 = new THREE.ConeGeometry(3.2, 14, 5); s1.translate(0, 6, 0); s1.rotateZ(0.18);
-                    let s2 = new THREE.ConeGeometry(2.2, 9.5, 5); s2.translate(-2.2, 4, 1.2); s2.rotateZ(-0.28);
-                    accentGeo = THREE.BufferGeometryUtils.mergeBufferGeometries([s1.toNonIndexed(), s2.toNonIndexed()]);
-                    s1.dispose(); s2.dispose();
-                    accentMat = new THREE.MeshStandardMaterial({ color: 0x2b0d0a, emissive: 0xff4500, emissiveIntensity: 0.65, roughness: 0.45, metalness: 0.4, flatShading: true });
-                } else {
-                    let c1 = new THREE.CylinderGeometry(0.3, 2.6, 15, 6); c1.translate(0, 6.5, 0); c1.rotateZ(0.16);
-                    let c2 = new THREE.CylinderGeometry(0.25, 1.9, 10.5, 6); c2.translate(-2.2, 4.5, 1.4); c2.rotateZ(-0.32); c2.rotateX(0.22);
-                    let c3 = new THREE.CylinderGeometry(0.25, 1.7, 9.0, 6); c3.translate(2.0, 3.8, -1.2); c3.rotateZ(0.35); c3.rotateX(-0.20);
-                    accentGeo = THREE.BufferGeometryUtils.mergeBufferGeometries([c1.toNonIndexed(), c2.toNonIndexed(), c3.toNonIndexed()]);
-                    c1.dispose(); c2.dispose(); c3.dispose();
-                    accentMat = new THREE.MeshStandardMaterial({ color: 0xc4ffff, emissive: 0x1ee0ff, emissiveIntensity: 0.70, roughness: 0.25, metalness: 0.2, flatShading: true });
+                if (!window.GLOBAL_PIT_ACCENT_ASSETS) window.GLOBAL_PIT_ACCENT_ASSETS = {};
+                if (!window.GLOBAL_PIT_ACCENT_ASSETS[themeIdx]) {
+                    let accentGeo, accentMat;
+                    if (themeIdx === 0) {
+                        let petals = new THREE.ConeGeometry(3.6, 2.8, 5); petals.rotateX(Math.PI); petals.translate(0, 1.2, 0);
+                        let bud = new THREE.DodecahedronGeometry(1.7, 0); bud.translate(0, 1.7, 0);
+                        accentGeo = THREE.BufferGeometryUtils.mergeBufferGeometries([petals.toNonIndexed(), bud.toNonIndexed()]);
+                        petals.dispose(); bud.dispose();
+                        accentMat = new THREE.MeshStandardMaterial({ color: 0xffe0f2, emissive: 0xff5ca8, emissiveIntensity: 0.95, roughness: 0.3, flatShading: true });
+                    } else if (themeIdx === 1) {
+                        let s1 = new THREE.ConeGeometry(3.2, 14, 5); s1.translate(0, 6, 0); s1.rotateZ(0.18);
+                        let s2 = new THREE.ConeGeometry(2.2, 9.5, 5); s2.translate(-2.2, 4, 1.2); s2.rotateZ(-0.28);
+                        accentGeo = THREE.BufferGeometryUtils.mergeBufferGeometries([s1.toNonIndexed(), s2.toNonIndexed()]);
+                        s1.dispose(); s2.dispose();
+                        accentMat = new THREE.MeshStandardMaterial({ color: 0x2b0d0a, emissive: 0xff4500, emissiveIntensity: 0.65, roughness: 0.45, metalness: 0.4, flatShading: true });
+                    } else {
+                        let c1 = new THREE.CylinderGeometry(0.3, 2.6, 15, 6); c1.translate(0, 6.5, 0); c1.rotateZ(0.16);
+                        let c2 = new THREE.CylinderGeometry(0.25, 1.9, 10.5, 6); c2.translate(-2.2, 4.5, 1.4); c2.rotateZ(-0.32); c2.rotateX(0.22);
+                        let c3 = new THREE.CylinderGeometry(0.25, 1.7, 9.0, 6); c3.translate(2.0, 3.8, -1.2); c3.rotateZ(0.35); c3.rotateX(-0.20);
+                        accentGeo = THREE.BufferGeometryUtils.mergeBufferGeometries([c1.toNonIndexed(), c2.toNonIndexed(), c3.toNonIndexed()]);
+                        c1.dispose(); c2.dispose(); c3.dispose();
+                        accentMat = new THREE.MeshStandardMaterial({ color: 0xc4ffff, emissive: 0x1ee0ff, emissiveIntensity: 0.70, roughness: 0.25, metalness: 0.2, flatShading: true });
+                    }
+                    accentGeo.computeVertexNormals();
+                    accentGeo._isGlobalCached = true;
+                    accentMat._isGlobalCached = true;
+                    window.GLOBAL_PIT_ACCENT_ASSETS[themeIdx] = { geo: accentGeo, mat: accentMat };
                 }
-                accentGeo.computeVertexNormals();
+                const { geo: accentGeo, mat: accentMat } = window.GLOBAL_PIT_ACCENT_ASSETS[themeIdx];
                 const meshPitAccents = new THREE.InstancedMesh(accentGeo, accentMat, accentSpawns.length);
                 meshPitAccents.castShadow = AppSettings.shadowsEnabled;
                 meshPitAccents.receiveShadow = true;
@@ -11558,8 +11640,8 @@ class Entity {
         this.auraRingMesh.visible = false;
         Game.scene.add(this.auraRingMesh); // Agganciato alla scena globale per prevenire freeze
 
-        this.auraGlow = new THREE.Mesh(new THREE.PlaneGeometry(radius * 6, radius * 6), new THREE.MeshBasicMaterial({map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}));
-        this.auraGlow.rotation.x = -Math.PI / 2;
+        this.auraGlow = new THREE.Mesh(window.GLOBAL_TELEGRAPH_GEO, new THREE.MeshBasicMaterial({map: GLOW_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}));
+        this.auraGlow.scale.set(radius * 6, 1, radius * 6);
         this.auraGlow.matrixAutoUpdate = false;
         this.auraGlow.visible = false;
         Game.scene.add(this.auraGlow); // Agganciato alla scena globale per prevenire freeze
@@ -12550,10 +12632,12 @@ class Player extends Entity {
         }
         if (this.auraRingMesh) {
             this.auraRingMesh.visible = false;
+            if (this.auraRingMesh.material) this.auraRingMesh.material.dispose();
             Game.scene.remove(this.auraRingMesh);
         }
         if (this.auraGlow) {
             this.auraGlow.visible = false;
+            if (this.auraGlow.material) this.auraGlow.material.dispose();
             Game.scene.remove(this.auraGlow);
         }
         if (this.mesh) {
@@ -13168,6 +13252,7 @@ class Player extends Entity {
             this.auraRingMesh.rotation.z -= dt * 2;
             this.auraRingMesh.updateMatrix();
             this.auraGlow.position.set(this.x, 0.4, this.y);
+            this.auraGlow.scale.set(this.radius * 6, 1, this.radius * 6);
             this.auraGlow.updateMatrix();
         }
         // ------------------------------------------------
@@ -15142,6 +15227,7 @@ class Enemy extends Entity {
             this.auraRingMesh.rotation.z -= dt * 2;
             this.auraRingMesh.updateMatrix();
             this.auraGlow.position.set(this.x, 0.4, this.y);
+            this.auraGlow.scale.set(this.radius * 6, 1, this.radius * 6);
             this.auraGlow.updateMatrix();
         }
 
@@ -16781,8 +16867,8 @@ class BossEnemy extends Enemy {
 
         if (this.telegraphMesh) { this.telegraphMesh.visible = false; Game.scene.remove(this.telegraphMesh); }
         if (this.shadowMesh) { this.shadowMesh.visible = false; Game.scene.remove(this.shadowMesh); }
-        if (this.auraRingMesh) { this.auraRingMesh.visible = false; Game.scene.remove(this.auraRingMesh); }
-        if (this.auraGlow) { this.auraGlow.visible = false; Game.scene.remove(this.auraGlow); }
+        if (this.auraRingMesh) { this.auraRingMesh.visible = false; if (this.auraRingMesh.material) this.auraRingMesh.material.dispose(); Game.scene.remove(this.auraRingMesh); }
+        if (this.auraGlow) { this.auraGlow.visible = false; if (this.auraGlow.material) this.auraGlow.material.dispose(); Game.scene.remove(this.auraGlow); }
 
         Game.addTrauma(2.5);
 
@@ -17594,6 +17680,8 @@ function clearScene() {
         Game.map.mapGroup.traverse((child) => {
             if (child.isMesh || child.isInstancedMesh) {
                if (child.geometry && 
+                    !child.geometry._isGlobalCached &&
+                    child.geometry !== window.GLOBAL_FLOOR_GEO &&
                     child.geometry !== InteractiveGrassSystem.geo && 
                     child.geometry !== window.GLOBAL_TREE_GEO && 
                     child.geometry !== window.GLOBAL_DEBRIS_GEO && 
@@ -17617,6 +17705,7 @@ function clearScene() {
                 }
                 
                 if (child.material && 
+                    !child.material._isGlobalCached &&
                     child.material !== window.GLOBAL_DEBRIS_MAT && 
                     child.material !== window.GLOBAL_TREE_MAT && 
                     child.material !== window.GLOBAL_BLOOD_MAT && 
@@ -17626,7 +17715,9 @@ function clearScene() {
                     !(window.GLOBAL_THEME_MATS && window.GLOBAL_THEME_MATS.some(mats => Object.values(mats).includes(child.material))) &&
                     !SharedMatSet.has(child.material)) {
                     if (Array.isArray(child.material)) {
-                        for(let m=0; m<child.material.length; m++) child.material[m].dispose();
+                        for(let m=0; m<child.material.length; m++) {
+                            if (child.material[m] && !child.material[m]._isGlobalCached) child.material[m].dispose();
+                        }
                     }
                     else child.material.dispose();
                 }
@@ -17676,8 +17767,8 @@ function clearScene() {
             // FIX SCENE GRAPH LEAK: Rimuove i componenti che restavano orfani nella scena
             if (e.shadowMesh) { e.shadowMesh.visible = false; Game.scene.remove(e.shadowMesh); }
             if (e.telegraphMesh) { e.telegraphMesh.visible = false; Game.scene.remove(e.telegraphMesh); }
-            if (e.auraRingMesh) { e.auraRingMesh.visible = false; Game.scene.remove(e.auraRingMesh); }
-            if (e.auraGlow) { e.auraGlow.visible = false; Game.scene.remove(e.auraGlow); }
+            if (e.auraRingMesh) { e.auraRingMesh.visible = false; if (e.auraRingMesh.material) e.auraRingMesh.material.dispose(); Game.scene.remove(e.auraRingMesh); }
+            if (e.auraGlow) { e.auraGlow.visible = false; if (e.auraGlow.material) e.auraGlow.material.dispose(); Game.scene.remove(e.auraGlow); }
         }
     }
     
