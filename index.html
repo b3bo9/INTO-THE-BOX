@@ -1179,7 +1179,7 @@ const AppSettings = {
     get maxDebrisPerFrame() { return isTouchDevice ? (this.mode === 0 ? 3 : (this.mode === 1 ? 5 : 9)) : (this.mode === 0 ? 6 : (this.mode === 1 ? 12 : 18)); },
     get maxTextsDrawn() { return isTouchDevice ? (this.mode === 0 ? 6 : (this.mode === 1 ? 10 : 16)) : (this.mode === 0 ? 14 : (this.mode === 1 ? 25 : 35)); },
     get maxWindSources() { return isTouchDevice ? (this.mode === 0 ? 1 : (this.mode === 1 ? 3 : 6)) : (this.mode === 0 ? 2 : (this.mode === 1 ? 6 : 10)); },
-    get grassDensityMult() { return this.mode === 0 ? 0.30 : (this.mode === 1 ? 0.68 : 1.0); },
+    get grassDensityMult() { return this.mode === 0 ? 0.50 : (this.mode === 1 ? 0.78 : 1.0); },
     get targetFogCount() { return this.mode === 0 ? 0 : (isTouchDevice ? (this.mode === 1 ? 16 : 28) : (this.mode === 1 ? 30 : 50)); },
     get playerLightRadius() { return !isTouchDevice ? 1050 : (this.mode === 0 ? 520 : (this.mode === 1 ? 650 : 780)); },
     getTargetPixelRatio() {
@@ -9000,8 +9000,32 @@ const InteractiveGrassSystem = {
     
     init() {
         if (this.geo) return;
-        this.geo = new THREE.ConeGeometry(3.5, 18, 3);
-        this.geo.translate(0, 9, 0); 
+        // Geometria custom "Ciuffo Doppio" (2 fili asimmetrici, 8 vertici totali invece di 13 di un singolo ConeGeometry, 0 tappi inferiori invisibili = -38% carico Vertex Shader e doppio volume visivo!)
+        this.geo = new THREE.BufferGeometry();
+        const positions = new Float32Array([
+            // Filo principale alto (h = 18.5, leggermente inclinato)
+            -1.0 + 3.6,  0.0, -0.5 + 0.0,
+            -1.0 - 1.8,  0.0, -0.5 + 3.12,
+            -1.0 - 1.8,  0.0, -0.5 - 3.12,
+            -0.2,       18.5,  0.4,
+            // Secondo filo compagno (h = 14.2, angolato in direzione opposta per formare un ciuffo naturale)
+             1.2 + 1.5,  0.0,  0.7 + 2.60,
+             1.2 - 3.0,  0.0,  0.7 + 0.0,
+             1.2 + 1.5,  0.0,  0.7 - 2.60,
+             2.4,       14.2, -0.5
+        ]);
+        const normalsArr = new Float32Array([
+            0, 1, 0,  0, 1, 0,  0, 1, 0,  0, 1, 0,
+            0, 1, 0,  0, 1, 0,  0, 1, 0,  0, 1, 0
+        ]);
+        const indices = [
+            0, 3, 1,  1, 3, 2,  2, 3, 0,
+            4, 7, 5,  5, 7, 6,  6, 7, 4
+        ];
+        this.geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        this.geo.setAttribute('normal', new THREE.BufferAttribute(normalsArr, 3));
+        this.geo.setIndex(indices);
+        // Origine già a y = 0 nella BufferGeometry custom
         this.geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 999999);
 
         // Uniforma le normali verso l'alto per un'illuminazione morbida e priva di sfaccettature nere
@@ -9015,7 +9039,7 @@ const InteractiveGrassSystem = {
         this.mat = new THREE.MeshLambertMaterial({
             color: 0x1a2b16,      
             emissive: 0x000000,   
-            flatShading: true
+            flatShading: false // Usa la normale morbida (0,1,0) evitando sfaccettature nere e calcoli dFdx/dFdy nel Fragment Shader
         });
 
         this.mat.onBeforeCompile = (shader) => {
@@ -9050,7 +9074,7 @@ const InteractiveGrassSystem = {
                 #endif
                 vec3 basePos = (modelMatrix * basePos4).xyz;
 
-                float heightFactor = max(0.0, position.y / 18.0);
+                float heightFactor = clamp(position.y / 14.5, 0.0, 1.0);
                 
                 // Inviamo i dati al Fragment Shader per colorare
                 vHeight = heightFactor;
@@ -9080,6 +9104,13 @@ const InteractiveGrassSystem = {
                         
                         // Raggio d'azione ridotto a 150 unità (distSq < 22500)
                         if(distSq < 22500.0 && distSq > 0.1) {
+                            float invDist = inversesqrt(distSq);
+                            float dist = distSq * invDist;
+                            float falloff = 1.0 - (dist * 0.0066667);
+                            float pushForce = falloff * falloff;
+                            interactDir += (dir * invDist) * (pushForce * 40.0 * windData.y);
+                        }
+                        if (false) {
                             float dist = sqrt(distSq);
                             float falloff = 1.0 - (dist / 150.0);
                             float pushForce = falloff * falloff;
@@ -9089,7 +9120,14 @@ const InteractiveGrassSystem = {
                 }
 
                 vec2 totalForce = windDir + interactDir;
-                float forceMag = length(totalForce);
+                // Piegamento parabolico Zero-Trig con conservazione della lunghezza d'arco (niente sqrt/normalize/sin/cos/cross per vertice!)
+                float fLenSq = dot(totalForce, totalForce);
+                if (fLenSq > 900.0) totalForce *= (30.0 * inversesqrt(fLenSq));
+                float bendFactor = heightFactor * (0.65 + 0.35 * heightFactor);
+                vec2 disp = totalForce * (0.58 * bendFactor);
+                float yDrop = dot(disp, disp) * 0.032;
+                vec3 bentVector = (worldPos.xyz - basePos) + vec3(disp.x, -yDrop, disp.y);
+                /*
                 
                 vec3 axis = vec3(1.0, 0.0, 0.0); 
                 if (forceMag > 0.001) {
@@ -9105,7 +9143,7 @@ const InteractiveGrassSystem = {
                 
                 vec3 cross_axis_v = cross(axis, v);
                 float dot_axis_v = dot(axis, v);
-                vec3 bentVector = v * c + cross_axis_v * s + axis * dot_axis_v * (1.0 - c);
+                */
                 
                 vec4 finalWorldPos = vec4(basePos + bentVector, 1.0);
                 vec4 mvPosition = viewMatrix * finalWorldPos;
@@ -9140,7 +9178,9 @@ const InteractiveGrassSystem = {
                 vec3 finalTipColor = mix(tipColor, dryTipColor, vColorRandom * 0.55);
                 
                 // Gradiente finale dalla radice alla punta
-                vec3 finalGrassColor = mix(rootColor, finalTipColor, vHeight);
+                // Gradiente morbido radice-punta con ambient occlusion alla base per dare volume 3D alle chiazze
+                float hCurve = smoothstep(0.0, 1.0, vHeight);
+                vec3 finalGrassColor = mix(rootColor, finalTipColor, hCurve);
                 
                 // Sovrascriviamo il colore finale che andrà a subire le luci e le ombre di Three.js
                 diffuseColor.rgb = finalGrassColor;
@@ -9398,7 +9438,7 @@ class GameMap {
         interactiveGrassMesh.receiveShadow = true;
         interactiveGrassMesh.castShadow = false;
         interactiveGrassMesh.frustumCulled = false;
-        let idxInteractiveGrass = 0;
+        let idxInteractiveGrass = 0; const grassPassTag = new Uint8Array(maxGrassClusters);
 
        // --- 2.5 ALLOCHIAMO I DETRITI ---
         const maxDebris = floorCount * (isTouchDevice ? 8 : 20);
@@ -10908,15 +10948,24 @@ class GameMap {
                             dummy.updateMatrix();
                             meshGrass.setMatrixAt(idxGrass++, dummy.matrix);
 
-                          if (noiseSafe > 0.45) {
-                                let intensity = (noiseSafe - 0.45) / 0.55;
-                                let baseMax = Math.ceil((isTouchDevice ? 85 : 220) * grassModeMult);
+                          let bandCore = Math.max(0.0, 1.0 - Math.abs(r - 0.525) / 0.175);
+                          let meadowWave = 0.5 + 0.5 * Math.sin(x * 0.45 - y * 0.35) * Math.cos(y * 0.40 + x * 0.30);
+                          let patchScore = bandCore * 0.55 + meadowWave * 0.45;
+                          if (patchScore > 0.20) {
+                                let intensity = Math.min(1.0, (patchScore - 0.20) / 0.58);
+                                let baseMax = Math.ceil((isTouchDevice ? 56 : 130) * grassModeMult);
                                 let maxBlades = MathUtils.randomInt(Math.max(16, baseMax - 35), Math.max(24, baseMax));
-                                let numBlades = Math.floor(maxBlades * Math.pow(intensity, 1.1));
+                                let numBlades = Math.floor(maxBlades * (0.38 + 0.62 * Math.pow(intensity, 0.85)));
+                                let patchOffX = Math.sin(x * 1.7 + y * 2.3) * (nearPit ? 5 : 11);
+                                let patchOffZ = Math.cos(x * 2.1 - y * 1.9) * (nearPit ? 5 : 11);
+                                let maxPatchRad = nearPit ? 24 : 35;
 
                                 for (let g = 0; g < numBlades; g++) {
-                                    let gx = (x * TILE_SIZE + TILE_SIZE / 2) + MathUtils.randomRange(-32, 32);
-                                    let gz = (y * TILE_SIZE + TILE_SIZE / 2) + MathUtils.randomRange(-32, 32);
+                                    let radialT = (g + Math.random() * 0.65) / Math.max(1, numBlades);
+                                    let rDist = Math.pow(radialT, 0.72) * maxPatchRad;
+                                    let rAng = g * 2.39996 + Math.random() * 0.45;
+                                    let gx = (x * TILE_SIZE + TILE_SIZE / 2) + patchOffX + Math.cos(rAng) * rDist;
+                                    let gz = (y * TILE_SIZE + TILE_SIZE / 2) + patchOffZ + Math.sin(rAng) * rDist;
                                     if (nearPit) {
                                         let txA = Math.floor((gx - 8) / TILE_SIZE), txB = Math.floor((gx + 8) / TILE_SIZE);
                                         let tzA = Math.floor((gz - 8) / TILE_SIZE), tzB = Math.floor((gz + 8) / TILE_SIZE);
@@ -10934,7 +10983,8 @@ class GameMap {
                                         }
                                     }
                                     dummy.position.set(gx, nearPit ? 0.45 : 0.2, gz);
-                                    let sizeMod = 0.5 + (intensity * 0.7);
+                                    let domeProfile = 1.28 - radialT * 0.48;
+                                    let sizeMod = (0.58 + (intensity * 0.62)) * domeProfile;
                                     let scaleG = MathUtils.randomRange(0.8, 1.5) * sizeMod;
                                     if (nearPit) scaleG = Math.min(scaleG * 0.55, 0.60);
                                     let maxTilt = nearPit ? 0.06 : 0.2;
@@ -10946,6 +10996,7 @@ class GameMap {
                                     );
                                     dummy.updateMatrix();
                                     if (idxInteractiveGrass < maxGrassClusters) {
+                                        grassPassTag[idxInteractiveGrass] = radialT < 0.50 ? 0 : (radialT < 0.78 ? 1 : 2);
                                         interactiveGrassMesh.setMatrixAt(idxInteractiveGrass++, dummy.matrix);
                                     }
                                 }
@@ -11099,14 +11150,21 @@ Game.auras.push({
         meshDirt.count = idxDirt;
         meshGrass.count = idxGrass;
         meshRock.count = idxRock;
-        // Permuta uniformemente le matrici dell'erba e dei ciottoli statici così il taglio live di .count (30% / 68% / 100%) scala la densità su TUTTA la mappa e non solo su un lato!
+        // Stratifica le matrici dell'erba in 3 anelli concentrici per chiazza (0: Cuore 50% PERF, 1: Corpo 78% BILANC, 2: Bordo 100% ULTRA)
+        // Così ogni chiazza d'erba rimane sempre compatta, folta e distribuita su tutta la mappa in qualsiasi modalità grafica!
         if (idxInteractiveGrass > 1) {
             const arr = interactiveGrassMesh.instanceMatrix.array;
-            for (let i = idxInteractiveGrass - 1; i > 0; i--) {
-                const j = (Math.random() * (i + 1)) | 0;
-                const a = i * 16, b = j * 16;
-                for (let k = 0; k < 16; k++) { const t = arr[a + k]; arr[a + k] = arr[b + k]; arr[b + k] = t; }
+            const sorted = new Float32Array(idxInteractiveGrass * 16);
+            let writeIdx = 0;
+            for (let pass = 0; pass < 3; pass++) {
+                for (let i = 0; i < idxInteractiveGrass; i++) {
+                    if (grassPassTag[i] === pass) {
+                        const src = i * 16;
+                        for (let k = 0; k < 16; k++) sorted[writeIdx++] = arr[src + k];
+                    }
+                }
             }
+            arr.set(sorted);
         }
         this.grassMesh = interactiveGrassMesh;
         this.totalGrassSpawned = idxInteractiveGrass;
