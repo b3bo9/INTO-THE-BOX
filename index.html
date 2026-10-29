@@ -1305,6 +1305,9 @@ const AppSettings = {
                 if (Game.map.grassMesh && Game.map.totalGrassSpawned !== undefined) {
                     Game.map.grassMesh.count = Math.floor(Game.map.totalGrassSpawned * this.grassDensityMult);
                 }
+                if (Game.map.treeCanopyMesh) {
+                    Game.map.treeCanopyMesh.castShadow = this.isUltraPC;
+                }
                 if (Game.map.debrisStaticMesh && Game.map.totalDebrisStaticSpawned !== undefined) {
                     const debMult = this.isLow ? 0.45 : (this.isUltra ? 1.0 : 0.75);
                     Game.map.debrisStaticMesh.count = Math.floor(Game.map.totalDebrisStaticSpawned * debMult);
@@ -2158,19 +2161,22 @@ const TILE_SIZE = 64; const CHUNK_SIZE = 30; const FIXED_TIME_STEP = 1 / 60; con
     // TEMA 1: FORESTA INCANTATA (Verde foglia caldo, muschio dorato e luce fatata)
     { 
         dirt: 0x383322, grass: 0x3f8f29, rock: 0x3d4a35, wall: 0x283322, 
-        grassShader: 0x2d6e1e, tree: 0x1a1812,
+        grassShader: 0x061904, grassEmissive: 0x050b02,
+        canopyShader: 0x071c05, canopyEmissive: 0x050b02, tree: 0x1a1812,
         ambient: 0x2d3b22, dirLight: 0xe8ffbb, fog: 0x0b1409
     },
     // TEMA 2: FUCINA INFERNALE (Bilanciato: ossidiana calda, brace ambrata e luce vulcanica morbida)
     { 
         dirt: 0x54201c, grass: 0xb52b20, rock: 0x50211e, wall: 0x361210, 
-        grassShader: 0x781b14, tree: 0x240908,
+        grassShader: 0x0b0302, grassEmissive: 0x0c0302,
+        canopyShader: 0x0d0403, canopyEmissive: 0x0e0302, tree: 0x240908,
         ambient: 0x381614, dirLight: 0xff8547, fog: 0x120506
     },
     // TEMA 3: CAVERNA CRISTALLINA (Azzurro fiabesco limpido e luce d'aurora)
     { 
         dirt: 0x18304d, grass: 0x287ec4, rock: 0x204970, wall: 0x112640, 
-        grassShader: 0x16508a, tree: 0x081930,
+        grassShader: 0x124264, grassEmissive: 0x051120,
+        canopyShader: 0x103c5c, canopyEmissive: 0x051120, tree: 0x081930,
         ambient: 0x241945, dirLight: 0x88f0ff, fog: 0x060b18
     }
 ];
@@ -7401,6 +7407,14 @@ loop(timestamp) {
         }
         if (InteractiveGrassSystem.mat) {
             InteractiveGrassSystem.mat.color.setHex(currentTheme.grassShader);
+            InteractiveGrassSystem.mat.emissive.setHex(currentTheme.grassEmissive || 0x000000);
+        }
+        if (TreeCanopySystem.mat) {
+            TreeCanopySystem.mat.color.setHex(currentTheme.canopyShader || currentTheme.grassShader);
+            TreeCanopySystem.mat.emissive.setHex(currentTheme.canopyEmissive || currentTheme.grassEmissive || 0x000000);
+        }
+        if (window.GLOBAL_TREE_MAT && currentTheme.tree) {
+            window.GLOBAL_TREE_MAT.color.setHex(currentTheme.tree);
         }
         if (this.floor <= 5) {
             this.difficultyMult = 0.62 + (this.floor - 1) * 0.045;
@@ -9208,17 +9222,17 @@ const InteractiveGrassSystem = {
                 // Colore base prelevato da Three.js
                 vec3 baseAlbedo = diffuseColor.rgb;
                 
-                // Radici morbide (evita l'effetto macchia nera sul pavimento)
-                vec3 rootColor = baseAlbedo * 0.32;
+                // Radici morbide calibrate per fondersi con la texture dell'erba sottostante
+                vec3 rootColor = baseAlbedo * 0.58;
                 
-                // Punte luminose e vellutate in stile fiabesco
-                vec3 tipColor = baseAlbedo * 1.42 + vec3(0.09, 0.09, 0.02); 
+                // Punte naturali dello stesso tono della texture sottostante (zero effetto neon/fluorescente)
+                vec3 tipColor = baseAlbedo * 1.08; 
                 
-                // Sfumatura dorata/calda sulle punte casuali
-                vec3 dryTipColor = baseAlbedo * 1.15 + vec3(0.18, 0.14, 0.04);
+                // Leggera variazione organica proporzionale al colore base (senza offset luminosi additivi)
+                vec3 dryTipColor = baseAlbedo * vec3(1.02, 0.96, 0.86);
                 
-                // Mischiamo la punta principale con la sfumatura dorata
-                vec3 finalTipColor = mix(tipColor, dryTipColor, vColorRandom * 0.55);
+                // Mischiamo la punta principale con la sfumatura naturale
+                vec3 finalTipColor = mix(tipColor, dryTipColor, vColorRandom * 0.50);
                 
                 // Gradiente finale dalla radice alla punta
                 // Gradiente morbido radice-punta con ambient occlusion alla base per dare volume 3D alle chiazze
@@ -9235,6 +9249,7 @@ const InteractiveGrassSystem = {
 function createDarkTreeGeometry() {
     try {
         const geometries = [];
+        window.GLOBAL_TREE_ANCHORS = [];
 
         function buildBranch(startPoint, direction, length, radiusBase, radiusTip, depth) {
             if (depth <= 0) return;
@@ -9277,23 +9292,40 @@ function createDarkTreeGeometry() {
 
             geometries.push(geo);
 
+            const endPoint = startPoint.clone().add(direction.clone().multiplyScalar(length));
+            if (depth === 2) {
+                window.GLOBAL_TREE_ANCHORS.push({
+                    x: endPoint.x, y: endPoint.y, z: endPoint.z,
+                    radius: 5.2, seed: window.GLOBAL_TREE_ANCHORS.length * 0.173
+                });
+            } else if (depth === 1) {
+                const midPoint = startPoint.clone().addScaledVector(direction, length * 0.52);
+                window.GLOBAL_TREE_ANCHORS.push({
+                    x: midPoint.x, y: midPoint.y, z: midPoint.z,
+                    radius: 4.6, seed: window.GLOBAL_TREE_ANCHORS.length * 0.173
+                });
+                window.GLOBAL_TREE_ANCHORS.push({
+                    x: endPoint.x, y: endPoint.y, z: endPoint.z,
+                    radius: 5.8, seed: window.GLOBAL_TREE_ANCHORS.length * 0.173
+                });
+            }
+
             if (depth > 1) {
-                const endPoint = startPoint.clone().add(direction.clone().multiplyScalar(length));
-                const numBranches = depth === 3 ? MathUtils.randomInt(2, 3) : 2;
+                const numBranches = depth === 3 ? 3 : 2;
                 
                 for (let i = 0; i < numBranches; i++) {
                     const branchDir = direction.clone();
-                    const spread = 0.6 + (3 - depth) * 0.4; 
+                    const spread = 0.65 + (3 - depth) * 0.38; 
                     
-                    const angle = (Math.PI * 2 / numBranches) * i + MathUtils.randomRange(-0.5, 0.5);
+                    const angle = (Math.PI * 2 / numBranches) * i + MathUtils.randomRange(-0.35, 0.35);
                     branchDir.x += Math.cos(angle) * spread;
                     branchDir.z += Math.sin(angle) * spread;
-                    branchDir.y += MathUtils.randomRange(0.2, 0.6); 
+                    branchDir.y += MathUtils.randomRange(0.25, 0.58); 
                     branchDir.normalize();
 
-                    const newLength = length * MathUtils.randomRange(0.65, 0.85);
+                    const newLength = length * MathUtils.randomRange(0.68, 0.84);
                     const newRadiusBase = radiusTip * 0.9;
-                    const newRadiusTip = depth === 2 ? 0.01 : radiusTip * 0.45; 
+                    const newRadiusTip = depth === 2 ? 0.08 : radiusTip * 0.45; 
                     
                     buildBranch(endPoint, branchDir, newLength, newRadiusBase, newRadiusTip, depth - 1);
                 }
@@ -9301,7 +9333,7 @@ function createDarkTreeGeometry() {
         }
 
         const startPos = new THREE.Vector3(0, 0, 0);
-        const startDir = new THREE.Vector3(MathUtils.randomRange(-0.15, 0.15), 1, MathUtils.randomRange(-0.15, 0.15)).normalize();
+        const startDir = new THREE.Vector3(MathUtils.randomRange(-0.10, 0.10), 1, MathUtils.randomRange(-0.10, 0.10)).normalize();
 
         buildBranch(startPos, startDir, 22, 1.8, 1.2, 3); 
 
@@ -9313,11 +9345,243 @@ function createDarkTreeGeometry() {
         
     } catch(e) {
         console.warn("Costruzione albero frattale fallita. È stato attivato l'albero di emergenza.", e);
+        window.GLOBAL_TREE_ANCHORS = [
+            { x: 0, y: 24, z: 0, radius: 6.5, seed: 0.1 },
+            { x: -5, y: 20, z: 4, radius: 5.0, seed: 0.4 },
+            { x: 5, y: 20, z: -4, radius: 5.0, seed: 0.7 }
+        ];
         let safeGeo = new THREE.ConeGeometry(2, 20, 5);
         safeGeo.translate(0, 10, 0);
         return safeGeo;
     }
 }
+
+// --- SISTEMA CHIOME ALBERI INTERATTIVE (1 Draw Call, 0 CPU, condivide gli uniform vento dell'erba) ---
+const TreeCanopySystem = {
+    geo: null,
+    mat: null,
+
+    init() {
+        if (this.geo) return;
+        if (!window.GLOBAL_TREE_GEO) window.GLOBAL_TREE_GEO = createDarkTreeGeometry();
+
+        const anchors = (window.GLOBAL_TREE_ANCHORS && window.GLOBAL_TREE_ANCHORS.length > 0)
+            ? window.GLOBAL_TREE_ANCHORS
+            : [{ x: 0, y: 28, z: 0, radius: 7.0, seed: 0.1 }];
+
+        const posArr = [];
+        const normArr = [];
+        const dataArr = []; // vec3(tipFactor 0..1, clusterSeed 0..1, anchorY)
+        const indices = [];
+        let vOffset = 0;
+
+        function pushVert(px, py, pz, nx, ny, nz, tipF, cSeed, anchorY) {
+            posArr.push(px, py, pz);
+            const nLen = Math.hypot(nx, ny, nz) || 1.0;
+            normArr.push(nx / nLen, ny / nLen, nz / nLen);
+            dataArr.push(tipF, cSeed, anchorY);
+            return vOffset++;
+        }
+
+        for (let a = 0; a < anchors.length; a++) {
+            const anc = anchors[a];
+            const ax = anc.x, ay = anc.y, az = anc.z;
+            const R = anc.radius;
+            const cSeed = (anc.seed % 1.0 + 1.0) % 1.0;
+
+            // 1. Nucleo fogliare low-poly morbido (cupola a 5 lati per dare volume pieno visto dall'alto)
+            const segs = 5;
+            const vTop = pushVert(ax, ay + R * 0.58, az, 0, 1, 0, 0.55, cSeed, ay);
+            const midRing = [];
+            const botRing = [];
+
+            for (let s = 0; s < segs; s++) {
+                const ang = (Math.PI * 2 / segs) * s + cSeed * 6.28318;
+                const ca = Math.cos(ang), sa = Math.sin(ang);
+                const rMid = R * (0.82 + 0.12 * Math.sin(s * 2.1 + cSeed * 10.0));
+                midRing.push(pushVert(
+                    ax + ca * rMid, ay + R * 0.08, az + sa * rMid,
+                    ca * 0.55, 0.83, sa * 0.55,
+                    0.40, cSeed, ay
+                ));
+                const angBot = ang + Math.PI / segs;
+                const cb = Math.cos(angBot), sb = Math.sin(angBot);
+                const rBot = R * 0.52;
+                botRing.push(pushVert(
+                    ax + cb * rBot, ay - R * 0.34, az + sb * rBot,
+                    cb * 0.65, 0.35, sb * 0.65,
+                    0.12, cSeed, ay
+                ));
+            }
+
+            for (let s = 0; s < segs; s++) {
+                const next = (s + 1) % segs;
+                indices.push(vTop, midRing[s], midRing[next]);
+                indices.push(midRing[s], botRing[s], midRing[next]);
+                indices.push(botRing[s], botRing[next], midRing[next]);
+            }
+
+            // 2. Ciuffi di foglie 3D sporgenti (stessa filosofia del Ciuffo Doppio dell'erba, 4 vertici / 3 triangoli per ciuffo)
+            const numTufts = 9;
+            for (let t = 0; t < numTufts; t++) {
+                const tFrac = t / numTufts;
+                const theta = t * 2.39996 + cSeed * 6.28318;
+                const ct = Math.cos(theta), st = Math.sin(theta);
+                const elev = 0.72 - tFrac * 0.85; // I primi ciuffi puntano verso l'alto, quelli esterni ricadono a corona
+                const radStart = R * (0.30 + 0.42 * tFrac);
+
+                const bx = ax + ct * radStart;
+                const by = ay + elev * R * 0.35;
+                const bz = az + st * radStart;
+
+                const bladeLen = R * (0.78 + 0.28 * ((t * 1.618 + cSeed) % 1.0));
+                const bladeW = R * 0.30;
+                const px = -st * bladeW, pz = ct * bladeW;
+
+                // 3 vertici della base del ciuffo ancorati nella chioma
+                const b0 = pushVert(bx + px, by, bz + pz, ct * 0.45, 0.89, st * 0.45, 0.25, cSeed, ay);
+                const b1 = pushVert(bx - px, by, bz - pz, ct * 0.45, 0.89, st * 0.45, 0.25, cSeed, ay);
+                const b2 = pushVert(bx - ct * bladeW * 0.55, by + bladeW * 0.65, bz - st * bladeW * 0.55, 0, 1, 0, 0.32, cSeed, ay);
+
+                // Punta esterna del ciuffo (tipFactor = 1.0 -> massima oscillazione nel vento e nelle esplosioni)
+                const tx = bx + ct * bladeLen;
+                const ty = by + elev * bladeLen * 0.65;
+                const tz = bz + st * bladeLen;
+                const bTip = pushVert(tx, ty, tz, ct * 0.55, 0.83, st * 0.55, 1.0, cSeed, ay);
+
+                indices.push(b0, bTip, b2);
+                indices.push(b2, bTip, b1);
+                indices.push(b1, bTip, b0);
+            }
+        }
+
+        this.geo = new THREE.BufferGeometry();
+        this.geo.setAttribute('position', new THREE.Float32BufferAttribute(posArr, 3));
+        this.geo.setAttribute('normal', new THREE.Float32BufferAttribute(normArr, 3));
+        this.geo.setAttribute('aCanopyData', new THREE.Float32BufferAttribute(dataArr, 3));
+        this.geo.setIndex(indices);
+        this.geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 999999);
+        this.geo._isGlobalCached = true;
+
+        this.mat = new THREE.MeshLambertMaterial({
+            color: 0x071c05,
+            emissive: 0x050b02
+        });
+        this.mat._isGlobalCached = true;
+
+        this.mat.onBeforeCompile = (shader) => {
+            // Condivide gli stessi identici uniform di InteractiveGrassSystem (0 overhead CPU!)
+            shader.uniforms.uWindSources = InteractiveGrassSystem.uniforms.uWindSources;
+            shader.uniforms.uWindCount = InteractiveGrassSystem.uniforms.uWindCount;
+            shader.uniforms.uTime = InteractiveGrassSystem.uniforms.uTime;
+            shader.uniforms.uCamPos = InteractiveGrassSystem.uniforms.uCamPos;
+
+            shader.vertexShader = `
+                #define MAX_WIND ${MAX_WIND}
+                uniform vec3 uWindSources[MAX_WIND];
+                uniform int uWindCount;
+                uniform float uTime;
+                uniform vec3 uCamPos;
+
+                attribute vec3 aCanopyData;
+
+                varying float vHeight;
+                varying float vColorRandom;
+                varying float vCanopyShade;
+            ` + shader.vertexShader;
+
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <project_vertex>',
+                `
+                vec4 basePos4 = vec4( 0.0, 0.0, 0.0, 1.0 );
+                #ifdef USE_INSTANCING
+                    basePos4 = instanceMatrix * basePos4;
+                #endif
+                vec3 treeBase = (modelMatrix * basePos4).xyz;
+
+                // 1. Frustum Culling istantaneo su GPU prima di calcolare vento e matrici
+                if (abs(treeBase.x - uCamPos.x) > 1400.0 || treeBase.z > uCamPos.z + 240.0 || treeBase.z < uCamPos.z - 1750.0) {
+                    gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                    return;
+                }
+
+                vec4 worldPos = vec4( transformed, 1.0 );
+                #ifdef USE_INSTANCING
+                    worldPos = instanceMatrix * worldPos;
+                #endif
+                worldPos = modelMatrix * worldPos;
+
+                float tipFactor = aCanopyData.x;
+                float clusterSeed = aCanopyData.y;
+                float heightRatio = clamp((aCanopyData.z - 18.0) / 28.0, 0.0, 1.0);
+
+                vHeight = tipFactor;
+                float treeRand = fract(sin(dot(treeBase.xz, vec2(12.9898, 78.233))) * 43758.5453);
+                vColorRandom = fract(treeRand + clusterSeed * 0.618034);
+                vCanopyShade = clamp(heightRatio * 0.45 + tipFactor * 0.55, 0.0, 1.0);
+
+                // 2. Vento ambientale a doppia frequenza (oscillazione lenta del ramo + fruscio rapido delle punte)
+                float mainWave = sin(uTime * 2.2 + treeBase.x * 0.012 + treeBase.z * 0.012 + clusterSeed * 3.14159);
+                float crossWave = cos(uTime * 1.6 + treeBase.x * 0.009 - treeBase.z * 0.011 + clusterSeed * 4.71238);
+                float leafFlutter = sin(uTime * 5.2 + clusterSeed * 12.566 + position.x * 0.42 + position.z * 0.42);
+
+                vec2 windDir = vec2(
+                    mainWave * (3.5 * heightRatio) + leafFlutter * (2.8 * tipFactor),
+                    crossWave * (2.6 * heightRatio) + leafFlutter * (2.2 * tipFactor)
+                );
+
+                // 3. Reazione fisica a Giocatore, Proiettili, Onde d'urto ed Esplosioni
+                vec2 interactDir = vec2(0.0);
+                for (int i = 0; i < MAX_WIND; i++) {
+                    if (i >= uWindCount) break;
+                    vec3 windData = uWindSources[i];
+                    vec2 dir = worldPos.xz - vec2(windData.x, windData.z);
+                    float distSq = dot(dir, dir);
+                    if (distSq < 28900.0 && distSq > 0.1) {
+                        float invDist = inversesqrt(distSq);
+                        float dist = distSq * invDist;
+                        float falloff = 1.0 - (dist * 0.00588235);
+                        float pushForce = falloff * falloff;
+                        interactDir += (dir * invDist) * (pushForce * 28.0 * windData.y * (0.30 + 0.70 * tipFactor));
+                    }
+                }
+
+                vec2 totalForce = windDir + interactDir;
+                float fLenSq = dot(totalForce, totalForce);
+                if (fLenSq > 576.0) totalForce *= (24.0 * inversesqrt(fLenSq));
+
+                float bendWeight = 0.25 * heightRatio + 0.75 * (tipFactor * tipFactor);
+                vec2 disp = totalForce * (0.55 * bendWeight);
+                float yFlutter = leafFlutter * 0.90 * tipFactor - dot(disp, disp) * 0.018;
+
+                vec4 finalWorldPos = vec4(worldPos.xyz + vec3(disp.x, yFlutter, disp.y), 1.0);
+                vec4 mvPosition = viewMatrix * finalWorldPos;
+                gl_Position = projectionMatrix * mvPosition;
+                `
+            );
+
+            shader.fragmentShader = `
+                varying float vHeight;
+                varying float vColorRandom;
+                varying float vCanopyShade;
+            ` + shader.fragmentShader;
+
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <color_fragment>',
+                `
+                #include <color_fragment>
+                vec3 baseAlbedo = diffuseColor.rgb;
+                vec3 innerColor = baseAlbedo * 0.46;
+                vec3 outerTipColor = baseAlbedo * 1.12;
+                vec3 warmTipColor = baseAlbedo * vec3(1.05, 0.96, 0.85);
+                vec3 finalTip = mix(outerTipColor, warmTipColor, vColorRandom * 0.55);
+                float curve = smoothstep(0.0, 1.0, vHeight * 0.75 + vCanopyShade * 0.25);
+                diffuseColor.rgb = mix(innerColor, finalTip, curve);
+                `
+            );
+        };
+    }
+};
 
 class GameMap {
     constructor(w, h) {
@@ -9332,6 +9596,7 @@ class GameMap {
     
   generate(isBossFloor = false) {
         InteractiveGrassSystem.init();
+        TreeCanopySystem.init();
         
         // FIX CPU Bounding Spheres: Diciamo a Three.js di non perdere tempo a calcolare 
         // l'ingombro delle geometrie instanziate, assegnando una sfera gigante predefinita.
@@ -9495,7 +9760,7 @@ class GameMap {
         meshDebris.castShadow = AppSettings.isUltraPC; 
         let idxDebris = 0;
         
-       // --- 2.6 ALLOCHIAMO GLI ALBERI ---
+       // --- 2.6 ALLOCHIAMO GLI ALBERI E LE CHIOME ANIMATE ---
         const maxTrees = floorCount * (isTouchDevice ? 1 : 2); 
         if (!window.GLOBAL_TREE_GEO) window.GLOBAL_TREE_GEO = createDarkTreeGeometry();
         if (!window.GLOBAL_TREE_MAT) window.GLOBAL_TREE_MAT = new THREE.MeshStandardMaterial({ color: 0x0a0807, emissive: 0x020101, roughness: 0.9 });
@@ -9503,6 +9768,14 @@ class GameMap {
         meshTrees.receiveShadow = true;
         meshTrees.castShadow = true;
         meshTrees.frustumCulled = false;
+
+        const meshTreeCanopy = new THREE.InstancedMesh(TreeCanopySystem.geo, TreeCanopySystem.mat, maxTrees);
+        meshTreeCanopy.receiveShadow = true;
+        meshTreeCanopy.castShadow = AppSettings.isUltraPC;
+        meshTreeCanopy.frustumCulled = false;
+        meshTreeCanopy.onBeforeRender = function(renderer, scene, camera) {
+            InteractiveGrassSystem.uniforms.uCamPos.value.setFromMatrixPosition(camera.matrixWorld);
+        };
         
         // --- FAKE SHADOWS PER GLI ALBERI (Frustum Culling disattivato per non farle sparire lontano da 0,0) ---
         if (!window.GLOBAL_TREE_SHADOW_GEO) {
@@ -10960,11 +11233,12 @@ class GameMap {
                                 dummy.rotation.set(0, Math.random() * Math.PI * 2, 0);
                                 dummy.updateMatrix();
                                 meshTrees.setMatrixAt(idxTree, dummy.matrix);
+                                meshTreeCanopy.setMatrixAt(idxTree, dummy.matrix);
 
                                 this.treePositions.push({ x: tx, y: sy * 20, z: tz, scale: s });
 
                                 dummy.position.set(tx + 3 * s, 0.45, tz + 4 * s);
-                                dummy.scale.set(s * 15, 1, s * 15);
+                                dummy.scale.set(s * 20, 1, s * 20);
                                 dummy.rotation.set(0, 0, 0);
                                 dummy.updateMatrix();
                                 meshTreeShadows.setMatrixAt(idxTree, dummy.matrix);
@@ -11231,12 +11505,16 @@ Game.auras.push({
         meshDebris.instanceMatrix.needsUpdate = true;
        meshTrees.count = idxTree; 
         meshTrees.instanceMatrix.needsUpdate = true; 
+        meshTreeCanopy.count = idxTree;
+        meshTreeCanopy.instanceMatrix.needsUpdate = true;
+        this.treeCanopyMesh = meshTreeCanopy;
         meshTreeShadows.count = idxTree;
         meshTreeShadows.instanceMatrix.needsUpdate = true;
        meshTreeShadows.visible = !AppSettings.shadowsEnabled; // Setta la visibilità di base
         
         if (idxTree > 0) {
             this.mapGroup.add(meshTrees);
+            this.mapGroup.add(meshTreeCanopy);
             this.mapGroup.add(meshTreeShadows); // Viene sempre aggiunto, la visibilità la gestisce la riga sopra
         }
         
@@ -17934,6 +18212,7 @@ function clearScene() {
                     !child.geometry._isGlobalCached &&
                     child.geometry !== window.GLOBAL_FLOOR_GEO &&
                     child.geometry !== InteractiveGrassSystem.geo && 
+                    child.geometry !== TreeCanopySystem.geo && 
                     child.geometry !== window.GLOBAL_TREE_GEO && 
                     child.geometry !== window.GLOBAL_DEBRIS_GEO && 
                     child.geometry !== window.GLOBAL_TREE_SHADOW_GEO && 
@@ -17963,6 +18242,7 @@ function clearScene() {
                     child.material !== window.GLOBAL_FOG_MAT && 
                     child.material !== window.GLOBAL_PIT_SHADOW_MAT &&
                     child.material !== InteractiveGrassSystem.mat &&
+                    child.material !== TreeCanopySystem.mat &&
                     !(window.GLOBAL_THEME_MATS && window.GLOBAL_THEME_MATS.some(mats => Object.values(mats).includes(child.material))) &&
                     !SharedMatSet.has(child.material)) {
                     if (Array.isArray(child.material)) {
