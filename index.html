@@ -9520,21 +9520,23 @@ const TreeCanopySystem = {
                 vColorRandom = fract(treeRand + clusterSeed * 0.618034);
                 vCanopyShade = clamp(heightRatio * 0.45 + tipFactor * 0.55, 0.0, 1.0);
 
-                // 2. Vento ambientale a doppia frequenza (oscillazione lenta del ramo + fruscio rapido delle punte)
-                float mainWave = sin(uTime * 2.2 + treeBase.x * 0.012 + treeBase.z * 0.012 + clusterSeed * 3.14159);
-                float crossWave = cos(uTime * 1.6 + treeBase.x * 0.009 - treeBase.z * 0.011 + clusterSeed * 4.71238);
-                float leafFlutter = sin(uTime * 5.2 + clusterSeed * 12.566 + position.x * 0.42 + position.z * 0.42);
+                // 2. Vento ambientale a doppia frequenza (leggermente meno accentuato)
+                float mainWave = sin(uTime * 2.0 + treeBase.x * 0.012 + treeBase.z * 0.012 + clusterSeed * 3.14159);
+                float crossWave = cos(uTime * 1.5 + treeBase.x * 0.009 - treeBase.z * 0.011 + clusterSeed * 4.71238);
+                float leafFlutter = sin(uTime * 4.6 + clusterSeed * 12.566 + position.x * 0.42 + position.z * 0.42);
 
                 vec2 windDir = vec2(
-                    mainWave * (3.5 * heightRatio) + leafFlutter * (2.8 * tipFactor),
-                    crossWave * (2.6 * heightRatio) + leafFlutter * (2.2 * tipFactor)
+                    mainWave * (2.4 * heightRatio) + leafFlutter * (1.8 * tipFactor),
+                    crossWave * (1.8 * heightRatio) + leafFlutter * (1.4 * tipFactor)
                 );
 
-                // 3. Reazione fisica a Giocatore, Proiettili, Onde d'urto ed Esplosioni
+                // 3. Reazione fisica a Scatto, Ultimate, Proiettili, Onde d'urto ed Esplosioni (ignora la camminata normale)
                 vec2 interactDir = vec2(0.0);
                 for (int i = 0; i < MAX_WIND; i++) {
                     if (i >= uWindCount) break;
                     vec3 windData = uWindSources[i];
+                    // uWindSources[0] è il giocatore: in camminata normale ha forza 1.3 (in Ulti ha 2.5, in Scatto ha 4.5)
+                    if (i == 0 && windData.y < 1.9) continue;
                     vec2 dir = worldPos.xz - vec2(windData.x, windData.z);
                     float distSq = dot(dir, dir);
                     if (distSq < 28900.0 && distSq > 0.1) {
@@ -9542,17 +9544,17 @@ const TreeCanopySystem = {
                         float dist = distSq * invDist;
                         float falloff = 1.0 - (dist * 0.00588235);
                         float pushForce = falloff * falloff;
-                        interactDir += (dir * invDist) * (pushForce * 28.0 * windData.y * (0.30 + 0.70 * tipFactor));
+                        interactDir += (dir * invDist) * (pushForce * 22.0 * windData.y * (0.30 + 0.70 * tipFactor));
                     }
                 }
 
                 vec2 totalForce = windDir + interactDir;
                 float fLenSq = dot(totalForce, totalForce);
-                if (fLenSq > 576.0) totalForce *= (24.0 * inversesqrt(fLenSq));
+                if (fLenSq > 361.0) totalForce *= (19.0 * inversesqrt(fLenSq));
 
                 float bendWeight = 0.25 * heightRatio + 0.75 * (tipFactor * tipFactor);
-                vec2 disp = totalForce * (0.55 * bendWeight);
-                float yFlutter = leafFlutter * 0.90 * tipFactor - dot(disp, disp) * 0.018;
+                vec2 disp = totalForce * (0.42 * bendWeight);
+                float yFlutter = leafFlutter * 0.60 * tipFactor - dot(disp, disp) * 0.015;
 
                 vec4 finalWorldPos = vec4(worldPos.xyz + vec3(disp.x, yFlutter, disp.y), 1.0);
                 vec4 mvPosition = viewMatrix * finalWorldPos;
