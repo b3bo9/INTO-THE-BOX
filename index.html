@@ -137,28 +137,248 @@
         .shop-btn.atk:hover { border-color: #f59e0b; }
         .shop-btn.crit:hover { border-color: #a855f7; }
 
-        /* --- PATH TREE NEGOZIO --- */
-        .shop-btn .path-node {
-            width: 12px; height: 6px; border-radius: 2px !important;
-            background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.2s ease;
+      /* --- SHOP AD ALTA ADRENALINA: REATTORI AL PLASMA --- */
+        @keyframes plasma-flow {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 0% 200%; }
         }
-        .shop-btn .path-node.active {
-            background: currentColor; border-color: #ffffff;
-            box-shadow: 0 0 8px currentColor !important;
+        @keyframes bubble-rise {
+            0% { transform: translateY(0) scale(0.6); opacity: 0; }
+            20% { opacity: 0.95; }
+            80% { opacity: 0.85; }
+            100% { transform: translateY(-140px) scale(1.25); opacity: 0; }
         }
-        .shop-btn .path-milestone {
-            padding: 1px 5px; border-radius: 4px !important; font-size: 8px; font-weight: 900;
-            border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(0, 0, 0, 0.6);
-            transition: all 0.2s ease;
+        @keyframes orb-rune-spin {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.08); }
+            100% { transform: rotate(360deg) scale(1); }
         }
-        .shop-btn .path-milestone.unlocked {
-            background: rgba(251, 191, 36, 0.2); border-color: #fbbf24; color: #fbbf24;
-            box-shadow: 0 0 10px rgba(251, 191, 36, 0.4) !important;
+        @keyframes orb-ready-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(251, 191, 36, 0.6), inset 0 0 8px rgba(251, 191, 36, 0.4) !important; transform: scale(1); }
+            50% { box-shadow: 0 0 24px rgba(251, 191, 36, 1), 0 0 40px var(--c-main), inset 0 0 14px #ffffff !important; transform: scale(1.14); }
         }
-        .shop-btn.almost-mastery {
-            border-color: rgba(251, 191, 36, 0.85) !important;
-            box-shadow: 0 0 14px rgba(251, 191, 36, 0.25), inset 0 0 10px rgba(251, 191, 36, 0.12) !important;
+        @keyframes pillar-surge-up {
+            0% { transform: translateY(100%) scaleY(0.4); opacity: 1; }
+            100% { transform: translateY(-120%) scaleY(1.6); opacity: 0; }
+        }
+        @keyframes mastery-beam-flash {
+            0% { opacity: 1; transform: scaleX(1.2); filter: brightness(2); }
+            100% { opacity: 0; transform: scaleX(0.1); filter: brightness(1); }
+        }
+        @keyframes shockwave-expand {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 1; border-width: 6px; }
+            100% { transform: translate(-50%, -50%) scale(3.4); opacity: 0; border-width: 1px; }
+        }
+        @keyframes shop-screen-jolt {
+            0%, 100% { transform: translate(0, 0); }
+            20% { transform: translate(-4px, 3px); }
+            40% { transform: translate(4px, -3px); }
+            60% { transform: translate(-3px, -2px); }
+            80% { transform: translate(3px, 2px); }
+        }
+        .anim-shop-jolt { animation: shop-screen-jolt 0.32s ease-out; }
+
+        /* Struttura luminosa di ogni colonna */
+        #floorScreen .totem-pillar {
+            background: linear-gradient(180deg, var(--c-bg-top) 0%, rgba(15, 20, 36, 0.88) 55%, var(--c-bg-bot) 100%) !important;
+            border: 1.5px solid var(--c-border) !important;
+            border-radius: 14px !important;
+            box-shadow: 0 0 18px var(--c-glow), inset 0 0 14px var(--c-glow) !important;
+            transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+        #floorScreen .totem-pillar.almost-mastery {
+            border-color: #fde047 !important;
+            box-shadow: 0 0 26px rgba(251, 191, 36, 0.55), inset 0 0 18px rgba(251, 191, 36, 0.28) !important;
+        }
+        #floorScreen .totem-pillar.mastery-maxed {
+            border-color: #ffffff !important;
+            box-shadow: 0 0 28px var(--c-main), inset 0 0 20px var(--c-glow) !important;
+        }
+
+        /* Condotto centrale traslucido */
+        #floorScreen .pillar-chamber {
+            background: linear-gradient(90deg, rgba(6, 9, 18, 0.85) 0%, rgba(16, 24, 42, 0.72) 50%, rgba(6, 9, 18, 0.85) 100%) !important;
+            border: 1.5px solid var(--c-border) !important;
+            border-radius: 10px !important;
+            box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.9), 0 0 10px var(--c-glow) !important;
+        }
+
+        /* Liquido al plasma continuo che sale dal basso */
+        #floorScreen .plasma-fill {
+            background: linear-gradient(180deg, #ffffff 0%, var(--c-main) 14%, var(--c-dark) 55%, var(--c-main) 100%) !important;
+            background-size: 100% 200% !important;
+            animation: plasma-flow 2.2s linear infinite !important;
+            box-shadow: 0 0 20px var(--c-main), inset 0 0 10px #ffffff !important;
+            transition: height 0.42s cubic-bezier(0.22, 1, 0.36, 1) !important;
+            border-radius: 6px !important;
+        }
+        /* Cresta incandescente in cima al liquido */
+        #floorScreen .plasma-fill::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 5px;
+            background: #ffffff;
+            border-radius: 999px;
+            box-shadow: 0 0 14px #ffffff, 0 0 24px var(--c-main);
+        }
+
+        /* Bolle di energia che salgono continuamente nel liquido */
+        #floorScreen .plasma-bubble {
+            position: absolute;
+            bottom: 2px;
+            border-radius: 9999px !important;
+            background: #ffffff;
+            box-shadow: 0 0 6px #ffffff, 0 0 10px var(--c-main) !important;
+            pointer-events: none;
+            animation: bubble-rise var(--dur, 1.8s) ease-in infinite;
+            animation-delay: var(--dly, 0s);
+        }
+
+        /* Tacche luminose dei 10 livelli sopra il tubo */
+        #floorScreen .chamber-step {
+            width: 100%;
+            flex: 1;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+            transition: background 0.25s ease;
+        }
+        #floorScreen .chamber-step:first-child { border-top: none; }
+        #floorScreen .chamber-step.lit {
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.24) 0%, transparent 80%);
+            border-bottom-color: rgba(255, 255, 255, 0.45);
+        }
+
+        /* Onda d'impulso verticale quando compri */
+        #floorScreen .surge-wave {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, transparent 0%, #ffffff 45%, var(--c-main) 75%, transparent 100%);
+            mix-blend-mode: screen;
+            pointer-events: none;
+            opacity: 0;
+        }
+        #floorScreen .surge-wave.active {
+            animation: pillar-surge-up 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Fascio laser a tutta colonna allo sblocco di Grado 5 o 10 */
+        #floorScreen .mastery-beam {
+            position: absolute;
+            inset: -10px 4px;
+            background: linear-gradient(90deg, transparent 0%, var(--c-main) 25%, #ffffff 50%, var(--c-main) 75%, transparent 100%);
+            pointer-events: none;
+            opacity: 0;
+            z-index: 30;
+            mix-blend-mode: screen;
+        }
+        #floorScreen .mastery-beam.active {
+            animation: mastery-beam-flash 0.7s ease-out forwards;
+        }
+
+        /* Medaglioni Circolari Peak (Lv.5 e Lv.10) */
+        #floorScreen .mastery-orb {
+            border-radius: 9999px !important;
+            background: radial-gradient(circle at 35% 35%, #252f48 0%, #0b0f1c 100%) !important;
+            border: 2px solid var(--c-border) !important;
+            color: rgba(255, 255, 255, 0.7) !important;
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.9), 0 0 10px var(--c-glow), inset 0 1px 3px rgba(255, 255, 255, 0.3) !important;
+            transition: all 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+        #floorScreen .mastery-orb:hover,
+        #floorScreen .mastery-orb.inspected {
+            transform: scale(1.18);
+            border-color: #ffffff !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 22px var(--c-main), 0 0 35px var(--c-main), inset 0 0 10px #ffffff !important;
+        }
+        #floorScreen .mastery-orb.ready-next {
+            border-color: #fde047 !important;
+            color: #fef08a !important;
+            animation: orb-ready-pulse 1.15s infinite ease-in-out;
+        }
+        #floorScreen .mastery-orb.unlocked {
+            background: radial-gradient(circle at 35% 35%, #ffffff 0%, #fbbf24 45%, var(--c-main) 100%) !important;
+            border-color: #ffffff !important;
+            color: #090b10 !important;
+            box-shadow: 0 0 22px #fbbf24, 0 0 38px var(--c-main), inset 0 0 8px #ffffff !important;
+        }
+        /* Anello runico rotante attorno ai Medaglioni sbloccati */
+        #floorScreen .mastery-orb.unlocked::before {
+            content: "";
+            position: absolute;
+            inset: -5px;
+            border-radius: 9999px !important;
+            border: 1.5px dashed #fde047;
+            animation: orb-rune-spin 5s linear infinite;
+            pointer-events: none;
+        }
+
+        /* Pulsante Compra Energizzato */
+        #floorScreen .pillar-buy-btn {
+            border-radius: 10px !important;
+            transition: all 0.12s ease-out;
+            cursor: pointer;
+        }
+        #floorScreen .pillar-buy-btn.can-afford {
+            background: linear-gradient(180deg, var(--c-btn-top) 0%, rgba(16, 20, 34, 0.96) 100%) !important;
+            border: 1.5px solid #facc15 !important;
+            box-shadow: 0 0 14px rgba(250, 204, 21, 0.32), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+        }
+        #floorScreen .pillar-buy-btn.can-afford:hover {
+            filter: brightness(1.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 22px rgba(250, 204, 21, 0.6), 0 0 15px var(--c-main) !important;
+        }
+        #floorScreen .pillar-buy-btn.can-afford:active { transform: scale(0.93); }
+        #floorScreen .pillar-buy-btn.locked {
+            background: rgba(12, 15, 26, 0.75) !important;
+            border: 1.5px solid rgba(255, 255, 255, 0.12) !important;
+            opacity: 0.5;
+        }
+
+        /* Onda d'urto circolare e Particelle UI */
+        .shop-shockwave {
+            position: fixed;
+            width: 36px; height: 36px;
+            border-radius: 9999px !important;
+            border: 4px solid #fde047;
+            box-shadow: 0 0 20px #fde047, inset 0 0 12px #ffffff !important;
+            pointer-events: none;
+            z-index: 265;
+            animation: shockwave-expand 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .shop-fx-particle {
+            position: fixed;
+            pointer-events: none;
+            border-radius: 9999px !important;
+            z-index: 260;
+            will-change: transform, opacity;
+            animation: shop-spark-fly var(--dur, 0.6s) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes shop-spark-fly {
+            0% { transform: translate3d(0, 0, 0) scale(1.2); opacity: 1; }
+            100% { transform: translate3d(var(--tx), var(--ty), 0) scale(0.1); opacity: 0; }
+        }
+        @keyframes totem-buy-pop {
+            0% { transform: scale(1); }
+            35% { transform: scale(1.05) translateY(-4px); filter: brightness(1.45); }
+            100% { transform: scale(1) translateY(0); filter: brightness(1); }
+        }
+        .anim-totem-pop { animation: totem-buy-pop 0.28s ease-out; }
+
+        /* Particelle GPU leggere dello Shop */
+        .shop-fx-particle {
+            position: fixed;
+            pointer-events: none;
+            border-radius: 9999px !important;
+            z-index: 260;
+            will-change: transform, opacity;
+            animation: shop-spark-fly 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes shop-spark-fly {
+            0% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
+            100% { transform: translate3d(var(--tx), var(--ty), 0) scale(0.1); opacity: 0; }
         }
 
         /* Bagliori Morbidi al passaggio/tocco (Senza ombre flat) */
@@ -805,41 +1025,65 @@ body.colorblind-mode #opt-colorblind-text {
         </div>
     </div>
 
-    <!-- TRANSIZIONE PIANO -->
+   <!-- TRANSIZIONE PIANO (FORGIA AL PLASMA AD ALTA ADRENALINA) -->
     <div id="floorScreen" class="absolute inset-0 z-[100] hidden pointer-events-auto bg-cover bg-center bg-no-repeat overflow-hidden" style="background-image: url('bg_piano.png');">
-        <div class="absolute inset-0 bg-gradient-to-b from-blue-950/80 via-transparent to-black/95 pointer-events-none"></div>
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_10%,_rgba(0,0,0,0.7)_100%)] pointer-events-none"></div>
+        <!-- Overlay traslucido che lascia brillare l'illustrazione sottostante + Fasci di Luce Arcana -->
+        <div class="absolute inset-0 bg-gradient-to-b from-blue-950/55 via-slate-950/45 to-black/85 pointer-events-none"></div>
+        <div class="absolute -top-10 left-1/4 w-80 h-56 bg-cyan-500/25 blur-3xl pointer-events-none animate-pulse"></div>
+        <div class="absolute top-1/3 -left-12 w-64 h-64 bg-red-500/20 blur-3xl pointer-events-none animate-pulse" style="animation-delay: 0.7s;"></div>
+        <div class="absolute top-1/3 -right-12 w-64 h-64 bg-purple-500/25 blur-3xl pointer-events-none animate-pulse" style="animation-delay: 1.4s;"></div>
+        <div class="absolute bottom-16 left-1/3 w-72 h-44 bg-amber-500/20 blur-3xl pointer-events-none animate-pulse" style="animation-delay: 0.4s;"></div>
 
-        <div class="w-full h-full flex flex-col justify-between items-center z-10 px-4 py-8 relative">
-            <!-- TITOLO -->
-            <div class="flex flex-col items-center text-center shrink-0 gap-3 mt-4">
-                <h1 class="text-[8vw] sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-cyan-300 via-blue-500 to-blue-800 uppercase tracking-tighter leading-none">Massacro Concluso</h1>
-                <p class="text-[10px] sm:text-sm text-cyan-200 font-bold tracking-[0.3em] uppercase bg-blue-950/50 px-6 py-2 rounded-full border border-cyan-500/30 backdrop-blur-md">L'oscurità si intensifica...</p>
+        <!-- Layer Particelle & Onde d'Urto -->
+        <div id="shop-fx-layer" class="fixed inset-0 pointer-events-none z-[260] overflow-hidden"></div>
+
+        <div id="shop-main-wrap" class="w-full h-full flex flex-col justify-between items-center z-10 px-2.5 sm:px-5 py-3.5 sm:py-6 relative max-w-[470px] mx-auto">
+            
+            <!-- 1. HEADER LUMINOSO & FORZIERE MONETE -->
+            <div class="w-full flex items-center justify-between gap-3 bg-slate-950/85 border-2 border-cyan-400/50 rounded-xl px-4 py-2.5 shadow-[0_0_25px_rgba(34,211,238,0.25)] shrink-0">
+                <div class="flex flex-col text-left">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                        <span class="text-[9px] sm:text-[10px] text-cyan-300 font-black tracking-[0.25em] uppercase leading-none">Forgia dell'Ascesa</span>
+                    </div>
+                    <h1 class="text-lg sm:text-2xl font-display font-black text-white uppercase tracking-wider leading-none mt-1 m-0 drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]">Infondi il Potere</h1>
+                </div>
+                <div class="flex items-center gap-2.5 bg-amber-950/70 border-2 border-yellow-400 px-3.5 py-1.5 rounded-lg shadow-[0_0_18px_rgba(250,204,21,0.45)]">
+                    <i class="fa-solid fa-coins text-yellow-300 text-lg sm:text-2xl drop-shadow-[0_0_10px_rgba(250,204,21,1)]"></i>
+                    <span id="shop-coins" class="text-yellow-200 font-display font-black text-xl sm:text-3xl tracking-wider leading-none">0</span>
+                </div>
             </div>
 
-        <!-- NEGOZIO E STATISTICHE COMPATTO (LISTA ORIZZONTALE) -->
-            <div class="flex-1 w-full flex flex-col items-center justify-center gap-2.5 my-2 z-20 overflow-hidden">
-             <!-- TITOLO NEGOZIO & MONETE -->
-                <div class="glass-panel flex items-center justify-between w-full max-w-[450px] px-5 py-2.5 rounded-none border-2 border-yellow-600 shadow-[4px_4px_0px_rgba(202,138,4,0.6)]! shrink-0">
-                    <span class="text-gray-300 font-bold tracking-widest text-[10px] sm:text-xs uppercase">Potenziamenti:</span>
-                    <span class="text-yellow-400 font-black text-xl sm:text-2xl drop-shadow-[0_0_8px_rgba(250,204,21,0.8)] flex items-center gap-2"><i class="fa-solid fa-coins"></i> <span id="shop-coins">0</span></span>
+            <!-- 2. DISPLAY OLOGRAFICO DEI POTERI (5 & 10) -->
+            <div id="shop-inspector" class="w-full px-3.5 py-2.5 flex items-center gap-3 rounded-xl bg-slate-950/85 border-2 border-amber-400/50 shadow-[0_0_20px_rgba(251,191,36,0.2)] shrink-0 min-h-[64px] my-1.5 transition-all duration-200">
+                <div id="shop-insp-icon-wrap" class="w-11 h-11 rounded-full bg-black border-2 border-amber-400 flex items-center justify-center shrink-0 text-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]">
+                    <i id="shop-insp-icon" class="fa-solid fa-wand-magic-sparkles text-base"></i>
                 </div>
-
-<!-- LISTA UPGRADE PATH TREE -->
-<div id="shop-tree-container" class="flex flex-col gap-2 w-full max-w-[450px] px-1 overflow-y-auto custom-scrollbar shrink h-auto max-h-[48vh] sm:max-h-[54vh]">
-    <!-- Popolato dinamicamente da ShopSystem.updateUI() -->
-</div>
+                <div class="flex flex-col min-w-0 flex-1 text-left">
+                    <div class="flex items-center justify-between gap-2">
+                        <span id="shop-insp-title" class="text-xs sm:text-sm font-black uppercase tracking-wider text-amber-300 truncate">Poteri Esclusivi (Grado 5 & 10)</span>
+                        <span id="shop-insp-badge" class="text-[8px] sm:text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-400/50 shrink-0">Tocca un Sigillo</span>
+                    </div>
+                    <p id="shop-insp-desc" class="text-[10px] sm:text-xs text-gray-100 font-bold leading-snug mt-1 m-0">Riempi i condotti di plasma e tocca i medaglioni per scoprire i poteri supremi.</p>
+                </div>
             </div>
 
-            <!-- BOTTONI BASSI (SHOP) -->
-          <div class="w-full max-w-[450px] flex flex-col gap-2 shrink-0 z-20">
-                <button onclick="UIManager.showCollectedRelics()" class="btn-cyber glass-panel box-glow-purple w-full py-3 text-xs sm:text-sm font-bold text-purple-300">
-                    <i class="fa-solid fa-gem mr-2"></i> LE TUE RELIQUIE
-                </button>
-                <div class="w-full mt-1 flex flex-col gap-2">
-                    <button id="btn-next-floor" onclick="nextFloor(window.nextIsCorrupted)" class="w-full transition-all active:scale-95"></button>
-                    <button onclick="goToMainMenu()" class="btn-cyber glass-panel box-glow-gray w-full py-3.5 text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-widest shrink-0">Torna al menu</button>
+            <!-- 3. I 5 REATTORI AL PLASMA (Dal basso verso l'alto) -->
+            <div id="shop-tree-container" class="grid grid-cols-5 gap-1.5 sm:gap-2.5 w-full flex-1 min-h-[265px] max-h-[54vh] my-1 items-stretch select-none">
+                <!-- Costruito e animato da ShopSystem -->
+            </div>
+
+            <!-- 4. BOTTONI AZIONE IN BASSO -->
+            <div class="w-full flex flex-col gap-2 shrink-0 z-20 mt-1">
+                <div class="grid grid-cols-2 gap-2 w-full">
+                    <button onclick="UIManager.showCollectedRelics()" class="btn-cyber glass-panel box-glow-purple w-full py-2.5 text-[10px] sm:text-xs font-bold text-purple-200 border-purple-400/50">
+                        <i class="fa-solid fa-gem text-purple-400"></i> Le Tue Reliquie
+                    </button>
+                    <button onclick="goToMainMenu()" class="btn-cyber glass-panel box-glow-gray w-full py-2.5 text-[10px] sm:text-xs font-bold text-gray-300 uppercase tracking-widest">
+                        <i class="fa-solid fa-bars"></i> Menu
+                    </button>
                 </div>
+                <button id="btn-next-floor" onclick="nextFloor(window.nextIsCorrupted)" class="w-full transition-all active:scale-95"></button>
             </div>
         </div>
     </div>
@@ -18859,32 +19103,44 @@ const Preloader = {
     baseCosts: { hp: 5, dmg: 7, speed: 6, atkSpeed: 7, crit: 7 },
     costs: { hp: 5, dmg: 7, speed: 6, atkSpeed: 7, crit: 7 },
     totalPurchases: 0,
+    inspectedNode: null,
+    _domBuilt: false,
 
     branches: {
         hp: {
-            name: 'Vitalità', icon: 'fa-heart', color: '#22c55e', tailwind: 'green',
-            tier1: { name: 'Barriera d\'Ingresso', desc: 'Inizio piano: +10% Scudo HP e +15% Cure ricevute' },
-            tier2: { name: 'Corazza della Fenice', desc: '-5% danno max/colpo e Rinascita 50% HP (1/piano)' }
+            name: 'Vitalità', short: 'VITA', icon: 'fa-heart',
+            color: '#22c55e', dark: '#15803d', border: 'rgba(34, 197, 94, 0.55)', glow: 'rgba(34, 197, 94, 0.25)',
+            bgTop: 'rgba(20, 83, 45, 0.55)', bgBot: 'rgba(5, 46, 22, 0.85)', btnTop: 'rgba(22, 101, 52, 0.85)', tailwind: 'green',
+            tier1: { name: 'Barriera d\'Ingresso', icon: 'fa-shield-heart', desc: 'Inizi ogni piano con uno Scudo pari al 10% HP Max e ricevi +15% Cure.' },
+            tier2: { name: 'Corazza della Fenice', icon: 'fa-fire-flame-curved', desc: '-5% danno max per colpo. 1 volta a piano rinasci col 50% HP respingendo i nemici.' }
         },
         dmg: {
-            name: 'Danno', icon: 'fa-fire', color: '#ef4444', tailwind: 'red',
-            tier1: { name: 'Impatto Frantumante', desc: '+35% danni a difese/scudi e spinta potenziata' },
-            tier2: { name: 'Dardo Perforante', desc: 'I proiettili base ottengono +1 Perforazione' }
+            name: 'Danno', short: 'DANNO', icon: 'fa-fire',
+            color: '#ef4444', dark: '#b91c1c', border: 'rgba(239, 68, 68, 0.55)', glow: 'rgba(239, 68, 68, 0.25)',
+            bgTop: 'rgba(127, 29, 29, 0.55)', bgBot: 'rgba(69, 10, 10, 0.85)', btnTop: 'rgba(153, 27, 27, 0.85)', tailwind: 'red',
+            tier1: { name: 'Impatto Frantumante', icon: 'fa-hammer', desc: 'Infliggi +35% danni alle difese/scudi nemici e li respingi con più forza.' },
+            tier2: { name: 'Dardo Perforante', icon: 'fa-angles-right', desc: 'I tuoi proiettili base trapassano il primo nemico colpito (+1 Perforazione).' }
         },
         speed: {
-            name: 'Movimento', icon: 'fa-shoe-prints', color: '#3b82f6', tailwind: 'blue',
-            tier1: { name: 'Passo Anfibio', desc: '+1s durata Scudo Cinetico e -50% rallentamento fosse' },
-            tier2: { name: 'Scia Cinetica', desc: 'Scatto: -0.5s CD Scudo e raccoglie loot (+50% raggio)' }
+            name: 'Movimento', short: 'VELOCITÀ', icon: 'fa-shoe-prints',
+            color: '#3b82f6', dark: '#1d4ed8', border: 'rgba(59, 130, 246, 0.55)', glow: 'rgba(59, 130, 246, 0.25)',
+            bgTop: 'rgba(30, 58, 138, 0.55)', bgBot: 'rgba(23, 37, 84, 0.85)', btnTop: 'rgba(29, 78, 216, 0.85)', tailwind: 'blue',
+            tier1: { name: 'Passo Anfibio', icon: 'fa-water', desc: 'Lo Scudo Cinetico dura +1s e dimezzi il rallentamento in acqua e lava.' },
+            tier2: { name: 'Scia Cinetica', icon: 'fa-magnet', desc: 'Ogni Scatto riduce di 0.5s la ricarica Scudo e aspira monete/essenze (+50% raggio).' }
         },
         atkSpeed: {
-            name: 'Ritmo', icon: 'fa-bolt', color: '#f59e0b', tailwind: 'amber',
-            tier1: { name: 'Innesco Rapido', desc: 'Ogni 6 attacchi: +1 Combo extra e +25% vel. colpo' },
-            tier2: { name: 'Doppia Canna', desc: 'Ogni 5 attacchi: 2° colpo parallelo (50% danno)' }
+            name: 'Ritmo', short: 'RITMO', icon: 'fa-bolt',
+            color: '#f59e0b', dark: '#b45309', border: 'rgba(245, 158, 11, 0.55)', glow: 'rgba(245, 158, 11, 0.25)',
+            bgTop: 'rgba(120, 53, 15, 0.55)', bgBot: 'rgba(69, 26, 3, 0.85)', btnTop: 'rgba(180, 83, 9, 0.85)', tailwind: 'amber',
+            tier1: { name: 'Innesco Rapido', icon: 'fa-forward-fast', desc: 'Ogni 6 attacchi ottieni +1 Punto Combo extra e il colpo viaggia +25% più veloce.' },
+            tier2: { name: 'Doppia Canna', icon: 'fa-clone', desc: 'Ogni 5 attacchi spari gratuitamente un secondo dardo parallelo (50% danno).' }
         },
         crit: {
-            name: 'Precisione', icon: 'fa-crosshairs', color: '#a855f7', tailwind: 'purple',
-            tier1: { name: 'Punto Vitale', desc: 'Combo aumenta Danno Critico (+0.5x a 100 Combo)' },
-            tier2: { name: 'Eco Letale', desc: 'I critici esplodono: 30% danno ad area (raggio 65)' }
+            name: 'Precisione', short: 'CRITICO', icon: 'fa-crosshairs',
+            color: '#a855f7', dark: '#7e22ce', border: 'rgba(168, 85, 247, 0.55)', glow: 'rgba(168, 85, 247, 0.25)',
+            bgTop: 'rgba(88, 28, 135, 0.55)', bgBot: 'rgba(59, 7, 100, 0.85)', btnTop: 'rgba(126, 34, 206, 0.85)', tailwind: 'purple',
+            tier1: { name: 'Punto Vitale', icon: 'fa-bolt-lightning', desc: 'La Combo aumenta il moltiplicatore di Danno Critico (fino a +0.50x a 100 Combo).' },
+            tier2: { name: 'Eco Letale', icon: 'fa-burst', desc: 'I colpi critici scatenano un\'esplosione cinetica che infligge il 30% di danno ad area.' }
         }
     },
 
@@ -18908,43 +19164,199 @@ const Preloader = {
 
     applyMasteriesToPlayer(p) {
         if (!p) return;
-        if (this.hasMastery('hp', 1)) {
-            p.modifiers.healDropMult += 0.15;
+        if (this.hasMastery('hp', 1)) p.modifiers.healDropMult += 0.15;
+        if (this.hasMastery('speed', 1)) p.modifiers.shieldDurationAdd += 1.0;
+    },
+
+    inspectMastery(key, tier, evt) {
+        if (evt) evt.stopPropagation();
+        const b = this.branches[key];
+        if (!b) return;
+        const tData = tier === 1 ? b.tier1 : b.tier2;
+        const reqLvl = tier === 1 ? 5 : 10;
+        const currLvl = this.levels[key];
+        const unlocked = currLvl >= reqLvl;
+
+        this.inspectedNode = `${key}_${tier}`;
+        document.querySelectorAll('#shop-tree-container .mastery-orb').forEach(el => {
+            el.classList.toggle('inspected', el.dataset.nodeId === this.inspectedNode);
+        });
+
+        const inspBox = document.getElementById('shop-inspector');
+        const wrap = document.getElementById('shop-insp-icon-wrap');
+        const icon = document.getElementById('shop-insp-icon');
+        const title = document.getElementById('shop-insp-title');
+        const badge = document.getElementById('shop-insp-badge');
+        const desc = document.getElementById('shop-insp-desc');
+        if (!title || !desc) return;
+
+        let accentCol = unlocked ? '#fbbf24' : b.color;
+        if (inspBox) {
+            inspBox.style.borderColor = accentCol;
+            inspBox.style.boxShadow = `0 0 22px ${unlocked ? 'rgba(251,191,36,0.35)' : b.glow}`;
         }
-        if (this.hasMastery('speed', 1)) {
-            p.modifiers.shieldDurationAdd += 1.0;
+        wrap.style.borderColor = accentCol;
+        wrap.style.color = accentCol;
+        wrap.style.boxShadow = `0 0 15px ${accentCol}`;
+        icon.className = `fa-solid ${tData.icon} text-base`;
+
+        title.innerText = `${b.short} • ${tData.name}`;
+        title.style.color = accentCol;
+
+        if (unlocked) {
+            badge.innerText = '★ POTERE ATTIVO';
+            badge.className = 'text-[8px] sm:text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/30 text-amber-200 border border-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.5)] shrink-0';
+        } else {
+            let rem = reqLvl - currLvl;
+            badge.innerText = rem === 1 ? '⚡ SBLOCCA COL PROSSIMO!' : `MANCANO ${rem} TACCHE`;
+            badge.className = rem === 1
+                ? 'text-[8px] sm:text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/25 text-amber-200 border border-amber-400 animate-pulse shrink-0'
+                : 'text-[8px] sm:text-[9px] font-black uppercase px-2 py-0.5 rounded bg-white/10 text-gray-200 border border-white/25 shrink-0';
+        }
+        desc.innerText = tData.desc;
+    },
+
+    // Scintille direzionali (verso l'alto quando riempi la barra, o supernova radiale quando sblocchi un potere)
+    spawnFX(targetEl, colorHex, count = 10, mode = 'upward') {
+        if (AppSettings.isLow || !targetEl) return;
+        const layer = document.getElementById('shop-fx-layer');
+        if (!layer) return;
+        const rect = targetEl.getBoundingClientRect();
+        const cx = rect.left + rect.width * 0.5;
+        const cy = rect.top + rect.height * 0.5;
+
+        if (mode === 'mastery') {
+            const ring = document.createElement('div');
+            ring.className = 'shop-shockwave';
+            ring.style.left = `${cx}px`;
+            ring.style.top = `${cy}px`;
+            ring.style.borderColor = colorHex;
+            layer.appendChild(ring);
+            setTimeout(() => ring.remove(), 560);
+        }
+
+        for (let i = 0; i < count; i++) {
+            const p = document.createElement('div');
+            p.className = 'shop-fx-particle';
+            const size = mode === 'mastery' ? MathUtils.randomRange(6, 11) : MathUtils.randomRange(4, 8);
+            let tx, ty, dur;
+
+            if (mode === 'upward') {
+                // Getto di particelle che risale lungo la colonna
+                tx = MathUtils.randomRange(-22, 22);
+                ty = -MathUtils.randomRange(55, 165);
+                dur = MathUtils.randomRange(0.45, 0.70);
+            } else {
+                // Esplosione radiale a supernova per i Medaglioni 5 e 10
+                const angle = (Math.PI * 2 / count) * i + MathUtils.randomRange(-0.2, 0.2);
+                const dist = MathUtils.randomRange(45, 115);
+                tx = Math.cos(angle) * dist;
+                ty = Math.sin(angle) * dist - 15;
+                dur = MathUtils.randomRange(0.55, 0.85);
+            }
+
+            p.style.width = `${size}px`;
+            p.style.height = `${size}px`;
+            p.style.left = `${cx - size * 0.5}px`;
+            p.style.top = `${cy - size * 0.5}px`;
+            p.style.background = i % 3 === 0 ? '#ffffff' : (i % 3 === 1 ? colorHex : '#fde047');
+            p.style.boxShadow = `0 0 12px ${colorHex}`;
+            p.style.setProperty('--tx', `${tx}px`);
+            p.style.setProperty('--ty', `${ty}px`);
+            p.style.setProperty('--dur', `${dur}s`);
+            layer.appendChild(p);
+            setTimeout(() => p.remove(), dur * 1000 + 50);
         }
     },
 
-    getStatPreview(type) {
-        let p = Game.player;
-        if (type === 'hp') {
-            let curr = p ? p.stats.maxHp : 100;
-            let rawGain = this.getHpGainForCurrentFloor();
-            let effGain = (p && p.modifiers.bloodthirst) ? Math.floor(rawGain * 0.85) : rawGain;
-            return { curr: curr, next: curr + effGain };
-        }
-        if (type === 'dmg') {
-            let curr = p ? p.modifiers.dmgMult : 1.0;
-            return { curr: curr.toFixed(2) + 'x', next: (curr + 0.10).toFixed(2) + 'x' };
-        }
-        if (type === 'speed') {
-            let curr = p ? p.modifiers.speedMult : 1.0;
-            return { curr: curr.toFixed(2) + 'x', next: (curr + 0.04).toFixed(2) + 'x' };
-        }
-        if (type === 'atkSpeed') {
-            let curr = p ? (1.0 + p.modifiers.bonusAtkSpeed) : 1.0;
-            return { curr: curr.toFixed(2) + 'x', next: (curr + 0.05).toFixed(2) + 'x' };
-        }
-        if (type === 'crit') {
-            let totalCrit = p ? (p.modifiers.critChance + p.modifiers.bonusCritChance) : 0.10;
-            if (totalCrit >= 0.75 && p) {
-                let cdm = p.modifiers.critDmgMult;
-                return { curr: cdm.toFixed(2) + 'x', next: (cdm + 0.12).toFixed(2) + 'x' };
+    buildDOM(container) {
+        let html = '';
+        const keys = ['hp', 'dmg', 'speed', 'atkSpeed', 'crit'];
+
+        keys.forEach((key) => {
+            const b = this.branches[key];
+
+            // 10 tacche luminose di riferimento (dall'alto 10 al basso 1)
+            let stepsHtml = '';
+            for (let step = 10; step >= 1; step--) {
+                stepsHtml += `<div id="step-${key}-${step}" class="chamber-step"></div>`;
             }
-            let curr = Math.round(totalCrit * 100);
-            return { curr: curr + '%', next: Math.min(75, curr + 5) + '%' };
-        }
+
+            // 6 bolle di plasma ascendenti continue dentro il liquido
+            let bubblesHtml = '';
+            const bubbleLefts = [18, 42, 68, 28, 56, 78];
+            const bubbleDurs = [1.5, 2.1, 1.7, 2.4, 1.9, 1.6];
+            const bubbleDelays = [0.0, 0.4, 0.9, 0.2, 1.1, 0.6];
+            for (let i = 0; i < 6; i++) {
+                let sz = (i % 2 === 0) ? 5 : 4;
+                bubblesHtml += `<span class="plasma-bubble" style="left:${bubbleLefts[i]}%; width:${sz}px; height:${sz}px; --dur:${bubbleDurs[i]}s; --dly:${bubbleDelays[i]}s;"></span>`;
+            }
+
+            html += `
+                <div id="totem-col-${key}" class="totem-pillar flex flex-col items-center justify-between p-1.5 sm:p-2 relative select-none overflow-visible"
+                     style="--c-main:${b.color}; --c-dark:${b.dark}; --c-border:${b.border}; --c-glow:${b.glow}; --c-bg-top:${b.bgTop}; --c-bg-bot:${b.bgBot}; --c-btn-top:${b.btnTop};">
+                    
+                    <!-- Fascio Laser di Ascensione allo sblocco Maestria -->
+                    <div id="beam-${key}" class="mastery-beam rounded-xl"></div>
+
+                    <!-- 1. MEDAGLIONE CIMA (GRADO 10) -->
+                    <div class="relative flex flex-col items-center z-20 -mb-2.5">
+                        <div id="node-${key}-2" data-node-id="${key}_2"
+                             onmouseenter="AudioEngine.playHover(); ShopSystem.inspectMastery('${key}', 2, event)"
+                             ontouchstart="AudioEngine.playHover(); ShopSystem.inspectMastery('${key}', 2, event)"
+                             onclick="ShopSystem.inspectMastery('${key}', 2, event)"
+                             class="mastery-orb w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center relative">
+                            <i class="fa-solid ${b.tier2.icon} text-sm sm:text-base pointer-events-none"></i>
+                        </div>
+                        <span id="over-${key}" class="hidden absolute -top-1.5 -right-2 bg-amber-400 text-black font-black text-[8px] px-1.5 rounded-full border border-white shadow"></span>
+                    </div>
+
+                    <!-- 2. CONDOTTO AL PLASMA CON LIQUIDO VIVO, BOLLE E MEDAGLIONE CENTRALE (GRADO 5) -->
+                    <div id="chamber-${key}" class="pillar-chamber w-full flex-1 flex flex-col justify-end my-1 relative overflow-hidden">
+                        
+                        <!-- Liquido continuo che sale con bolle di plasma -->
+                        <div id="plasma-fill-${key}" class="plasma-fill w-full h-0 relative overflow-hidden">
+                            ${bubblesHtml}
+                        </div>
+
+                        <!-- Onda d'impulso verticale a ogni acquisto -->
+                        <div id="surge-${key}" class="surge-wave"></div>
+
+                        <!-- Griglia delle 10 tacche sovrapposta -->
+                        <div class="absolute inset-0 flex flex-col justify-between pointer-events-none z-10">
+                            ${stepsHtml}
+                        </div>
+
+                        <!-- MEDAGLIONE META' BARRA (GRADO 5) -->
+                        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+                            <div id="node-${key}-1" data-node-id="${key}_1"
+                                 onmouseenter="AudioEngine.playHover(); ShopSystem.inspectMastery('${key}', 1, event)"
+                                 ontouchstart="AudioEngine.playHover(); ShopSystem.inspectMastery('${key}', 1, event)"
+                                 onclick="ShopSystem.inspectMastery('${key}', 1, event)"
+                                 class="mastery-orb w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center relative">
+                                <i class="fa-solid ${b.tier1.icon} text-xs sm:text-sm pointer-events-none"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. ETICHETTA RAMO LUMINOSA -->
+                    <div class="flex items-center justify-center gap-1 my-1">
+                        <i class="fa-solid ${b.icon} text-[10px] sm:text-xs" style="color:${b.color}; filter:drop-shadow(0 0 5px ${b.color});"></i>
+                        <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-white">${b.short}</span>
+                    </div>
+
+                    <!-- 4. PULSANTE COMPRA CON PREZZO GIGANTE -->
+                    <button id="totem-btn-${key}" onclick="ShopSystem.buy('${key}')"
+                            class="pillar-buy-btn can-afford w-full py-2.5 px-1 flex items-center justify-center gap-1.5">
+                        <i id="totem-coin-icon-${key}" class="fa-solid fa-coins text-yellow-300 text-xs sm:text-sm drop-shadow-[0_0_6px_rgba(250,204,21,0.8)]"></i>
+                        <span id="totem-cost-${key}" class="font-display font-black text-sm sm:text-base text-yellow-200 leading-none">5</span>
+                    </button>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        this._domBuilt = true;
     },
 
     updateUI() {
@@ -18955,90 +19367,84 @@ const Preloader = {
         const container = document.getElementById('shop-tree-container');
         if (!container) return;
 
+        if (!this._domBuilt || container.children.length === 0) {
+            this.buildDOM(container);
+        }
+
         this.recalculateCosts();
-        let html = '';
         const keys = ['hp', 'dmg', 'speed', 'atkSpeed', 'crit'];
 
         keys.forEach((key) => {
-            const b = this.branches[key];
             const lvl = this.levels[key];
             const cost = this.costs[key];
             const canAfford = Game.coins >= cost;
-            const prev = this.getStatPreview(key);
-
-            const inTier1 = lvl < 5;
-            const targetMilestone = inTier1 ? 5 : 10;
-            const activeTier = inTier1 ? b.tier1 : b.tier2;
-            const progressInTier = inTier1 ? lvl : Math.min(5, lvl - 5);
             const isOneStepAway = (lvl === 4 || lvl === 9);
-            const isMaxMastery = lvl >= 10;
 
-            let nodesHtml = '';
-            for (let n = 1; n <= 4; n++) {
-                let filled = progressInTier >= n || isMaxMastery;
-                nodesHtml += `
-                    <div class="path-node ${filled ? 'active' : ''}" style="color: ${b.color}"></div>
-                    <div class="w-1.5 h-[2px] ${filled ? 'bg-white/60' : 'bg-white/10'}"></div>
-                `;
+            const colEl = document.getElementById(`totem-col-${key}`);
+            if (colEl) {
+                colEl.classList.toggle('almost-mastery', isOneStepAway);
+                colEl.classList.toggle('mastery-maxed', lvl >= 10);
             }
 
-            let milestoneLabel = isMaxMastery ? '★ MAX' : `★ LV.${targetMilestone}`;
-            let milestoneClass = isMaxMastery ? 'unlocked' : (isOneStepAway ? 'border-amber-400 text-amber-300 animate-pulse' : 'text-gray-400');
-            nodesHtml += `<div class="path-milestone ${milestoneClass}">${milestoneLabel}</div>`;
-
-            let masteryText = '';
-            if (isMaxMastery) {
-                masteryText = `<span class="text-amber-400 font-black">MAESTRIA II ATTIVA:</span> <span class="text-gray-200">${b.tier2.name}</span>`;
-            } else if (isOneStepAway) {
-                masteryText = `<span class="text-amber-300 font-black">PROSSIMO GRADO:</span> <span class="text-white">${activeTier.desc}</span>`;
-            } else {
-                masteryText = `<span class="text-gray-400">Lv.${targetMilestone}: ${activeTier.desc}</span>`;
+            // 1. Altezza fluida del plasma vivo (0% -> 50% al Grado 5 -> 100% al Grado 10)
+            const fillEl = document.getElementById(`plasma-fill-${key}`);
+            if (fillEl) {
+                const pct = Math.min(100, (lvl / 10) * 100);
+                fillEl.style.height = `${pct}%`;
             }
 
-            html += `
-                <button onclick="ShopSystem.buy('${key}')" class="shop-btn ${key} ${isOneStepAway ? 'almost-mastery' : ''} relative w-full p-2.5 flex flex-col gap-1.5 overflow-hidden shrink-0 text-left">
-                    <div class="w-full flex items-center justify-between">
-                        <div class="flex items-center gap-2.5 w-[38%]">
-                            <div class="w-8 h-8 bg-${b.tailwind}-900/50 flex items-center justify-center border border-${b.tailwind}-500/40 shrink-0">
-                                <i class="fa-solid ${b.icon} text-${b.tailwind}-400 text-sm"></i>
-                            </div>
-                            <div class="flex flex-col">
-                                <span class="text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wider leading-none">${b.name}</span>
-                                <span class="text-[9px] font-bold text-gray-400 mt-0.5">Grado ${lvl} ${lvl >= 5 ? '★' : ''}${lvl >= 10 ? '★' : ''}</span>
-                            </div>
-                        </div>
+            // 2. Illuminazione delle singole tacche raggiunte
+            for (let step = 1; step <= 10; step++) {
+                const stepEl = document.getElementById(`step-${key}-${step}`);
+                if (stepEl) stepEl.classList.toggle('lit', lvl >= step);
+            }
 
-                        <div class="flex items-center justify-center gap-1.5 w-[34%] bg-black/50 py-1 px-2 border border-gray-800">
-                            <span class="text-gray-400 font-bold text-[9px] sm:text-[11px]">${prev.curr}</span>
-                            <i class="fa-solid fa-chevron-right text-${b.tailwind}-400 text-[8px]"></i>
-                            <span class="text-${b.tailwind}-300 font-black text-[10px] sm:text-xs">${prev.next}</span>
-                        </div>
+            // 3. Medaglioni Grado 5 e Grado 10
+            const node1 = document.getElementById(`node-${key}-1`);
+            if (node1) {
+                node1.classList.toggle('unlocked', lvl >= 5);
+                node1.classList.toggle('ready-next', lvl === 4);
+            }
+            const node2 = document.getElementById(`node-${key}-2`);
+            if (node2) {
+                node2.classList.toggle('unlocked', lvl >= 10);
+                node2.classList.toggle('ready-next', lvl === 9);
+            }
 
-                        <div class="flex justify-end w-[24%]">
-                            <div class="bg-black/70 ${canAfford ? 'text-yellow-400 border-yellow-500/50' : 'text-gray-500 border-gray-800'} border px-2.5 py-1 text-[10px] sm:text-xs font-black flex items-center justify-center gap-1.5 min-w-[54px]">
-                                <i class="fa-solid fa-coins"></i> <span>${cost}</span>
-                            </div>
-                        </div>
-                    </div>
+            // 4. Badge Overdrive oltre il Grado 10
+            const overEl = document.getElementById(`over-${key}`);
+            if (overEl) {
+                if (lvl > 10) {
+                    overEl.innerText = `+${lvl - 10}`;
+                    overEl.classList.remove('hidden');
+                } else {
+                    overEl.classList.add('hidden');
+                }
+            }
 
-                    <div class="w-full flex items-center justify-between gap-2 pt-1 border-t border-white/10">
-                        <div class="flex items-center shrink-0">
-                            ${nodesHtml}
-                        </div>
-                        <div class="text-[8.5px] sm:text-[9.5px] font-bold truncate text-right flex-1">
-                            ${masteryText}
-                        </div>
-                    </div>
-                </button>
-            `;
+            // 5. Pulsante Prezzo
+            const btnEl = document.getElementById(`totem-btn-${key}`);
+            const costEl = document.getElementById(`totem-cost-${key}`);
+            const coinIcon = document.getElementById(`totem-coin-icon-${key}`);
+            if (costEl) costEl.innerText = cost;
+            if (btnEl && costEl && coinIcon) {
+                btnEl.classList.toggle('can-afford', canAfford);
+                btnEl.classList.toggle('locked', !canAfford);
+                costEl.className = `font-display font-black text-sm sm:text-base leading-none ${canAfford ? 'text-yellow-200' : 'text-gray-500'}`;
+                coinIcon.className = `fa-solid fa-coins text-xs sm:text-sm ${canAfford ? 'text-yellow-300 drop-shadow-[0_0_6px_rgba(250,204,21,0.8)]' : 'text-gray-600'}`;
+            }
         });
-
-        container.innerHTML = html;
     },
 
     buy(type) {
         this.recalculateCosts();
         let cost = this.costs[type];
+        const colEl = document.getElementById(`totem-col-${type}`);
+        const btnEl = document.getElementById(`totem-btn-${type}`);
+        const surgeEl = document.getElementById(`surge-${type}`);
+        const beamEl = document.getElementById(`beam-${type}`);
+        const chamberEl = document.getElementById(`chamber-${type}`);
+
         if (Game.coins >= cost) {
             Game.coins -= cost;
             this.levels[type]++;
@@ -19047,13 +19453,6 @@ const Preloader = {
 
             if (!unlockedMastery) {
                 this.totalPurchases++;
-            }
-
-            if (unlockedMastery) {
-                AudioEngine.playLevelUp();
-                Haptics.vibrate([30, 20, 50]);
-            } else {
-                AudioEngine.playCoin();
             }
 
             let p = Game.player;
@@ -19091,19 +19490,57 @@ const Preloader = {
             }
 
             this.updateUI();
+
+            // Mostra nel Display il potere appena sbloccato o il prossimo traguardo del ramo
+            let inspectTier = newLvl <= 5 ? 1 : 2;
+            this.inspectMastery(type, inspectTier);
+
+            const bColor = this.branches[type].color;
+
+            // Impulso luminoso che risale il tubo a ogni acquisto
+            if (surgeEl) {
+                surgeEl.classList.remove('active');
+                void surgeEl.offsetWidth;
+                surgeEl.classList.add('active');
+            }
+            if (colEl) {
+                colEl.classList.remove('anim-totem-pop');
+                void colEl.offsetWidth;
+                colEl.classList.add('anim-totem-pop');
+            }
+
+            if (unlockedMastery) {
+                // ESPLOSIONE ADRENALINICA SBLOCCO GRADO 5 O GRADO 10
+                AudioEngine.playLevelUp();
+                AudioEngine.playShoot('chain_lightning');
+                Haptics.vibrate([40, 25, 80]);
+
+                if (beamEl) {
+                    beamEl.classList.remove('active');
+                    void beamEl.offsetWidth;
+                    beamEl.classList.add('active');
+                }
+                const wrapEl = document.getElementById('shop-main-wrap');
+                if (wrapEl && AppSettings.screenShake) {
+                    wrapEl.classList.remove('anim-shop-jolt');
+                    void wrapEl.offsetWidth;
+                    wrapEl.classList.add('anim-shop-jolt');
+                }
+                const nodeEl = document.getElementById(`node-${type}-${newLvl === 5 ? 1 : 2}`);
+                this.spawnFX(nodeEl || btnEl, bColor, 26, 'mastery');
+            } else {
+                // GETTO ENERGETICO ASCENDENTE LUNGO LA COLONNA
+                AudioEngine.playCoin();
+                AudioEngine.playCollect();
+                Haptics.vibrate(15);
+                this.spawnFX(btnEl, bColor, 12, 'upward');
+                if (chamberEl) this.spawnFX(chamberEl, bColor, 6, 'upward');
+            }
         } else {
             AudioEngine.playClick();
-            let btn = document.querySelector(`button[onclick="ShopSystem.buy('${type}')"]`);
-            if (btn) {
-                let textSpans = btn.querySelectorAll('span.text-white');
-                textSpans.forEach(span => {
-                    span.classList.remove('text-white');
-                    span.classList.add('text-red-500');
-                    setTimeout(() => {
-                        span.classList.remove('text-red-500');
-                        span.classList.add('text-white');
-                    }, 150);
-                });
+            if (btnEl) {
+                btnEl.style.borderColor = '#ef4444';
+                setTimeout(() => { btnEl.style.borderColor = ''; }, 180);
             }
         }
     },
@@ -19112,7 +19549,9 @@ const Preloader = {
         this.bonus = { hp: 0, dmg: 0, speed: 0, atkSpeed: 0, crit: 0, critDmg: 0 };
         this.levels = { hp: 0, dmg: 0, speed: 0, atkSpeed: 0, crit: 0 };
         this.totalPurchases = 0;
+        this.inspectedNode = null;
         this.recalculateCosts();
+        if (this._domBuilt) this.updateUI();
     }
 };
 
