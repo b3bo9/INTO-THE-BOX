@@ -137,6 +137,30 @@
         .shop-btn.atk:hover { border-color: #f59e0b; }
         .shop-btn.crit:hover { border-color: #a855f7; }
 
+        /* --- PATH TREE NEGOZIO --- */
+        .shop-btn .path-node {
+            width: 12px; height: 6px; border-radius: 2px !important;
+            background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        .shop-btn .path-node.active {
+            background: currentColor; border-color: #ffffff;
+            box-shadow: 0 0 8px currentColor !important;
+        }
+        .shop-btn .path-milestone {
+            padding: 1px 5px; border-radius: 4px !important; font-size: 8px; font-weight: 900;
+            border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(0, 0, 0, 0.6);
+            transition: all 0.2s ease;
+        }
+        .shop-btn .path-milestone.unlocked {
+            background: rgba(251, 191, 36, 0.2); border-color: #fbbf24; color: #fbbf24;
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.4) !important;
+        }
+        .shop-btn.almost-mastery {
+            border-color: rgba(251, 191, 36, 0.85) !important;
+            box-shadow: 0 0 14px rgba(251, 191, 36, 0.25), inset 0 0 10px rgba(251, 191, 36, 0.12) !important;
+        }
+
         /* Bagliori Morbidi al passaggio/tocco (Senza ombre flat) */
         .box-glow-red:hover { border-color: #FF1838 !important; box-shadow: 0 0 16px rgba(255, 24, 56, 0.4) !important; color: #FF1838 !important; }
         .box-glow-blue:hover { border-color: #00DDFF !important; box-shadow: 0 0 16px rgba(0, 221, 255, 0.4) !important; color: #00DDFF !important; }
@@ -801,94 +825,10 @@ body.colorblind-mode #opt-colorblind-text {
                     <span class="text-yellow-400 font-black text-xl sm:text-2xl drop-shadow-[0_0_8px_rgba(250,204,21,0.8)] flex items-center gap-2"><i class="fa-solid fa-coins"></i> <span id="shop-coins">0</span></span>
                 </div>
 
-<!-- LISTA UPGRADE -->
-               <div class="flex flex-col gap-2 w-full max-w-[450px] px-1 overflow-y-auto custom-scrollbar shrink h-auto max-h-[45vh] sm:max-h-[50vh]">
-                    
-                    <button onclick="ShopSystem.buy('hp')" class="stagger-enter shop-btn hp relative w-full p-2 sm:p-2.5 flex items-center justify-between overflow-hidden shrink-0" style="animation-delay: 0.1s;">
-                        <div class="flex items-center gap-3 w-[35%]">
-                            <div class="w-8 h-8 bg-green-900/50 flex items-center justify-center border border-green-500/30 shrink-0"><i class="fa-solid fa-heart text-green-400 text-sm"></i></div>
-                            <span class="text-white font-bold text-[10px] sm:text-[11px] uppercase tracking-widest text-left leading-tight">Vitalità</span>
-                        </div>
-                        <div class="flex items-center justify-center gap-1.5 w-[35%] bg-black/40 py-1.5 border border-gray-800">
-                            <span id="shop-hp-curr" class="text-gray-400 font-bold text-[9px] sm:text-[11px]">100</span>
-                            <i class="fa-solid fa-chevron-right text-green-400 text-[8px]"></i>
-                            <span id="shop-hp-next" class="text-green-300 font-black text-[10px] sm:text-xs">115</span>
-                        </div>
-                        <div class="flex justify-end w-[25%] pr-1">
-                            <div class="bg-black/50 text-yellow-400 border border-yellow-500/40 px-2 py-1 text-[10px] sm:text-xs font-black flex items-center justify-center gap-1.5 min-w-[50px]">
-                                <i class="fa-solid fa-coins"></i> <span id="shop-cost-hp">4</span>
-                            </div>
-                        </div>
-                    </button>
-
-                    <button onclick="ShopSystem.buy('dmg')" class="stagger-enter shop-btn dmg relative w-full p-2 sm:p-2.5 flex items-center justify-between overflow-hidden shrink-0" style="animation-delay: 0.2s;">
-                        <div class="flex items-center gap-3 w-[35%]">
-                            <div class="w-8 h-8 bg-red-900/50 flex items-center justify-center border border-red-500/30 shrink-0"><i class="fa-solid fa-fire text-red-500 text-sm"></i></div>
-                            <span class="text-white font-bold text-[10px] sm:text-[11px] uppercase tracking-widest text-left leading-tight">Danno</span>
-                        </div>
-                        <div class="flex items-center justify-center gap-1.5 w-[35%] bg-black/40 py-1.5 border border-gray-800">
-                            <span id="shop-dmg-curr" class="text-gray-400 font-bold text-[9px] sm:text-[11px]">1.0x</span>
-                            <i class="fa-solid fa-chevron-right text-red-500 text-[8px]"></i>
-                            <span id="shop-dmg-next" class="text-red-300 font-black text-[10px] sm:text-xs">1.1x</span>
-                        </div>
-                        <div class="flex justify-end w-[25%] pr-1">
-                            <div class="bg-black/50 text-yellow-400 border border-yellow-500/40 px-2 py-1 text-[10px] sm:text-xs font-black flex items-center justify-center gap-1.5 min-w-[50px]">
-                                <i class="fa-solid fa-coins"></i> <span id="shop-cost-dmg">6</span>
-                            </div>
-                        </div>
-                    </button>
-
-                    <button onclick="ShopSystem.buy('speed')" class="stagger-enter shop-btn spd relative w-full p-2 sm:p-2.5 flex items-center justify-between overflow-hidden shrink-0" style="animation-delay: 0.3s;">
-                        <div class="flex items-center gap-3 w-[35%]">
-                            <div class="w-8 h-8 bg-blue-900/50 flex items-center justify-center border border-blue-500/30 shrink-0"><i class="fa-solid fa-shoe-prints text-blue-400 text-sm"></i></div>
-                            <span class="text-white font-bold text-[10px] sm:text-[11px] uppercase tracking-widest text-left leading-tight">Movimento</span>
-                        </div>
-                        <div class="flex items-center justify-center gap-1.5 w-[35%] bg-black/40 py-1.5 border border-gray-800">
-                            <span id="shop-spd-curr" class="text-gray-400 font-bold text-[9px] sm:text-[11px]">1.00x</span>
-                            <i class="fa-solid fa-chevron-right text-blue-400 text-[8px]"></i>
-                            <span id="shop-spd-next" class="text-blue-300 font-black text-[10px] sm:text-xs">1.03x</span>
-                        </div>
-                        <div class="flex justify-end w-[25%] pr-1">
-                            <div class="bg-black/50 text-yellow-400 border border-yellow-500/40 px-2 py-1 text-[10px] sm:text-xs font-black flex items-center justify-center gap-1.5 min-w-[50px]">
-                                <i class="fa-solid fa-coins"></i> <span id="shop-cost-spd">5</span>
-                            </div>
-                        </div>
-                    </button>
-
-                    <button onclick="ShopSystem.buy('atkSpeed')" class="stagger-enter shop-btn atk relative w-full p-2 sm:p-2.5 flex items-center justify-between overflow-hidden shrink-0" style="animation-delay: 0.4s;">
-                        <div class="flex items-center gap-3 w-[35%]">
-                            <div class="w-8 h-8 bg-amber-900/50 flex items-center justify-center border border-amber-500/30 shrink-0"><i class="fa-solid fa-bolt text-amber-500 text-sm"></i></div>
-                            <span class="text-white font-bold text-[10px] sm:text-[11px] uppercase tracking-widest text-left leading-tight">Ritmo</span>
-                        </div>
-                        <div class="flex items-center justify-center gap-1.5 w-[35%] bg-black/40 py-1.5 border border-gray-800">
-                            <span id="shop-atk-curr" class="text-gray-400 font-bold text-[9px] sm:text-[11px]">1.00x</span>
-                            <i class="fa-solid fa-chevron-right text-amber-500 text-[8px]"></i>
-                            <span id="shop-atk-next" class="text-amber-300 font-black text-[10px] sm:text-xs">1.03x</span>
-                        </div>
-                        <div class="flex justify-end w-[25%] pr-1">
-                            <div class="bg-black/50 text-yellow-400 border border-yellow-500/40 px-2 py-1 text-[10px] sm:text-xs font-black flex items-center justify-center gap-1.5 min-w-[50px]">
-                                <i class="fa-solid fa-coins"></i> <span id="shop-cost-atk">6</span>
-                            </div>
-                        </div>
-                    </button>
-
-                    <button onclick="ShopSystem.buy('crit')" class="stagger-enter shop-btn crit relative w-full p-2 sm:p-2.5 flex items-center justify-between overflow-hidden shrink-0" style="animation-delay: 0.5s;">
-                        <div class="flex items-center gap-3 w-[35%]">
-                            <div class="w-8 h-8 bg-purple-900/50 flex items-center justify-center border border-purple-500/30 shrink-0"><i class="fa-solid fa-crosshairs text-purple-500 text-sm"></i></div>
-                            <span class="text-white font-bold text-[10px] sm:text-[11px] uppercase tracking-widest text-left leading-tight">Precisione</span>
-                        </div>
-                        <div class="flex items-center justify-center gap-1.5 w-[35%] bg-black/40 py-1.5 border border-gray-800">
-                            <span id="shop-crit-curr" class="text-gray-400 font-bold text-[9px] sm:text-[11px]">10%</span>
-                            <i class="fa-solid fa-chevron-right text-purple-500 text-[8px]"></i>
-                            <span id="shop-crit-next" class="text-purple-300 font-black text-[10px] sm:text-xs">15%</span>
-                        </div>
-                        <div class="flex justify-end w-[25%] pr-1">
-                            <div class="bg-black/50 text-yellow-400 border border-yellow-500/40 px-2 py-1 text-[10px] sm:text-xs font-black flex items-center justify-center gap-1.5 min-w-[50px]">
-                                <i class="fa-solid fa-coins"></i> <span id="shop-cost-crit">7</span>
-                            </div>
-                        </div>
-                    </button>
-                </div>
+<!-- LISTA UPGRADE PATH TREE -->
+<div id="shop-tree-container" class="flex flex-col gap-2 w-full max-w-[450px] px-1 overflow-y-auto custom-scrollbar shrink h-auto max-h-[48vh] sm:max-h-[54vh]">
+    <!-- Popolato dinamicamente da ShopSystem.updateUI() -->
+</div>
             </div>
 
             <!-- BOTTONI BASSI (SHOP) -->
@@ -2137,6 +2077,20 @@ playCoin() {
         gain.gain.setValueAtTime(0.3, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
         osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.15);
         this.playNoise(0.15, 'high');
+    },
+    playShieldDown() {
+        if (!this.ctx || this.ctx.state === 'suspended' || this.sfxMuted) return;
+        let t = this.ctx.currentTime;
+        let dest = this.masterCompressor || this.ctx.destination;
+        let osc = this.ctx.createOscillator();
+        let gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(520, t);
+        osc.frequency.exponentialRampToValueAtTime(95, t + 0.22);
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.005, t + 0.22);
+        osc.connect(gain); gain.connect(dest);
+        osc.start(t); osc.stop(t + 0.23);
     },
     playUltimate() {
         if (!this.ctx || this.ctx.state === 'suspended' || this.sfxMuted) return;
@@ -5882,26 +5836,29 @@ const UI = {
             }
         }
         
-        // Update Scudo Attivo (Mostra lo stato disabilitato solo per lo scudo manuale, mai se è attivo l'Egidio gratuito fuori CD)
+       // Update Scudo Attivo: Illuminato di Ciano mentre è in uso, lampeggia in Rosso nell'ultimo secondo (< 1.0s)
         if (Game.player.activeShieldTimer > 0 && !Game.player.autoShieldActive) {
-            if (this.cache.shieldActive !== true) {
+            let isExpiring = Game.player.activeShieldTimer < 1.0;
+            let stateKey = isExpiring ? 'expiring' : 'active';
+            if (this.cache.shieldActive !== stateKey) {
                 if (this.els.btnShield) {
-                    // UX REWORK: Mette il bottone in grigio trasparente per indicare che non è cliccabile
-                    this.els.btnShield.classList.add('border-gray-600', 'opacity-50', 'grayscale');
-                    this.els.btnShield.classList.remove('border-cyan-400', 'opacity-100', 'shadow-[0_0_20px_rgba(34,211,238,0.7)]', 'opacity-75', 'shadow-[0_0_15px_rgba(0,0,0,0.8)]');
-                    if (this.els.btnShieldFill) {
-                        this.els.btnShieldFill.className = "absolute bottom-0 left-0 w-full bg-cyan-900/50 transition-all duration-100 pointer-events-none";
+                    this.els.btnShield.classList.remove('border-gray-600', 'opacity-50', 'opacity-75', 'grayscale', 'border-cyan-400', 'border-red-500', 'animate-pulse', 'shadow-[0_0_20px_rgba(34,211,238,0.7)]', 'shadow-[0_0_15px_rgba(0,0,0,0.8)]');
+                    if (isExpiring) {
+                        this.els.btnShield.classList.add('border-red-500', 'opacity-100', 'animate-pulse', 'shadow-[0_0_25px_rgba(239,68,68,0.9)]');
+                        if (this.els.btnShieldFill) this.els.btnShieldFill.className = "absolute bottom-0 left-0 w-full bg-red-500/60 transition-all duration-75 pointer-events-none";
+                    } else {
+                        this.els.btnShield.classList.add('border-cyan-400', 'opacity-100', 'shadow-[0_0_25px_rgba(34,211,238,0.9)]');
+                        if (this.els.btnShieldFill) this.els.btnShieldFill.className = "absolute bottom-0 left-0 w-full bg-cyan-400/60 transition-all duration-100 pointer-events-none";
                     }
                 }
-                this.cache.shieldActive = true;
-                this.cache.shieldReady = null; // FIX CRITICO: Azzera la cache per forzare la ricolorazione quando finisce!
+                this.cache.shieldActive = stateKey;
+                this.cache.shieldReady = null;
             }
-            // UX REWORK: Anima lo svuotamento della barra mentre lo scudo è in uso
             if (this.els.btnShieldFill) {
                 let shieldMaxDur = 3.0 + Game.player.modifiers.shieldDurationAdd;
                 let activePct = Math.round((Game.player.activeShieldTimer / shieldMaxDur) * 100);
                 this.els.btnShieldFill.style.height = `${activePct}%`;
-                this.cache.shieldPct = activePct; // Aggiorna la cache per forzare il ritorno al 100% a fine scudo
+                this.cache.shieldPct = activePct;
             }
         } else {
             this.cache.shieldActive = false;
@@ -5918,13 +5875,13 @@ const UI = {
                     if (this.cache.shieldReady !== true) {
                         if (this.els.btnShieldFill) this.els.btnShieldFill.className = "absolute bottom-0 left-0 w-full bg-cyan-500/50 transition-all duration-100 pointer-events-none";
                         this.els.btnShield.classList.add('border-cyan-400', 'opacity-100', 'shadow-[0_0_20px_rgba(34,211,238,0.7)]');
-                        this.els.btnShield.classList.remove('border-gray-600', 'opacity-75', 'shadow-[0_0_15px_rgba(0,0,0,0.8)]', 'opacity-50', 'grayscale');
+                        this.els.btnShield.classList.remove('border-gray-600', 'opacity-75', 'shadow-[0_0_15px_rgba(0,0,0,0.8)]', 'opacity-50', 'grayscale','border-red-500', 'animate-pulse', 'shadow-[0_0_25px_rgba(239,68,68,0.9)]', 'shadow-[0_0_25px_rgba(34,211,238,0.9)]' );
                         this.cache.shieldReady = true;
                     }
                 } else {
                     if (this.cache.shieldReady !== false) {
                         if (this.els.btnShieldFill) this.els.btnShieldFill.className = "absolute bottom-0 left-0 w-full bg-cyan-500/50 transition-all duration-100 pointer-events-none";
-                        this.els.btnShield.classList.remove('border-cyan-400', 'opacity-100', 'shadow-[0_0_20px_rgba(34,211,238,0.7)]', 'opacity-50', 'grayscale');
+                        this.els.btnShield.classList.remove('border-cyan-400', 'opacity-100', 'shadow-[0_0_20px_rgba(34,211,238,0.7)]', 'opacity-50', 'grayscale', 'border-red-500', 'animate-pulse', 'shadow-[0_0_25px_rgba(239,68,68,0.9)]', 'shadow-[0_0_25px_rgba(34,211,238,0.9)]');
                         this.els.btnShield.classList.add('border-gray-600', 'opacity-75', 'shadow-[0_0_15px_rgba(0,0,0,0.8)]');
                         this.cache.shieldReady = false;
                     }
@@ -6551,7 +6508,9 @@ pushDebris(px, pz, radius, force) {
     },
 
  getHealScale() {
-        return this.floor <= 10 ? 1.0 : Math.max(0.55, 1.0 - (this.floor - 10) * 0.04);
+        let baseScale = this.floor <= 10 ? 1.0 : Math.max(0.55, 1.0 - (this.floor - 10) * 0.04);
+        let masteryBonus = (this.player && typeof ShopSystem !== 'undefined' && ShopSystem.hasMastery('hp', 1)) ? 1.15 : 1.0;
+        return baseScale * masteryBonus;
     },
     addCombo(amount = 1) { 
         let oldCombo = this.combo;
@@ -7140,6 +7099,7 @@ loop(timestamp) {
                     let pChildren = this.player.mesh.children;
                     for (let c = 0; c < pChildren.length; c++) pChildren[c].visible = true;
                     if (this.player.shieldMesh) this.player.shieldMesh.visible = false;
+                    if (this.player.shieldFloorRing) this.player.shieldFloorRing.visible = false;
                     if (this.player.glacialShieldMesh) this.player.glacialShieldMesh.visible = false;
                     if (this.player.overheadCrystal) {
                         this.player.overheadCrystal.visible = false;
@@ -7560,6 +7520,13 @@ loop(timestamp) {
             this.player.obeliskBurnTimer = 0;
             this.player.obeliskSlowTimer = 0;
             this.player._lastAuraType = null;
+            this.player.phoenixUsedThisFloor = false; // Reset Corazza della Fenice (Vitalità Lv.10)
+            if (typeof ShopSystem !== 'undefined' && ShopSystem.hasMastery('hp', 1)) {
+                // Barriera d'Ingresso (Vitalità Lv.5): inizia ogni piano con 10% Scudo Temporaneo
+                this.player.tempHp = Math.max(this.player.tempHp || 0, this.player.stats.maxHp * 0.10);
+                this.player.glacialShieldMesh.material.color.setHex(0x22c55e);
+                this.player.glacialShieldMesh.visible = true;
+            }
             this.player.updateAppearance();
         }
 
@@ -8855,6 +8822,33 @@ startGame(diffMult) {
                             }
                         }
                     }
+                }
+            }
+
+            // 4. Arco Olografico di Durata Scudo Cinetico attorno al Giocatore
+            if (this.player.activeShieldTimer > 0) {
+                let sPos = this.toScreenPosition(this.player.x, 14, this.player.y);
+                if (sPos.z < 1) {
+                    let maxShieldDur = 3.0 + (this.player.modifiers.shieldDurationAdd || 0);
+                    let pct = Math.max(0, Math.min(1, this.player.activeShieldTimer / maxShieldDur));
+                    let isExpiring = this.player.activeShieldTimer < 1.0;
+                    let flashAlert = isExpiring && (Math.sin(this.player.activeShieldTimer * 35) > 0);
+
+                    let arcColor = isExpiring ? (flashAlert ? '#ffffff' : '#ff2244') :
+                                   (this.player.essence === 'red' ? '#ff1838' :
+                                   (this.player.essence === 'green' ? '#22ff44' : '#00ddff'));
+
+                    this.uiCtx.beginPath();
+                    this.uiCtx.arc(sPos.x, sPos.y, 28, 0, Math.PI * 2);
+                    this.uiCtx.strokeStyle = 'rgba(5, 5, 10, 0.65)';
+                    this.uiCtx.lineWidth = 4.5;
+                    this.uiCtx.stroke();
+
+                    this.uiCtx.beginPath();
+                    this.uiCtx.arc(sPos.x, sPos.y, 28, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * pct));
+                    this.uiCtx.strokeStyle = arcColor;
+                    this.uiCtx.lineWidth = isExpiring ? 3.5 : 2.5;
+                    this.uiCtx.stroke();
                 }
             }
         }
@@ -11881,6 +11875,7 @@ this.fogMesh.renderOrder = -1; // Assicura che venga disegnato DOPO il terreno (
 
     takeDamage(amount, source, isCrit) {
         if (!this.active || this.dead || this.dying) return;
+        if (source === Game.player && typeof ShopSystem !== 'undefined' && ShopSystem.hasMastery('dmg', 1)) amount *= 1.35;
         if (this.isProphetBuffed) {
             amount *= 0.05;
             if (source === Game.player) AudioEngine.playHit('shield_clang');
@@ -12457,11 +12452,48 @@ class Player extends Entity {
         
         this.mesh.add(this.light); this.mesh.position.set(this.x, 0, this.y); Game.scene.add(this.mesh);
         this.mesh.traverse(c => { if(c.material && c.material.emissive && c !== this.modelParts.staffGem && c !== this.modelParts.halo) this.flashMats.push(c.material); });
-        this.shieldMesh = new THREE.Mesh(SharedGeo.icosahedron, new THREE.MeshBasicMaterial({color: 0x00DDFF, wireframe: true, transparent: true, opacity: 0.6}));
-        this.shieldMesh.scale.set(28, 28, 28);
-        this.shieldMesh.position.y = 12;
+        // --- SCUDO CINETICO 3D MULTI-STRATO AD ALTA VISIBILITÀ ---
+        this.shieldMesh = new THREE.Mesh(
+            SharedGeo.icosahedron,
+            new THREE.MeshBasicMaterial({ color: 0x00DDFF, wireframe: true, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false })
+        );
+        this.shieldMesh.scale.set(30, 30, 30);
+        this.shieldMesh.position.y = 14;
         this.shieldMesh.visible = false;
+
+        this.shieldCoreMat = new THREE.MeshBasicMaterial({
+            color: 0x00DDFF, transparent: true, opacity: 0.24, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false
+        });
+        let shieldCore = new THREE.Mesh(SharedGeo.icosahedron, this.shieldCoreMat);
+        shieldCore.scale.setScalar(0.92);
+        this.shieldMesh.add(shieldCore);
+
+        this.shieldGyroMat = new THREE.MeshBasicMaterial({
+            color: 0xffffff, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false
+        });
+        this.shieldGyroRing = new THREE.Mesh(SharedGeo.torus, this.shieldGyroMat);
+        this.shieldGyroRing.scale.set(1.12, 1.12, 0.35);
+        this.shieldGyroRing.rotation.x = Math.PI / 2;
+        this.shieldMesh.add(this.shieldGyroRing);
+
+        this.shieldHaloMat = new THREE.SpriteMaterial({
+            map: GLOW_TEX, color: 0x00DDFF, transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending, depthWrite: false
+        });
+        let shieldHalo = new THREE.Sprite(this.shieldHaloMat);
+        shieldHalo.scale.set(2.8, 2.8, 1);
+        this.shieldMesh.add(shieldHalo);
+
         this.mesh.add(this.shieldMesh);
+
+        this.shieldFloorMat = new THREE.MeshBasicMaterial({
+            color: 0x00DDFF, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false
+        });
+        this.shieldFloorRing = new THREE.Mesh(SharedGeo.auraRing, this.shieldFloorMat);
+        this.shieldFloorRing.rotation.x = -Math.PI / 2;
+        this.shieldFloorRing.position.y = 1.2;
+        this.shieldFloorRing.scale.set(34, 34, 1);
+        this.shieldFloorRing.visible = false;
+        this.mesh.add(this.shieldFloorRing);
         // Scudo Glaciale (Temp HP - Verde/Blu)
         this.glacialShieldMesh = new THREE.Mesh(SharedGeo.sphere, new THREE.MeshBasicMaterial({
             color: 0x00ffaa, 
@@ -13026,6 +13058,8 @@ class Player extends Entity {
         this.modifiers.speedMult += ShopSystem.bonus.speed;
         this.modifiers.bonusAtkSpeed += ShopSystem.bonus.atkSpeed;
         this.modifiers.bonusCritChance += ShopSystem.bonus.crit;
+        this.modifiers.critDmgMult += (ShopSystem.bonus.critDmg || 0);
+        ShopSystem.applyMasteriesToPlayer(this);
 
         this.relics.forEach(r => r.apply(this));
         this.syncRelicVisuals(); // Rimuove istantaneamente gli FX delle reliquie sacrificate e attiva quelli nuovi
@@ -13169,6 +13203,12 @@ class Player extends Entity {
             Game.scene.remove(this.mesh);
         }
     }
+    setShieldVisualColor(hexColor, ringColor = hexColor) {
+        this.shieldMesh.material.color.setHex(hexColor);
+        if (this.shieldCoreMat) this.shieldCoreMat.color.setHex(hexColor);
+        if (this.shieldHaloMat) this.shieldHaloMat.color.setHex(hexColor);
+        if (this.shieldFloorMat) this.shieldFloorMat.color.setHex(ringColor);
+    }
     updateAppearance() {
         let skin = SkinSystem.getCurrentSkin();
         let hasActiveEssence = Boolean(this.essence || Game.ultimateActive);
@@ -13251,7 +13291,7 @@ class Player extends Entity {
             if (this.essence === 'red') sColor = ESSENCE_COLORS.red;
             else if (this.essence === 'blue') sColor = ESSENCE_COLORS.blue;
             else if (this.essence === 'green') sColor = ESSENCE_COLORS.green;
-            this.shieldMesh.material.color.setHex(sColor);
+            this.setShieldVisualColor(sColor, sColor);
         }
 
         let pAura = this._lastAuraType;
@@ -13381,40 +13421,77 @@ class Player extends Entity {
             this.shadowMesh.updateMatrix();
         }
 
-       // Gestione Scudo Cinetico (Shift)
-    
+     // Gestione Scudo Cinetico (Shift) con Feedback di Scadenza (< 1.0s)
         if (this.activeShieldTimer > 0) {
             this.activeShieldTimer -= dt;
-            // Se invincibilità attiva, nascondi lo scudo durante il blink
-            this.shieldMesh.visible = (this.invincibilityTimer <= 0 || Math.floor(this.invincibilityTimer * 15) % 2 === 0);
-            
-            this.shieldMesh.rotation.y += dt * 5;
-            this.shieldMesh.rotation.z += dt * 3;
-            
-         if (this.shieldFlashTimer > 0) {
+            let isVisible = (this.invincibilityTimer <= 0 || Math.floor(this.invincibilityTimer * 15) % 2 === 0);
+            this.shieldMesh.visible = isVisible;
+            if (this.shieldFloorRing) this.shieldFloorRing.visible = isVisible;
+
+            let baseColor = 0x00DDFF;
+            if (this.essence === 'red') baseColor = ESSENCE_COLORS.red;
+            else if (this.essence === 'blue') baseColor = ESSENCE_COLORS.blue;
+            else if (this.essence === 'green') baseColor = ESSENCE_COLORS.green;
+
+            let rotBoost = this.activeShieldTimer < 1.0 ? 2.2 : 1.0;
+            this.shieldMesh.rotation.y += dt * 4.5 * rotBoost;
+            this.shieldMesh.rotation.z += dt * 2.8 * rotBoost;
+            if (this.shieldGyroRing) this.shieldGyroRing.rotation.y -= dt * 7.0 * rotBoost;
+
+            if (this.shieldFlashTimer > 0) {
                 this.shieldFlashTimer -= dt;
                 let pulse = this.shieldFlashTimer / 0.15;
-                this.shieldMesh.material.opacity = 0.6 + (0.4 * pulse);
-                this.shieldMesh.scale.set(28 + (12 * pulse), 28 + (12 * pulse), 28 + (12 * pulse));
-            } else if (this.activeShieldTimer < 0.8) {
-                // Avviso scadenza negli ultimi 0.8s: pulsazione rapida + tick sonoro
-                let warnWave = Math.sin(this.activeShieldTimer * 32);
-                this.shieldMesh.material.opacity = 0.20 + Math.abs(warnWave) * 0.65;
-                let sScale = 28 + warnWave * 2.5;
+                this.setShieldVisualColor(0xffffff, baseColor);
+                this.shieldMesh.material.opacity = 1.0;
+                if (this.shieldCoreMat) this.shieldCoreMat.opacity = 0.45 * pulse + 0.22;
+                let sScale = 30 + 10 * pulse;
                 this.shieldMesh.scale.set(sScale, sScale, sScale);
+                if (this.shieldFloorRing) this.shieldFloorRing.scale.set(34 + 8 * pulse, 34 + 8 * pulse, 1);
+            } else if (this.activeShieldTimer < 1.0) {
+                let urgency = 1.0 - Math.max(0, this.activeShieldTimer);
+                let freq = 24 + urgency * 38;
+                let wave = Math.sin(this.activeShieldTimer * freq);
+                let isAlertPeak = wave > 0;
+
+                this.setShieldVisualColor(isAlertPeak ? 0xffffff : 0xff2244, isAlertPeak ? 0xff2244 : baseColor);
+                this.shieldMesh.material.opacity = isAlertPeak ? 0.95 : 0.25;
+                if (this.shieldCoreMat) this.shieldCoreMat.opacity = isAlertPeak ? 0.38 : 0.08;
+                if (this.shieldHaloMat) this.shieldHaloMat.opacity = isAlertPeak ? 0.60 : 0.15;
+                if (this.shieldFloorMat) this.shieldFloorMat.opacity = isAlertPeak ? 0.95 : 0.30;
+
+                let sScale = 30 + wave * 3.2;
+                this.shieldMesh.scale.set(sScale, sScale, sScale);
+
+                if (this.shieldFloorRing) {
+                    let floorRad = Math.max(18, 34 * (0.55 + 0.45 * this.activeShieldTimer));
+                    this.shieldFloorRing.scale.set(floorRad, floorRad, 1);
+                }
+
+                if (Game.frameCount % (isTouchDevice ? 5 : 3) === 0 && !AppSettings.isLow) {
+                    let a = Math.random() * Math.PI * 2;
+                    let p = Game.getParticle();
+                    p.spawn(this.x + Math.cos(a) * 26, 16, this.y + Math.sin(a) * 26, isAlertPeak ? SharedMat.spriteWhite : SharedMat.spriteRed, 'spark', a);
+                    p.baseSize = 14;
+                }
+
                 this._shieldWarnTick = (this._shieldWarnTick || 0) - dt;
                 if (this._shieldWarnTick <= 0) {
-                    this._shieldWarnTick = 0.22;
+                    this._shieldWarnTick = Math.max(0.10, 0.24 - urgency * 0.12);
                     AudioEngine.playHover();
                 }
             } else {
                 this._shieldWarnTick = 0;
-                this.shieldMesh.material.opacity = 0.6;
-                this.shieldMesh.scale.set(28, 28, 28);
+                let breath = Math.sin(Game.playTime * 6.0);
+                this.setShieldVisualColor(baseColor, baseColor);
+                this.shieldMesh.material.opacity = 0.88 + breath * 0.08;
+                if (this.shieldCoreMat) this.shieldCoreMat.opacity = 0.22 + breath * 0.05;
+                if (this.shieldHaloMat) this.shieldHaloMat.opacity = 0.42 + breath * 0.08;
+                if (this.shieldFloorMat) this.shieldFloorMat.opacity = 0.80 + breath * 0.10;
+                let sScale = 30 + breath * 1.0;
+                this.shieldMesh.scale.set(sScale, sScale, sScale);
+                if (this.shieldFloorRing) this.shieldFloorRing.scale.set(34, 34, 1);
             }
 
-
-           // AEGIS DEL GUARDIANO: Spire viola del vuoto che ruotano attorno allo scudo attivo
             if (this.modifiers.explosiveShield && Game.frameCount % (isTouchDevice ? 6 : 3) === 0) {
                 let va = Game.playTime * 8.0;
                 let vp = Game.getParticle();
@@ -13422,7 +13499,6 @@ class Player extends Entity {
                 vp.baseSize = 18;
             }
 
-            // BATTERIA A IONI: Folgora 1 nemico vicino ogni secondo con un vero Fulmine 3D!
             if (this.modifiers.ionBattery) {
                 this.ionZapTimer = (this.ionZapTimer || 0) + dt;
                 if (this.ionZapTimer >= 1.0) {
@@ -13433,14 +13509,11 @@ class Player extends Entity {
                         if (!e.dead && !e.isPursuer && e.type !== 'crystal') {
                             let zapDmg = ((this.stats.minDmg + this.stats.maxDmg) * 0.5) * 0.80 * this.modifiers.dmgMult;
                             e.takeDamage(zapDmg, this, false, false);
-
-                            // Traccia il fulmine 3D tra il Fuoco Fatuo e il bersaglio
                             let dx = e.x - this.x, dy = e.y - this.y;
                             let dist = Math.sqrt(dx * dx + dy * dy) || 1;
                             let angle = Math.atan2(dy, dx);
                             Game.getDashLine().spawn(this.x + dx * 0.5, this.y + dy * 0.5, dist, angle, 0x00eeff, 7.5, 0.18);
                             Game.spawnLightFlash(e.x, e.y, 0x00eeff, 4.5, 320, 0.15);
-
                             let zNova = Game.getParticle();
                             zNova.spawn(e.x, 22, e.y, SharedMat.spriteWhite, 'nova');
                             zNova.baseSize = 65;
@@ -13454,15 +13527,15 @@ class Player extends Entity {
 
             if (this.activeShieldTimer <= 0) {
                 this.shieldMesh.visible = false;
+                if (this.shieldFloorRing) this.shieldFloorRing.visible = false;
                 if (!this.autoShieldActive) {
                     this.activeShieldCooldown = 8.0;
                 }
                 this.autoShieldActive = false;
                 
-                // --- ESPLOSIONE AEGIS DEL GUARDIANO (Max 12 stack, fino a 2.5x Danno Base, Nova Arcana Multicolore) ---
                 if (this.modifiers.explosiveShield) {
                     let stacks = Math.min(this.shieldAbsorbed, 12);
-                    let mult = 1.0 + (stacks / 12) * 1.5; // Da 1.0x a 2.5x Danno Base
+                    let mult = 1.0 + (stacks / 12) * 1.5;
                     let totalDmg = this.stats.maxDmg * mult * this.modifiers.dmgMult;
                     let totalRadius = Math.min(160 + stacks * 18, 376); 
                     
@@ -13476,15 +13549,23 @@ class Player extends Entity {
                     }
                     Game.addTrauma(1.5);
                     AudioEngine.playShoot('explosive_arrow');
-                    
-                    if (stacks > 0) {
-                        Game.getFloatingText().spawn(this.x, this.y + 20, `AEGIS NOVA (${stacks}x)!`, '#e879f9', 35, true);
-                    }
+                    if (stacks > 0) Game.getFloatingText().spawn(this.x, this.y + 20, `AEGIS NOVA (${stacks}x)!`, '#e879f9', 35, true);
                     this.shieldAbsorbed = 0;
+                } else {
+                    AudioEngine.playShieldDown();
+                    let pop = Game.getParticle();
+                    pop.spawn(this.x, 16, this.y, SharedMat.spriteBlue, 'nova');
+                    pop.baseSize = 65; pop.life = 0.12; pop.maxLife = 0.12;
+                    let spCount = AppSettings.isLow ? 3 : 6;
+                    for (let s = 0; s < spCount; s++) {
+                        let a = (Math.PI * 2 / spCount) * s;
+                        Game.getParticle().spawn(this.x + Math.cos(a) * 20, 16, this.y + Math.sin(a) * 20, SharedMat.spriteWhite, 'spark', a);
+                    }
                 }
             }
         } else {
             this.shieldMesh.visible = false;
+            if (this.shieldFloorRing) this.shieldFloorRing.visible = false;
         }
 
        // Gestione unica ed esclusiva dello Scudo Glaciale (Temp HP)
@@ -13871,7 +13952,8 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
 
             // 3. FISICA E AUDIO AMBIENTALE ACQUA / LAVA / GHIACCIO
             if (inPit) {
-                if (!isIce) currentSpeed *= 0.35; // Riduce la velocità del 65% in acqua e lava
+                // Passo Anfibio (Movimento Lv.5) dimezza il rallentamento in acqua e lava (da -65% a -32.5%)
+                if (!isIce) currentSpeed *= (typeof ShopSystem !== 'undefined' && ShopSystem.hasMastery('speed', 1)) ? 0.675 : 0.35;
                 let envType = Game.currentThemeIndex === 0 ? 'water' : (Game.currentThemeIndex === 1 ? 'lava' : 'ice');
                 AudioEngine.playEnvironmentSound(envType, isMoving, dt);
             }
@@ -14354,8 +14436,9 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
 
         if (Game.ultimateActive) baseDmg *= 2.0;
         if (isCrit) {
-            baseDmg *= this.modifiers.critDmgMult;
-            // Follia Omicida: il Teschio Sussurrante si ingrandisce ed emette un flash cremisi a ogni critico
+            // Punto Vitale (Precisione Lv.5): ogni punto Combo aumenta il moltiplicatore critico (+0.50x a 100 Combo, scala con Maestria del Flow)
+            let comboCritBonus = (typeof ShopSystem !== 'undefined' && ShopSystem.hasMastery('crit', 1)) ? (Math.min(Game.combo, 100 * flowCapMult) * 0.005) : 0;
+            baseDmg *= (this.modifiers.critDmgMult + comboCritBonus);
             if (this.modifiers.homicidalFrenzy && this.relicPetMeshes && this.relicPetMeshes.skull) {
                 this._skullCritPop = 0.22;
                 let sNova = Game.getParticle();
@@ -14370,7 +14453,16 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
         if (this.essence === 'blue') projType = 'chain_lightning';
         if (this.essence === 'green') projType = 'homing_arrow';
         let piercing = (this.overdrive && this.essence === 'blue');
-        let bonusPierce = (this.modifiers.flowMastery && Game.combo > 50 && projType === 'player_arrow') ? 1 : 0;
+
+        // Dardo Perforante (Danno Lv.10) + sinergia con Maestria del Flow
+        let bonusPierce = ((this.modifiers.flowMastery && Game.combo > 50 && projType === 'player_arrow') ? 1 : 0)
+                        + ((typeof ShopSystem !== 'undefined' && ShopSystem.hasMastery('dmg', 2) && projType === 'player_arrow') ? 1 : 0);
+
+        // Innesco Rapido (Ritmo Lv.5) e Doppia Canna (Ritmo Lv.10)
+        this.rhythmShotCount = (this.rhythmShotCount || 0) + 1;
+        let isRapidTrigger = (typeof ShopSystem !== 'undefined' && ShopSystem.hasMastery('atkSpeed', 1)) && (this.rhythmShotCount % 6 === 0);
+        let isDoubleBarrel = (typeof ShopSystem !== 'undefined' && ShopSystem.hasMastery('atkSpeed', 2)) && (this.rhythmShotCount % 5 === 0);
+
         AudioEngine.playShoot(projType, isCrit);
         
         if (!AppSettings.isLow) {
@@ -14384,12 +14476,22 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
         }
         
         let projSpeed = (projType === 'explosive_arrow') ? 400 : 800;
+        if (isRapidTrigger) {
+            projSpeed *= 1.25;
+            Game.addCombo(1); // Scala automaticamente con Ritmo di Battaglia!
+        }
         
-        // Gemelli Cinetici (65% danno per colpo)
+        // Sparo principale + sinergia Gemelli Cinetici + Doppia Canna (50% danno)
         if (this.activeShieldTimer > 0 && this.modifiers.twinKinetic) {
             let twinDmg = baseDmg * 0.65;
             let p1 = Game.getProjectile(); p1.spawn(this.x, this.y, this.angle - 0.15, projSpeed, twinDmg, 'player', projType, piercing, isCrit); p1.canInfect = true; p1.pierceCount = bonusPierce;
             let p2 = Game.getProjectile(); p2.spawn(this.x, this.y, this.angle + 0.15, projSpeed, twinDmg, 'player', projType, piercing, isCrit); p2.canInfect = true; p2.pierceCount = bonusPierce;
+            if (isDoubleBarrel) {
+                let p3 = Game.getProjectile(); p3.spawn(this.x, this.y, this.angle, projSpeed, baseDmg * 0.50, 'player', projType, piercing, isCrit); p3.canInfect = true; p3.pierceCount = bonusPierce;
+            }
+        } else if (isDoubleBarrel) {
+            let p1 = Game.getProjectile(); p1.spawn(this.x, this.y, this.angle - 0.06, projSpeed, baseDmg, 'player', projType, piercing, isCrit); p1.canInfect = true; p1.pierceCount = bonusPierce;
+            let p2 = Game.getProjectile(); p2.spawn(this.x, this.y, this.angle + 0.06, projSpeed, baseDmg * 0.50, 'player', projType, piercing, isCrit); p2.canInfect = true; p2.pierceCount = bonusPierce;
         } else {
             let p1 = Game.getProjectile(); p1.spawn(this.x, this.y, this.angle, projSpeed, baseDmg, 'player', projType, piercing, isCrit); p1.canInfect = true; p1.pierceCount = bonusPierce;
         }
@@ -14600,16 +14702,47 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
             this.dashResistTimer = 3.0; // Attiva buff resistenza dei Calzari
         }
 
-        if (this.essence === 'green') { Game.getDecoy().spawn(this.x, this.y); Game.getHazard().spawn(this.x, this.y, 40, 3.0, this.stats.maxDmg * 0.5 * this.modifiers.dmgMult, ESSENCE_COLORS.green, 'poison'); }
-        if (this.overdrive && this.essence === 'red') { Game.getHazard().spawn(this.x, this.y, 80, 1.0, this.stats.maxDmg * 3 * this.modifiers.dmgMult, ESSENCE_COLORS.red, 'fire'); }
-    }
+       if (this.essence === 'green') { Game.getDecoy().spawn(this.x, this.y); Game.getHazard().spawn(this.x, this.y, 40, 3.0, this.stats.maxDmg * 0.5 * this.modifiers.dmgMult, ESSENCE_COLORS.green, 'poison'); }
+        if (this.overdrive && this.essence === 'red') { Game.getHazard().spawn(this.x, this.y, 80, 1.0, this.stats.maxDmg * 3 * this.modifiers.dmgMult, ESSENCE_COLORS.red, 'fire'); }
+
+        // Scia Cinetica (Movimento Lv.10): -0.5s ricarica Scudo e raccolta istantanea a raggio +50% (scala con Magnete Elementale)
+        if (typeof ShopSystem !== 'undefined' && ShopSystem.hasMastery('speed', 2)) {
+            if (this.activeShieldCooldown > 0) {
+                this.activeShieldCooldown = Math.max(0, this.activeShieldCooldown - 0.5);
+            }
+            let vacuumRad = (this.radius + 20 * this.modifiers.pickupRadiusMult) * 1.5;
+            let vacuumRadSq = vacuumRad * vacuumRad;
+
+            for (let i = 0; i < Game.essences.length; i++) {
+                let e = Game.essences[i];
+                if (e.active && !e.collecting && MathUtils.distanceSq(this, e) <= vacuumRadSq) {
+                    this.collectEssence(e.type);
+                    e.startCollect(this);
+                }
+            }
+            for (let i = 0; i < Game.coinDrops.length; i++) {
+                let c = Game.coinDrops[i];
+                if (c.active && !c.collecting && MathUtils.distanceSq(this, c) <= vacuumRadSq) {
+                    c.startCollect();
+                    AudioEngine.playCoin();
+                    Game.coins++;
+                    if (UI.els.coins) UI.els.coins.innerText = Game.coins;
+                    Game.getFloatingText().spawn(this.x, this.y, "+1", '#ffaa00', 25, true);
+                    if (this.modifiers.miserPact) {
+                        this.miserBuffTimer = 3.0;
+                        this.miserBuffStacks = Math.min(5, (this.miserBuffStacks || 0) + 1);
+                    }
+                }
+            }
+        }
+    }
     
   takeDamage(amount, source) {
         if (this.invincibilityTimer > 0) return; 
 
-        // Protezione dinamica anti-oneshot prima delle riduzioni attive (premia l'uso dello Scudo!)
+        // Protezione dinamica anti-oneshot (-5% ulteriore se possiedi Corazza della Fenice Lv.10)
         if (source !== 'hazard') {
-            let maxHitPct = Game.floor <= 4 ? 0.28 : (Game.floor <= 11 ? 0.36 : 0.45);
+            let maxHitPct = (Game.floor <= 4 ? 0.28 : (Game.floor <= 11 ? 0.36 : 0.45)) - ((typeof ShopSystem !== 'undefined' && ShopSystem.hasMastery('hp', 2)) ? 0.05 : 0);
             amount = Math.min(amount, this.stats.maxHp * maxHitPct);
         }
         
@@ -14693,6 +14826,36 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
 
         if (!wasDead) {
             Game.addTrauma(0.8);
+            // Corazza della Fenice (Vitalità Lv.10): 1 volta per piano respinge i nemici (0 danni) e cura il 50% HP
+            if (this.stats.hp <= 0 && typeof ShopSystem !== 'undefined' && ShopSystem.hasMastery('hp', 2) && !this.phoenixUsedThisFloor) {
+                this.phoenixUsedThisFloor = true;
+                this.dead = false;
+                this.stats.hp = Math.floor(this.stats.maxHp * 0.50);
+                this.invincibilityTimer = 1.5;
+
+                Game.hitStop = 0.15;
+                Game.addTrauma(1.5);
+                AudioEngine.playLevelUp();
+                AudioEngine.playShoot('explosive_arrow');
+                Game.spawnLightFlash(this.x, this.y, 0x22c55e, 10.0, 600, 0.4);
+
+                let pNova = Game.getParticle();
+                pNova.spawn(this.x, 20, this.y, SharedMat.spriteGreen, 'nova');
+                pNova.baseSize = 320;
+
+                let nearby = Game.enemyGrid.findNearby(this, 260);
+                for (let i = 0; i < nearby.length; i++) {
+                    let e = nearby[i];
+                    if (!e.dead && e.type !== 'crystal') {
+                        let ang = Math.atan2(e.y - this.y, this.x - e.x);
+                        let pushAng = Math.atan2(e.y - this.y, e.x - this.x);
+                        e.push(Math.cos(pushAng), Math.sin(pushAng), 220);
+                        if (!e.isBoss) e.frozenTimer = Math.max(e.frozenTimer || 0, 1.0);
+                    }
+                }
+                Game.getFloatingText().spawn(this.x, this.y + 30, "CORAZZA DELLA FENICE (+50% HP)!", '#22c55e', 36, true);
+                return;
+            }
           if (this.stats.hp <= 0) {
                 this.dead = true;
                 Game.lives--;
@@ -14794,6 +14957,7 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
                 let pChildren = this.mesh.children;
                 for (let c = 0; c < pChildren.length; c++) pChildren[c].visible = false;
                 if (this.shieldMesh) this.shieldMesh.visible = false;
+              if (this.shieldFloorRing) this.shieldFloorRing.visible = false;
                 if (this.glacialShieldMesh) this.glacialShieldMesh.visible = false;
                 if (this.shadowMesh) this.shadowMesh.visible = false;
                 this.auraRingMesh.visible = false;
@@ -14889,16 +15053,15 @@ if (Game.ultimateActive) currentSpeed *= 1.35; currentSpeed = Math.min(currentSp
             this.shieldAbsorbed = 0;
             this.shieldHealCount = 0;
             this.shieldMesh.visible = true;
+            if (this.shieldFloorRing) this.shieldFloorRing.visible = true;
             
-            // --- MODIFICA: COLORE SCUDO IN BASE ALL'ESSENZA ---
-            let shieldColor = 0x00DDFF; // Ciano di default
+            let shieldColor = 0x00DDFF;
             if (this.essence === 'red') shieldColor = ESSENCE_COLORS.red;
             else if (this.essence === 'blue') shieldColor = ESSENCE_COLORS.blue;
             else if (this.essence === 'green') shieldColor = ESSENCE_COLORS.green;
-            this.shieldMesh.material.color.setHex(shieldColor);
-            // --------------------------------------------------
+            this.setShieldVisualColor(shieldColor, shieldColor);
             
-            this.shieldMesh.material.opacity = 0.6;
+            this.shieldMesh.material.opacity = 0.9;
             AudioEngine.playCollect();
         }
     }
@@ -16463,6 +16626,9 @@ class Enemy extends Entity {
         if (aura === 'green') amount *= 0.65;
 
         let hasJudgment = (source === Game.player && Game.player && Game.player.modifiers.executioner);
+        // Impatto Frantumante (Danno Lv.5): +35% danni alle difese nemiche (si moltiplica con Lama del Giudizio)
+        let shieldBreaker = (source === Game.player && typeof ShopSystem !== 'undefined' && ShopSystem.hasMastery('dmg', 1)) ? 1.35 : 1.0;
+
         let executionTriggered = false;
         if (hasJudgment) {
             let hpRatio = this.stats.hp / this.stats.maxHp;
@@ -16481,7 +16647,7 @@ class Enemy extends Entity {
         if (source === Game.player && Game.player.modifiers.openerDmg && (this.stats.hp / this.stats.maxHp) >= 0.8) amount *= 1.30;
 
         if (this.isProphetBuffed) {
-            amount *= 0.05;
+            amount *= 0.05 * shieldBreaker;
             isCrit = false;
             this._shieldClang = true;
             if (Game.frameCount % 4 === 0) Game.getParticle().spawn(this.x, 20, this.y, SharedMat.spriteWhite, 'spark');
@@ -16490,32 +16656,32 @@ class Enemy extends Entity {
         // --- SCUDI E FINESTRE DI VULNERABILITÀ TATTICHE ---
         if (this.type === 'ring_walker') {
             if ((this.ringRecoverTimer || 0) <= 0) {
-                amount *= hasJudgment ? 0.50 : 0.05;
+                amount *= (hasJudgment ? 0.50 : 0.05) * shieldBreaker;
                 if (!hasJudgment) isCrit = false;
                 this._shieldClang = true;
                 if (Game.frameCount % 3 === 0) Game.getParticle().spawn(this.x, this.radius * 2.55, this.y, SharedMat.spriteRed, 'spark');
             } else {
-                amount *= 1.25; // +25% danni sul nucleo scoperto!
+                amount *= 1.25;
             }
         }
 
         if (this.type === 'fire_demon') {
             if ((this.telegraphTimer || 0) <= 0 && (this.coreExposedTimer || 0) <= 0) {
-                amount *= hasJudgment ? 0.70 : 0.40;
+                amount *= (hasJudgment ? 0.70 : 0.40) * shieldBreaker;
                 if (!hasJudgment) isCrit = false;
                 this._shieldClang = true;
                 if (Game.frameCount % 3 === 0) Game.getParticle().spawn(this.x, this.radius * 1.5, this.y, SharedMat.spriteWhite, 'spark');
             } else {
-                amount *= 1.35; // +35% danni sul nucleo incandescente aperto!
+                amount *= 1.35;
             }
         }
 
         if (this.type === 'goblin' && (this.goblinStunTimer || 0) > 0) {
-            amount *= 1.50; // +50% danni se schiantato contro muro/obelisco!
+            amount *= 1.50;
         }
 
         if (this.type === 'orc' && (this.clubRecoveryTimer || 0) > 0) {
-            amount *= 1.25; // +25% danni mentre recupera la clava da terra!
+            amount *= 1.25;
         }
 
         if (this.type === 'golem' && source && typeof source.x === 'number') {
@@ -16525,13 +16691,13 @@ class Enemy extends Entity {
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
             if (Math.abs(diff) < Math.PI / 1.5) {
-                amount *= hasJudgment ? 0.60 : 0.20;
+                amount *= (hasJudgment ? 0.60 : 0.20) * shieldBreaker;
                 if (!hasJudgment) isCrit = false;
                 this._shieldClang = true;
                 Game.getParticle().spawn(this.x + Math.cos(angleToSource) * this.radius, 15, this.y + Math.sin(angleToSource) * this.radius, SharedMat.spriteBlue, 'spark');
                 this.hitSquashTimer = 0.12;
             } else {
-                amount *= 1.25; // +25% danni colpendo il Golem alle spalle!
+                amount *= 1.25;
             }
         }
 
@@ -16566,6 +16732,30 @@ class Enemy extends Entity {
                 this.slowedTimer = Math.max(this.slowedTimer || 0, 2.5);
                 this.slowType = 'blue';
             }
+            // Impatto Frantumante (Danno Lv.5): spinge indietro i nemici con più forza
+            if (typeof ShopSystem !== 'undefined' && ShopSystem.hasMastery('dmg', 1) && !this.isBoss) {
+                let pushAng = Math.atan2(this.y - Game.player.y, this.x - Game.player.x);
+                this.push(Math.cos(pushAng), Math.sin(pushAng), this.type === 'golem' ? 5 : 14);
+            }
+        }
+
+        // Eco Letale (Precisione Lv.10): i critici generano un'esplosione cinetica (30% danno entro 65 unità)
+        if (isCrit && source === Game.player && typeof ShopSystem !== 'undefined' && ShopSystem.hasMastery('crit', 2) && !Game._inCritEcho) {
+            Game._inCritEcho = true;
+            let echoDmg = amount * 0.30;
+            let echoRadSq = 65 * 65;
+            let nearby = Game.enemyGrid.findNearby(this, 65);
+            for (let i = 0; i < nearby.length; i++) {
+                let other = nearby[i];
+                if (other !== this && !other.dead && MathUtils.distanceSq(this, other) <= echoRadSq) {
+                    other.takeDamage(echoDmg, Game.player, false, false);
+                }
+            }
+            let echoNova = Game.getParticle();
+            echoNova.spawn(this.x, 18, this.y, SharedMat.spritePink, 'nova');
+            echoNova.baseSize = 95;
+            echoNova.life = 0.14; echoNova.maxLife = 0.14;
+            Game._inCritEcho = false;
         }
 
         if (source === Game.player && Game.player.overdrive && Game.player.essence === 'green' && canInfect) {
@@ -18664,80 +18854,242 @@ const Preloader = {
 };
 
   const ShopSystem = {
-    bonus: { hp: 0, dmg: 0, speed: 0, atkSpeed: 0, crit: 0 },
+    bonus: { hp: 0, dmg: 0, speed: 0, atkSpeed: 0, crit: 0, critDmg: 0 },
+    levels: { hp: 0, dmg: 0, speed: 0, atkSpeed: 0, crit: 0 },
+    baseCosts: { hp: 5, dmg: 7, speed: 6, atkSpeed: 7, crit: 7 },
     costs: { hp: 5, dmg: 7, speed: 6, atkSpeed: 7, crit: 7 },
+    totalPurchases: 0,
 
-    updateUI() {
-        if(!document.getElementById('shop-coins')) return;
-        document.getElementById('shop-coins').innerText = Game.coins;
-        if (UI.els.coins) UI.els.coins.innerText = Game.coins;
-
-        let currentHpMax = Game.player ? Game.player.stats.maxHp : 100;
-        document.getElementById('shop-hp-curr').innerText = currentHpMax;
-        document.getElementById('shop-hp-next').innerText = currentHpMax + 18;
-        document.getElementById('shop-cost-hp').innerText = this.costs.hp;
-
-        let currentDmgMult = Game.player ? Game.player.modifiers.dmgMult : 1.0;
-        document.getElementById('shop-dmg-curr').innerText = currentDmgMult.toFixed(2) + "x";
-        document.getElementById('shop-dmg-next').innerText = (currentDmgMult + 0.10).toFixed(2) + "x";
-        document.getElementById('shop-cost-dmg').innerText = this.costs.dmg;
-
-        let currentSpdMult = Game.player ? Game.player.modifiers.speedMult : 1.0;
-        document.getElementById('shop-spd-curr').innerText = currentSpdMult.toFixed(2) + "x";
-        document.getElementById('shop-spd-next').innerText = (currentSpdMult + 0.04).toFixed(2) + "x";
-        document.getElementById('shop-cost-spd').innerText = this.costs.speed;
-
-        let currentAtkMult = Game.player ? (1.0 + Game.player.modifiers.bonusAtkSpeed) : 1.0;
-        if(document.getElementById('shop-atk-curr')){
-            document.getElementById('shop-atk-curr').innerText = currentAtkMult.toFixed(2) + "x";
-            document.getElementById('shop-atk-next').innerText = (currentAtkMult + 0.05).toFixed(2) + "x";
-            document.getElementById('shop-cost-atk').innerText = this.costs.atkSpeed;
-        }
-
-        let totalCrit = Game.player ? (Game.player.modifiers.critChance + Game.player.modifiers.bonusCritChance) : 0.10;
-        let currentCrit = Math.round(totalCrit * 100);
-        if(document.getElementById('shop-crit-curr')){
-            if (totalCrit >= 0.75 && Game.player) {
-                let cdm = Game.player.modifiers.critDmgMult;
-                document.getElementById('shop-crit-curr').innerText = cdm.toFixed(2) + "x";
-                document.getElementById('shop-crit-next').innerText = (cdm + 0.12).toFixed(2) + "x";
-            } else {
-                document.getElementById('shop-crit-curr').innerText = currentCrit + "%";
-                document.getElementById('shop-crit-next').innerText = Math.min(75, currentCrit + 5) + "%";
-            }
-            document.getElementById('shop-cost-crit').innerText = this.costs.crit;
+    branches: {
+        hp: {
+            name: 'Vitalità', icon: 'fa-heart', color: '#22c55e', tailwind: 'green',
+            tier1: { name: 'Barriera d\'Ingresso', desc: 'Inizio piano: +10% Scudo HP e +15% Cure ricevute' },
+            tier2: { name: 'Corazza della Fenice', desc: '-5% danno max/colpo e Rinascita 50% HP (1/piano)' }
+        },
+        dmg: {
+            name: 'Danno', icon: 'fa-fire', color: '#ef4444', tailwind: 'red',
+            tier1: { name: 'Impatto Frantumante', desc: '+35% danni a difese/scudi e spinta potenziata' },
+            tier2: { name: 'Dardo Perforante', desc: 'I proiettili base ottengono +1 Perforazione' }
+        },
+        speed: {
+            name: 'Movimento', icon: 'fa-shoe-prints', color: '#3b82f6', tailwind: 'blue',
+            tier1: { name: 'Passo Anfibio', desc: '+1s durata Scudo Cinetico e -50% rallentamento fosse' },
+            tier2: { name: 'Scia Cinetica', desc: 'Scatto: -0.5s CD Scudo e raccoglie loot (+50% raggio)' }
+        },
+        atkSpeed: {
+            name: 'Ritmo', icon: 'fa-bolt', color: '#f59e0b', tailwind: 'amber',
+            tier1: { name: 'Innesco Rapido', desc: 'Ogni 6 attacchi: +1 Combo extra e +25% vel. colpo' },
+            tier2: { name: 'Doppia Canna', desc: 'Ogni 5 attacchi: 2° colpo parallelo (50% danno)' }
+        },
+        crit: {
+            name: 'Precisione', icon: 'fa-crosshairs', color: '#a855f7', tailwind: 'purple',
+            tier1: { name: 'Punto Vitale', desc: 'Combo aumenta Danno Critico (+0.5x a 100 Combo)' },
+            tier2: { name: 'Eco Letale', desc: 'I critici esplodono: 30% danno ad area (raggio 65)' }
         }
     },
 
+    hasMastery(type, tier) {
+        return this.levels[type] >= (tier === 1 ? 5 : 10);
+    },
+
+    getHpGainForCurrentFloor() {
+        let f = (typeof Game !== 'undefined' && Game.floor) ? Game.floor : 1;
+        return 15 + Math.floor((f - 1) * 1.5);
+    },
+
+    recalculateCosts() {
+        for (let k in this.costs) {
+            let lvl = this.levels[k];
+            let localIncrease = Math.round(Math.pow(lvl, 1.35) * 1.8);
+            let globalTax = this.totalPurchases * 1;
+            this.costs[k] = this.baseCosts[k] + localIncrease + globalTax;
+        }
+    },
+
+    applyMasteriesToPlayer(p) {
+        if (!p) return;
+        if (this.hasMastery('hp', 1)) {
+            p.modifiers.healDropMult += 0.15;
+        }
+        if (this.hasMastery('speed', 1)) {
+            p.modifiers.shieldDurationAdd += 1.0;
+        }
+    },
+
+    getStatPreview(type) {
+        let p = Game.player;
+        if (type === 'hp') {
+            let curr = p ? p.stats.maxHp : 100;
+            let rawGain = this.getHpGainForCurrentFloor();
+            let effGain = (p && p.modifiers.bloodthirst) ? Math.floor(rawGain * 0.85) : rawGain;
+            return { curr: curr, next: curr + effGain };
+        }
+        if (type === 'dmg') {
+            let curr = p ? p.modifiers.dmgMult : 1.0;
+            return { curr: curr.toFixed(2) + 'x', next: (curr + 0.10).toFixed(2) + 'x' };
+        }
+        if (type === 'speed') {
+            let curr = p ? p.modifiers.speedMult : 1.0;
+            return { curr: curr.toFixed(2) + 'x', next: (curr + 0.04).toFixed(2) + 'x' };
+        }
+        if (type === 'atkSpeed') {
+            let curr = p ? (1.0 + p.modifiers.bonusAtkSpeed) : 1.0;
+            return { curr: curr.toFixed(2) + 'x', next: (curr + 0.05).toFixed(2) + 'x' };
+        }
+        if (type === 'crit') {
+            let totalCrit = p ? (p.modifiers.critChance + p.modifiers.bonusCritChance) : 0.10;
+            if (totalCrit >= 0.75 && p) {
+                let cdm = p.modifiers.critDmgMult;
+                return { curr: cdm.toFixed(2) + 'x', next: (cdm + 0.12).toFixed(2) + 'x' };
+            }
+            let curr = Math.round(totalCrit * 100);
+            return { curr: curr + '%', next: Math.min(75, curr + 5) + '%' };
+        }
+    },
+
+    updateUI() {
+        const coinEl = document.getElementById('shop-coins');
+        if (coinEl) coinEl.innerText = Game.coins;
+        if (UI.els.coins) UI.els.coins.innerText = Game.coins;
+
+        const container = document.getElementById('shop-tree-container');
+        if (!container) return;
+
+        this.recalculateCosts();
+        let html = '';
+        const keys = ['hp', 'dmg', 'speed', 'atkSpeed', 'crit'];
+
+        keys.forEach((key) => {
+            const b = this.branches[key];
+            const lvl = this.levels[key];
+            const cost = this.costs[key];
+            const canAfford = Game.coins >= cost;
+            const prev = this.getStatPreview(key);
+
+            const inTier1 = lvl < 5;
+            const targetMilestone = inTier1 ? 5 : 10;
+            const activeTier = inTier1 ? b.tier1 : b.tier2;
+            const progressInTier = inTier1 ? lvl : Math.min(5, lvl - 5);
+            const isOneStepAway = (lvl === 4 || lvl === 9);
+            const isMaxMastery = lvl >= 10;
+
+            let nodesHtml = '';
+            for (let n = 1; n <= 4; n++) {
+                let filled = progressInTier >= n || isMaxMastery;
+                nodesHtml += `
+                    <div class="path-node ${filled ? 'active' : ''}" style="color: ${b.color}"></div>
+                    <div class="w-1.5 h-[2px] ${filled ? 'bg-white/60' : 'bg-white/10'}"></div>
+                `;
+            }
+
+            let milestoneLabel = isMaxMastery ? '★ MAX' : `★ LV.${targetMilestone}`;
+            let milestoneClass = isMaxMastery ? 'unlocked' : (isOneStepAway ? 'border-amber-400 text-amber-300 animate-pulse' : 'text-gray-400');
+            nodesHtml += `<div class="path-milestone ${milestoneClass}">${milestoneLabel}</div>`;
+
+            let masteryText = '';
+            if (isMaxMastery) {
+                masteryText = `<span class="text-amber-400 font-black">MAESTRIA II ATTIVA:</span> <span class="text-gray-200">${b.tier2.name}</span>`;
+            } else if (isOneStepAway) {
+                masteryText = `<span class="text-amber-300 font-black">PROSSIMO GRADO:</span> <span class="text-white">${activeTier.desc}</span>`;
+            } else {
+                masteryText = `<span class="text-gray-400">Lv.${targetMilestone}: ${activeTier.desc}</span>`;
+            }
+
+            html += `
+                <button onclick="ShopSystem.buy('${key}')" class="shop-btn ${key} ${isOneStepAway ? 'almost-mastery' : ''} relative w-full p-2.5 flex flex-col gap-1.5 overflow-hidden shrink-0 text-left">
+                    <div class="w-full flex items-center justify-between">
+                        <div class="flex items-center gap-2.5 w-[38%]">
+                            <div class="w-8 h-8 bg-${b.tailwind}-900/50 flex items-center justify-center border border-${b.tailwind}-500/40 shrink-0">
+                                <i class="fa-solid ${b.icon} text-${b.tailwind}-400 text-sm"></i>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wider leading-none">${b.name}</span>
+                                <span class="text-[9px] font-bold text-gray-400 mt-0.5">Grado ${lvl} ${lvl >= 5 ? '★' : ''}${lvl >= 10 ? '★' : ''}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-center gap-1.5 w-[34%] bg-black/50 py-1 px-2 border border-gray-800">
+                            <span class="text-gray-400 font-bold text-[9px] sm:text-[11px]">${prev.curr}</span>
+                            <i class="fa-solid fa-chevron-right text-${b.tailwind}-400 text-[8px]"></i>
+                            <span class="text-${b.tailwind}-300 font-black text-[10px] sm:text-xs">${prev.next}</span>
+                        </div>
+
+                        <div class="flex justify-end w-[24%]">
+                            <div class="bg-black/70 ${canAfford ? 'text-yellow-400 border-yellow-500/50' : 'text-gray-500 border-gray-800'} border px-2.5 py-1 text-[10px] sm:text-xs font-black flex items-center justify-center gap-1.5 min-w-[54px]">
+                                <i class="fa-solid fa-coins"></i> <span>${cost}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="w-full flex items-center justify-between gap-2 pt-1 border-t border-white/10">
+                        <div class="flex items-center shrink-0">
+                            ${nodesHtml}
+                        </div>
+                        <div class="text-[8.5px] sm:text-[9.5px] font-bold truncate text-right flex-1">
+                            ${masteryText}
+                        </div>
+                    </div>
+                </button>
+            `;
+        });
+
+        container.innerHTML = html;
+    },
+
     buy(type) {
+        this.recalculateCosts();
         let cost = this.costs[type];
         if (Game.coins >= cost) {
             Game.coins -= cost;
-            AudioEngine.playCoin();
-            this.costs[type] = Math.ceil(this.costs[type] * 1.26);
+            this.levels[type]++;
+            let newLvl = this.levels[type];
+            let unlockedMastery = (newLvl === 5 || newLvl === 10);
 
-            if (type === 'hp') { 
-                let gain = Game.player.modifiers.bloodthirst ? 15 : 18;
-                Game.player.stats.maxHp += gain; Game.player.baseStats.maxHp += 18; Game.player.stats.hp = Math.min(Game.player.stats.maxHp, Game.player.stats.hp + gain); this.bonus.hp += 18; 
+            if (!unlockedMastery) {
+                this.totalPurchases++;
             }
-            if (type === 'dmg') { 
-                Game.player.modifiers.dmgMult += 0.10; this.bonus.dmg += 0.10; 
+
+            if (unlockedMastery) {
+                AudioEngine.playLevelUp();
+                Haptics.vibrate([30, 20, 50]);
+            } else {
+                AudioEngine.playCoin();
             }
-            if (type === 'speed') { 
-                Game.player.modifiers.speedMult += 0.04; this.bonus.speed += 0.04; 
+
+            let p = Game.player;
+            if (type === 'hp') {
+                let rawGain = this.getHpGainForCurrentFloor();
+                let effGain = p.modifiers.bloodthirst ? Math.floor(rawGain * 0.85) : rawGain;
+                p.baseStats.maxHp += rawGain;
+                p.stats.maxHp += effGain;
+                p.stats.hp = Math.min(p.stats.maxHp, p.stats.hp + effGain);
+                this.bonus.hp += rawGain;
+                if (newLvl === 5) p.modifiers.healDropMult += 0.15;
             }
-            if (type === 'atkSpeed') { 
-                Game.player.modifiers.bonusAtkSpeed += 0.05; this.bonus.atkSpeed += 0.05; 
+            if (type === 'dmg') {
+                p.modifiers.dmgMult += 0.10;
+                this.bonus.dmg += 0.10;
             }
-            if (type === 'crit') { 
-                let totalCrit = Game.player.modifiers.critChance + Game.player.modifiers.bonusCritChance;
+            if (type === 'speed') {
+                p.modifiers.speedMult += 0.04;
+                this.bonus.speed += 0.04;
+                if (newLvl === 5) p.modifiers.shieldDurationAdd += 1.0;
+            }
+            if (type === 'atkSpeed') {
+                p.modifiers.bonusAtkSpeed += 0.05;
+                this.bonus.atkSpeed += 0.05;
+            }
+            if (type === 'crit') {
+                let totalCrit = p.modifiers.critChance + p.modifiers.bonusCritChance;
                 if (totalCrit >= 0.75) {
-                    Game.player.modifiers.critDmgMult += 0.12;
+                    p.modifiers.critDmgMult += 0.12;
+                    this.bonus.critDmg = (this.bonus.critDmg || 0) + 0.12;
                 } else {
-                    Game.player.modifiers.bonusCritChance += 0.05;
+                    p.modifiers.bonusCritChance += 0.05;
                     this.bonus.crit += 0.05;
                 }
             }
+
             this.updateUI();
         } else {
             AudioEngine.playClick();
@@ -18757,8 +19109,10 @@ const Preloader = {
     },
 
     reset() {
-        this.bonus = { hp: 0, dmg: 0, speed: 0, atkSpeed: 0, crit: 0 };
-        this.costs = { hp: 5, dmg: 7, speed: 6, atkSpeed: 7, crit: 7 };
+        this.bonus = { hp: 0, dmg: 0, speed: 0, atkSpeed: 0, crit: 0, critDmg: 0 };
+        this.levels = { hp: 0, dmg: 0, speed: 0, atkSpeed: 0, crit: 0 };
+        this.totalPurchases = 0;
+        this.recalculateCosts();
     }
 };
 
